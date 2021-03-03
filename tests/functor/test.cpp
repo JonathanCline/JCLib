@@ -1,5 +1,5 @@
 
-#include <SAELib/functor.h>
+#include <jclib/functor.h>
 
 int foo(int _a, int _b)
 {
@@ -26,7 +26,7 @@ struct Bar
 
 int main()
 {
-	sae::functor<int(int, int)> _f{};
+	jc::functor<int(int, int)> _f{};
 
 	if (_f.good_pointer() || _f)
 		return -1;
@@ -56,7 +56,7 @@ int main()
 	// test copy constructor
 
 	const auto _fconstcopy = _f;
-	sae::functor<int(int, int)> _fcopy{ _fconstcopy };
+	jc::functor<int(int, int)> _fcopy{ _fconstcopy };
 
 	if (!_fcopy.good_pointer())
 		return -1;
@@ -67,7 +67,7 @@ int main()
 	
 	// test move constructor
 
-	sae::functor<int(int, int)> _fmoved{ std::move(_fcopy) };
+	jc::functor<int(int, int)> _fmoved{ std::move(_fcopy) };
 
 	if (_fcopy.good_pointer())
 		return -1;
