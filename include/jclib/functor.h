@@ -67,7 +67,7 @@
 	};
 */
 
-#include "jcLib/config.h"
+#include "jclib/config.h"
 
 #include <utility>
 #include <new>
