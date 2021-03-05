@@ -263,6 +263,9 @@ namespace jc
 	template <typename T>
 	JCLIB_CONSTEXPR static bool is_noexcept_function_v = is_noexcept_function<T>::value;
 
+	using std::enable_if;
+	using std::enable_if_t;
+
 };
 
 #endif
