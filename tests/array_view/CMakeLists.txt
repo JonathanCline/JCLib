@@ -1,0 +1,6 @@
+
+add_executable(JCLib_ArrayViewTesting "array_view_test.cpp")
+target_link_libraries(JCLib_ArrayViewTesting PRIVATE JCLib)
+add_test("JCLib_ArrayView_Test" JCLib_ArrayViewTesting)
+
+set_target_properties(JCLib_ArrayViewTesting PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED True)
