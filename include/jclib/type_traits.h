@@ -266,6 +266,42 @@ namespace jc
 	using std::enable_if;
 	using std::enable_if_t;
 
+
+
+
+	template <typename IterT>
+#ifdef __cpp_concepts
+	requires requires (IterT& a) { *a; }
+#endif
+	struct iterator_to
+	{
+		using type = std::remove_reference_t<decltype(*std::declval<IterT&>())>;
+	};
+	template <typename IterT>
+#ifdef __cpp_concepts
+	requires requires () { iterator_to<IterT>{}; }
+#endif
+	using iterator_to_t = typename iterator_to<IterT>::type;
+
+
+
+
+	template <typename IterT, typename T, typename = void>
+	struct is_iterator_to : false_type {};
+
+	template <typename IterT, typename T>
+#ifdef __cpp_concepts
+	requires requires () { is_iterator_to<IterT, T>{}; }
+#endif
+	struct is_iterator_to<IterT, T, jc::enable_if_t<is_same_v<T, iterator_to_t<IterT>>, int>> : true_type {};
+
+
+	template <typename IterT, typename T>
+#ifdef __cpp_concepts
+	requires requires () { is_iterator_to<IterT, T>{}; }
+#endif
+	JCLIB_CONSTEXPR static bool is_iterator_to_v = is_iterator_to<IterT, T>::value;
+
 };
 
 #endif
