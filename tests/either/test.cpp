@@ -6,6 +6,6 @@
 
 int main()
 {
-	jc::either<int, std::string> _f{ 3 };
+	//jc::either<int, std::string> _f{ 3 };
 	return 0;
 };

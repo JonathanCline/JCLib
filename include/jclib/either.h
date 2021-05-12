@@ -5,7 +5,7 @@
 #define _JCLIB_EITHER_
 
 #include "jclib/config.h"
-
+/*
 namespace jc
 {
 	
@@ -24,7 +24,7 @@ namespace jc
 		using second_type = SecondT;
 
 		struct second_value_t {};
-		JCLIB_CONSTANT second_value_t second_value{};
+		//JCLIB_CONSTANT second_value_t second_value{};
 
 		JCLIB_CONSTEXPR bool has_first() const noexcept
 		{
@@ -68,5 +68,5 @@ namespace jc
 	};
 
 };
-
+*/
 #endif
