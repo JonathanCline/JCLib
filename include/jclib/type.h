@@ -21,6 +21,7 @@
 	Contains various type meta programming tools
 */
 
+#include "jclib/config.h"
 #include "jclib/type_traits.h"
 
 #include <tuple>
@@ -31,7 +32,6 @@ namespace jc
 	template <int Index, typename... Ts>
 	struct type_selector
 	{
-		static SAELIB_CONSTANT int index = Index;
 #ifdef __cpp_lib_tuple_element_t
 		using type = typename std::tuple_element<Index, Ts...>::type;
 #endif
@@ -41,8 +41,25 @@ namespace jc
 	using type_selector_t = typename type_selector<Index, Ts...>::type;
 
 
+	// if UseAlternate is false, type_switch::type = T, otherwise type_switch::type = AlternateT
+	template <bool UseAlternate, typename T, typename AlternateT>
+	struct type_switch;
 
+	template <typename T, typename AlternateT>
+	struct type_switch<true, T, AlternateT>
+	{
+		using type = AlternateT;
+	};
+	template <typename T, typename AlternateT>
+	struct type_switch<false, T, AlternateT>
+	{
+		using type = T;
+	};
 
+	// if UseAlternate is false this is T, otherwise this is AlternateT
+	template <bool UseAlternate, typename T, typename AlternateT>
+	using type_switch_t = typename type_switch<UseAlternate, T, AlternateT>::type;
+	
 };
 
 #endif

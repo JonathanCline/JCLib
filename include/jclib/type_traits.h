@@ -74,7 +74,7 @@ namespace jc
 	{};
 
 	template <typename T, typename... Ts>
-	JCLIB_CONSTEXPR static bool is_any_of_v = is_any_of<T, Ts...>::value;
+	JCLIB_CONSTANT static inline bool is_any_of_v = is_any_of<T, Ts...>::value;
 
 
 	/*
@@ -95,7 +95,7 @@ namespace jc
 	> {};
 
 	template <typename T>
-	JCLIB_CONSTEXPR static bool is_character_v = is_character<T>::value;
+	JCLIB_CONSTANT static inline bool is_character_v = is_character<T>::value;
 
 	/*
 		Basic type catagory
@@ -120,7 +120,7 @@ namespace jc
 	using std::is_unsigned_v;
 
 	template <typename T>
-	JCLIB_CONSTEXPR static bool is_integer_v = is_arithmetic_v<T> && std::numeric_limits<T>::is_integer;
+	JCLIB_CONSTANT static bool is_integer_v = is_arithmetic_v<T> && std::numeric_limits<T>::is_integer;
 
 	template <typename T>
 	struct is_integer : public bool_constant<is_integer_v<T>> {};
@@ -260,8 +260,75 @@ namespace jc
 	struct is_noexcept_function : false_type {};
 #endif
 
+#ifdef __cpp_noexcept_function_type
+	template <typename T>
+	struct add_noexcept;
+
+	template <typename ReturnT, typename... ArgTs>
+	struct add_noexcept<ReturnT(ArgTs...)>
+	{
+		using type = ReturnT(ArgTs...) noexcept;
+	};
+
+	template <typename ReturnT, typename... ArgTs>
+	struct add_noexcept<ReturnT(*)(ArgTs...)>
+	{
+		using type = ReturnT(*)(ArgTs...) noexcept;
+	};
+	template <typename ReturnT, typename ClassT, typename... ArgTs>
+	struct add_noexcept<ReturnT(ClassT::*)(ArgTs...)>
+	{
+		using type = ReturnT(ClassT::*)(ArgTs...) noexcept;
+	};
+
+	template <typename T>
+	using add_noexcept_t = typename add_noexcept<T>::type;
+
+#else
+
+#endif
+
 	template <typename T>
 	JCLIB_CONSTEXPR static bool is_noexcept_function_v = is_noexcept_function<T>::value;
+
+	using std::enable_if;
+	using std::enable_if_t;
+
+
+
+
+	template <typename IterT>
+#ifdef __cpp_concepts
+	requires requires (IterT& a) { *a; }
+#endif
+	struct iterator_to
+	{
+		using type = std::remove_reference_t<decltype(*std::declval<IterT&>())>;
+	};
+	template <typename IterT>
+#ifdef __cpp_concepts
+	requires requires () { iterator_to<IterT>{}; }
+#endif
+	using iterator_to_t = typename iterator_to<IterT>::type;
+
+
+
+
+	template <typename IterT, typename T, typename = void>
+	struct is_iterator_to : false_type {};
+
+	template <typename IterT, typename T>
+#ifdef __cpp_concepts
+	requires requires () { is_iterator_to<IterT, T>{}; }
+#endif
+	struct is_iterator_to<IterT, T, jc::enable_if_t<is_same_v<T, iterator_to_t<IterT>>, int>> : true_type {};
+
+
+	template <typename IterT, typename T>
+#ifdef __cpp_concepts
+	requires requires () { is_iterator_to<IterT, T>{}; }
+#endif
+	JCLIB_CONSTEXPR static bool is_iterator_to_v = is_iterator_to<IterT, T>::value;
 
 };
 

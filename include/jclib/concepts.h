@@ -180,6 +180,17 @@ namespace jc
 	template <typename T>
 	concept cx_free_function_pointer = is_free_function_pointer_v<T>;
 
+
+	/*
+		Iterator related concepts
+	*/
+	
+	template <typename T, typename U>
+	concept cx_iterator_to = requires (T _iter)
+	{
+		{ *_iter } -> std::convertible_to<U>;
+	};
+
 };
 
 #endif

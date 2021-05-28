@@ -1,6 +1,6 @@
 
 add_executable(JCLib_FunctorTesting "test.cpp")
-set_target_properties(JCLib_FunctorTesting PROPERTIES CXX_STANDARD 14)
+set_target_properties(JCLib_FunctorTesting PROPERTIES CXX_STANDARD 17)
 
 target_compile_definitions(JCLib_FunctorTesting 
 	INTERFACE JCLIB_CXX_STANDARD=${CMAKE_CXX_STANDARD})
