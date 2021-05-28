@@ -4,7 +4,7 @@ option(JCLIB_BUILD_TESTS ON)
 option(JCLIB_ALLOW_DEPRECATED OFF)
 
 project(JCLib 
-	VERSION 0.0.1
+	VERSION 0.0.2
 	DESCRIPTION "A collection of useful things and improvements for c++"
 	HOMEPAGE_URL "https://github.com/JonathanCline/JCLib")
 
