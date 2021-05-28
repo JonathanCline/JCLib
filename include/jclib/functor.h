@@ -27,7 +27,7 @@
 
 
 /*
-	sae::functor<> works almost identically to the std::function<> type.
+	jc::functor<> works almost identically to the std::function<> type.
 
 	However, instead of having to use std::bind for a member function, there is builtin functionality for "binding" a
 	member function.
@@ -36,7 +36,7 @@
 
 	Example Code:
 
-	#include "SAE_Functor.h"
+	#include "jclib/functor.h"
 	#include <iostream>
 
 	int foo(const int& _a)
@@ -57,7 +57,7 @@
 	{
 		int i = 0;
 		bar _b{};
-		sae::functor<int(const int&)> _fp = &foo;
+		jc::functor<int(const int&)> _fp = &foo;
 		i = _fp(i);
 		std::cout << i << '\n';
 		_fp = std::pair{ &bar::foobar, &_b };
@@ -69,272 +69,393 @@
 
 #include "jclib/config.h"
 
+#include "jclib/type.h"
+#include "jclib/type_traits.h"
+
+
 #include <utility>
 #include <new>
+#include <tuple>
+
 
 namespace jc
 {
-	
 	namespace impl
 	{
-
-		template <typename ReturnT, typename... Args>
-		struct functionPtr_t
-		{
-		public:
-
-			virtual inline functionPtr_t<ReturnT, Args...>* clone() const = 0;
-			virtual inline ReturnT invoke(Args... _a) const = 0;
-
-			JCLIB_CONSTEXPR functionPtr_t() noexcept = default;
-			virtual ~functionPtr_t() {};
-
-		};
-
-		template <typename ReturnT, typename... Args>
-		struct freeFunctionPtr_t : public functionPtr_t<ReturnT, Args...>
+		/**
+		 * @brief Base type for function pointer wrapper type erasure
+		 * @tparam ReturnT Function return type
+		 * @tparam ...ArgTs Function arguement types
+		*/
+		template <typename ReturnT, typename... ArgTs>
+		struct function_pointer_base
 		{
 		private:
-			using ParentT = functionPtr_t<ReturnT, Args...>;
-
+			using this_type = function_pointer_base<ReturnT, ArgTs...>;
 		public:
-
-			virtual inline functionPtr_t<ReturnT, Args...>* clone() const final
-			{
-				return new freeFunctionPtr_t{ *this };
-			};
-			virtual inline ReturnT invoke(Args... args) const final
-			{
-				return (*fptr)(args...);
-			};
-
-			using function_pointer = ReturnT(*)(Args...);
-
-			JCLIB_CONSTEXPR freeFunctionPtr_t(const function_pointer& _p) noexcept :
-				fptr{ _p }
-			{};
-			JCLIB_CONSTEXPR freeFunctionPtr_t() noexcept = default;
-
-		private:
-			function_pointer fptr;
-
-		};
-		template <typename ReturnT, class ScopeT, typename... Args>
-		struct memberFunctionPtr_t : public functionPtr_t<ReturnT, Args...>
-		{
-		private:
-			using ParentT = functionPtr_t<ReturnT, Args...>;
-
-		public:
-
-			virtual inline functionPtr_t<ReturnT, Args...>* clone() const final
-			{
-				return new memberFunctionPtr_t{ *this };
-			};
-			virtual inline ReturnT invoke(Args... args) const final
-			{
-				return (class_ptr->*fptr)(args...);
-			};
-
-			using function_pointer = ReturnT(ScopeT::*)(Args...);
-
-
-			JCLIB_CONSTEXPR memberFunctionPtr_t(const function_pointer& _f, ScopeT* _c) noexcept :
-				fptr{ _f }, class_ptr{ _c }
-			{};
-
-			JCLIB_CONSTEXPR memberFunctionPtr_t() noexcept = default;
-
-		private:
-			function_pointer fptr;
-			ScopeT* class_ptr = nullptr;
-
-		};
-
-
-		template <bool isNoexcept, typename ReturnT, typename... Args>
-		struct functor_impl
-		{
-		public:
+			// Function return type
 			using return_type = ReturnT;
 
-			JCLIB_CONSTEXPR bool good() const noexcept { return this->ptr_ != nullptr; };
+			// Function argument typelist (tuple)
+			using argument_typelist = std::tuple<ArgTs...>;
 
-			void release()
-			{
-				this->ptr_ = nullptr;
-			};
-			void reset()
-			{
-				delete this->ptr_;
-				this->release();
-			};
+			virtual this_type* clone() const = 0;
+			virtual return_type invoke(ArgTs... _a) const = 0;
+
+			virtual ~function_pointer_base() = default;
+		};
+
+		/**
+		 * @brief Free function pointer wrapper 
+		 * @tparam ReturnT Function return type
+		 * @tparam ...ArgTs Function arguement types
+		*/
+		template <typename ReturnT, typename... ArgTs>
+		struct free_function_pointer : public function_pointer_base<ReturnT, ArgTs...>
+		{
+		private:
+			// alias to ease the pain
+			using parent_type = function_pointer_base<ReturnT, ArgTs...>;
+
+		public:
+			using return_type = typename parent_type::return_type;
 			
-			inline ReturnT invoke(Args... _args) const noexcept(isNoexcept)
+			// Internal function pointer type
+			using function_pointer_type = return_type(*)(ArgTs...);
+
+			parent_type* clone() const final
 			{
-				return this->ptr_->invoke(_args...);
+				return new free_function_pointer{ *this };
 			};
-			inline ReturnT operator()(Args... _args) const noexcept(isNoexcept)
+			return_type invoke(ArgTs... args) const final
 			{
-				return this->ptr_->invoke(_args...);
+				const auto& _function = this->ptr_;
+				JCLIB_ASSERT(_function != nullptr);
+				return (*_function)(args...);
 			};
 
-			JCLIB_CONSTEXPR inline bool is_member_function() const noexcept
+			JCLIB_CONSTEXPR free_function_pointer(const function_pointer_type& _p) noexcept :
+				ptr_{ _p }
+			{};
+			JCLIB_CONSTEXPR free_function_pointer() noexcept = default;
+
+		private:
+			function_pointer_type ptr_;
+
+		};
+	
+		/**
+		 * @brief Base type for member function pointer type erasure, this is the reason why inheritance is even being used
+		 * @tparam ReturnT Function return type
+		 * @tparam ClassT The member function's class type
+		 * @tparam ...ArgTs Function arguement types
+		*/
+		template <typename ReturnT, class ClassT, typename... ArgTs>
+		struct member_function_pointer : public function_pointer_base<ReturnT, ArgTs...>
+		{
+		private:
+			using parent_type = function_pointer_base<ReturnT, ArgTs...>;
+
+		public:
+			using class_type = ClassT;
+			using return_type = typename parent_type::return_type;
+
+			// Internal function pointer type
+			using function_pointer_type = return_type(class_type::*)(ArgTs...);
+
+			parent_type* clone() const final
 			{
-				return this->member_function_;
+				return new member_function_pointer{ *this };
 			};
-			JCLIB_CONSTEXPR inline bool good_pointer() const noexcept
+			return_type invoke(ArgTs... args) const final
 			{
-				return this->good();
+				auto& _class = this->class_;
+				auto& _function = this->ptr_;
+				JCLIB_ASSERT(_class != nullptr && _function != nullptr);
+				return (_class->*_function)(args...);
 			};
 
+			JCLIB_CONSTEXPR member_function_pointer(const function_pointer_type& _function, class_type* _class) noexcept :
+				ptr_{ _function }, class_{ _class }
+			{};
+			JCLIB_CONSTEXPR member_function_pointer() noexcept = default;
+
+		private:
+			function_pointer_type ptr_;
+			class_type* class_;
+
+		};
+		
+		/**
+		 * @brief function_pointer_base RAII wrapper and functor interface implementation
+		 * @tparam isNoexcept Specifies the function pointer is noexcept
+		 * @tparam ReturnT Function return type
+		 * @tparam ...ArgTs Function arguement types
+		*/
+		template <bool isNoexcept, typename ReturnT, typename... ArgTs>
+		struct functor_impl
+		{
+		private:
+			using free_function_type = jc::type_switch_t<isNoexcept,
+				ReturnT(*)(ArgTs...),
+				jc::add_noexcept_t<ReturnT(*)(ArgTs...)>
+			>;
+
+			template <typename _T>
+			using member_function_type = jc::type_switch_t<isNoexcept,
+				ReturnT(_T::*)(ArgTs...),
+				jc::add_noexcept_t<ReturnT(_T::*)(ArgTs...)>
+			>;
+
+		public:
+
+			/**
+			 * @brief Underlying pointer type owned / managed
+			*/
+			using pointer = function_pointer_base<ReturnT, ArgTs...>*;
+
+			using return_type = ReturnT;
+
+			/**
+			 * @brief True if the function type is noexcept
+			*/
+			JCLIB_CONSTANT static inline bool is_noexcept_v = isNoexcept;
+
+			/**
+			 * @brief Returns true if the function type is noexcept
+			*/
+			JCLIB_CONSTEXPR static bool is_noexcept() noexcept
+			{
+				return is_noexcept_v;
+			};
+
+		private:
+			JCLIB_CONSTEXPR auto& get() noexcept
+			{
+				return this->ptr_;
+			};
+			JCLIB_CONSTEXPR const pointer& get() const noexcept
+			{
+				return this->ptr_;
+			};
+
+		public:
+
+			/**
+			 * @brief Returns true if the owned function pointer can be invoked
+			 * @return True if possible, false otherwise
+			*/
+			JCLIB_CONSTEXPR bool good() const noexcept
+			{
+				return this->get() != nullptr;
+			};
+
+			// deprecated in favor of good() to unify semantics
+			JCLIB_DEPRECATE_BLOCK
+			(
+				JCLIB_CONSTEXPR JCLIB_DEPRECATED("use good() instead") bool good_pointer() const noexcept
+				{
+					return this->good();
+				}
+			);
+			
+			/**
+			 * @brief Same as good()
+			*/
 			JCLIB_CONSTEXPR explicit operator bool() const noexcept
 			{
 				return this->good();
 			};
 
-			JCLIB_CONSTEXPR functor_impl(ReturnT(*_func)(Args...)) :
-				ptr_{ new freeFunctionPtr_t<ReturnT, Args...>{_func} },
-				member_function_{ false }
-			{};
-			template <class ScopeT>
-			JCLIB_CONSTEXPR functor_impl(ReturnT(ScopeT::* _func)(Args...), ScopeT* _p = nullptr) :
-				ptr_{ new memberFunctionPtr_t<ReturnT, ScopeT, Args...>{_func, _p} },
-				member_function_{ true }
-			{};
-
-			functor_impl& operator=(ReturnT(*_func)(Args...))
+			/**
+			 * @brief Releases ownership of the underlying function pointer and sets it to nullptr
+			*/
+			JCLIB_CONSTEXPR void release() noexcept
 			{
-				delete ptr_;
-				ptr_ = new impl::freeFunctionPtr_t<ReturnT, Args...>{ _func };
-				this->member_function_ = false;
-				return *this;
-			};
-			template <class ScopeT>
-			functor_impl& operator=(std::pair<ReturnT(ScopeT::*)(Args...), ScopeT*>&& _memberFunc)
-			{
-				delete ptr_;
-				ptr_ = new memberFunctionPtr_t<ReturnT, ScopeT, Args...>{ _memberFunc.first, _memberFunc.second };
-				this->member_function_ = true;
-				return *this;
+				pointer& _ptr = this->get();
+				_ptr = nullptr;
 			};
 
-			JCLIB_CONSTEXPR functor_impl() noexcept :
-				ptr_{ nullptr }, member_function_{ false }
+			/**
+			 * @brief Frees the owned function pointer memory and resets it to nullptr,
+			*/
+			JCLIB_CONSTEXPR void reset() noexcept
+			{
+				pointer& _ptr = this->get();
+				delete _ptr;
+				this->release();
+				JCLIB_ASSERT(_ptr == nullptr);
+			};
+
+			/**
+			 * @brief Releases ownership of the owned function pointer and returns it
+			 * @return The owned function pointer as a pointer to the base (impl::function_pointer_base)
+			*/
+			JCLIB_CONSTEXPR JCLIB_NODISCARD("owning pointer") pointer extract() noexcept
+			{
+				const pointer _out = this->get();
+				this->release();
+				return _out;
+			};
+
+			/**
+			 * @brief Invokes the owned function pointer, undefined if good() would return false
+			 * @param _args Arguements to invoke the owned function pointer with
+			 * @return Value returned by invoking the owned function pointer, or nothing if void
+			*/
+			return_type invoke(ArgTs... _args) const noexcept(functor_impl::is_noexcept())
+			{
+				JCLIB_ASSERT(this->good());
+				const pointer& _function = this->get();
+				return _function->invoke(_args...);
+			};
+
+			/**
+			 * @brief Same as invoke()
+			*/
+			return_type operator()(ArgTs... _args) const noexcept(functor_impl::is_noexcept())
+			{
+				JCLIB_ASSERT(this->good());
+				const pointer& _function = this->get();
+				return _function->invoke(_args...);
+			};
+
+			/**
+			 * @brief Defaults to own nothing, good() will return false.
+			*/
+			JCLIB_CONSTEXPR functor_impl() noexcept = default;
+
+			/**
+			 * @param _function Must be an owning pointer to a function object; set to nullptr by the constructor
+			*/
+			JCLIB_CONSTEXPR explicit functor_impl(pointer& _function) noexcept :
+				ptr_{ _function }
+			{
+				_function = nullptr;
+			};
+
+			JCLIB_CONSTEXPR functor_impl(free_function_type _function) :
+				functor_impl{ new free_function_pointer<ReturnT, ArgTs...>{_function} }
 			{};
 
-			JCLIB_CONSTEXPR explicit functor_impl(const functor_impl& _o) :
-				ptr_{ (_o)? _o.ptr_->clone() : nullptr }
-			{};
-			functor_impl& operator=(const functor_impl& _o)
+			// calls reset()
+			functor_impl& operator=(free_function_type _function)
 			{
-				delete ptr_;
-				ptr_ = (_o)? _o.ptr_->clone() : nullptr ;
+				this->reset();
+				this->ptr_ = new impl::free_function_pointer<ReturnT, ArgTs...>{ _function };
 				return *this;
 			};
 
-			JCLIB_CONSTEXPR explicit functor_impl(functor_impl&& _o) noexcept :
-				ptr_{ std::exchange(_o.ptr_, nullptr) }
+			template <typename ScopeT>
+			JCLIB_CONSTEXPR functor_impl(member_function_type<ScopeT> _function, ScopeT* _class) :
+				functor_impl{ new member_function_pointer<ReturnT, ScopeT, ArgTs...>{ _function, _class } }
 			{};
-			functor_impl& operator=(functor_impl&& _o) noexcept
-			{
-				delete this->ptr_;
-				this->ptr_ = std::exchange(_o.ptr_, nullptr);
-				return *this;
-			}
 
+			// calls reset()
+			template <typename ScopeT>
+			functor_impl& operator=(std::pair<member_function_type<ScopeT>, ScopeT*> _memberFunction)
+			{
+				this->reset();
+				this->ptr_ = new member_function_pointer<ReturnT, ScopeT, ArgTs...>
+				{
+					_memberFunction.first, _memberFunction.second
+				};
+				return *this;
+			};
+
+			JCLIB_CONSTEXPR explicit functor_impl(const functor_impl& _other) :
+				ptr_{ (_other.good())? _other.get()->clone() : nullptr }
+			{};
+			functor_impl& operator=(const functor_impl& _other)
+			{
+				this->reset();
+				this->ptr_ = (_other.good())? _other.get()->clone() : nullptr ;
+				return *this;
+			};
+
+			JCLIB_CONSTEXPR explicit functor_impl(functor_impl&& _other) noexcept :
+				ptr_{ _other.extract() }
+			{};
+			functor_impl& operator=(functor_impl&& _other) noexcept
+			{
+				// Check that these are not owning the same function object (this should never happen, ever)
+				JCLIB_ASSERT(this->get() != &_other.get());
+				this->reset();
+				this->ptr_ = _other.extract();
+				return *this;
+			};
+
+			// Calls reset()
 			~functor_impl()
 			{
 				this->reset();
 			};
 
 		private:
-			bool member_function_ = false;
-			functionPtr_t<ReturnT, Args...>* ptr_;
+			pointer ptr_ = nullptr;
 		};
 
 #ifdef __cpp_deduction_guides
-
 		template <typename ReturnT, typename... Args>
 		functor_impl(ReturnT(*)(Args...))->functor_impl<false, ReturnT, Args...>;
-
-		template <typename ReturnT, typename... Args>
-		functor_impl(ReturnT(*)(Args...) noexcept)->functor_impl<true, ReturnT, Args...>;
 
 		template <typename ReturnT, typename ScopeT, typename... Args>
 		functor_impl(ReturnT(ScopeT::*)(Args...), ScopeT*)->functor_impl<false, ReturnT, Args...>;
 
-		template <typename ReturnT, typename ScopeT, typename... Args>
-		functor_impl(ReturnT(ScopeT::*)(Args...) noexcept, ScopeT*)->functor_impl<true, ReturnT, Args...>;
-
-#endif
-
-		template <typename T>
-		struct functor_base;
-
-		template <typename ReturnT, typename... Args>
-		struct functor_base<ReturnT(Args...)> : public functor_impl<false, ReturnT, Args...>
-		{
-			using functor_impl<false, ReturnT, Args...>::functor_impl;
-			using functor_impl<false, ReturnT, Args...>::operator=;
-		};
-		
 #ifdef __cpp_noexcept_function_type
 		template <typename ReturnT, typename... Args>
-		struct functor_base<ReturnT(Args...) noexcept> : public functor_impl<true, ReturnT, Args...>
-		{
-			using functor_impl<true, ReturnT, Args...>::functor_impl;
-			using functor_impl<true, ReturnT, Args...>::operator=;
-		};
+		functor_impl(ReturnT(*)(Args...) noexcept)->functor_impl<true, ReturnT, Args...>;
+
+		template <typename ReturnT, typename ScopeT, typename... Args>
+		functor_impl(ReturnT(ScopeT::*)(Args...) noexcept, ScopeT*)->functor_impl<true, ReturnT, Args...>;
 #endif
-
-#ifdef __cpp_deduction_guides
-
-		template <typename ReturnT, typename... Args>
-		functor_base(ReturnT(*)(Args...))->functor_base<ReturnT(Args...)>;
-
-		template <typename ReturnT, typename... Args>
-		functor_base(ReturnT(*)(Args...) noexcept)->functor_base<ReturnT(Args...) noexcept>;
-
-		template <typename ReturnT, typename ScopeT, typename... Args>
-		functor_base(ReturnT(ScopeT::*)(Args...), ScopeT*)->functor_base<ReturnT(Args...)>;
-
-		template <typename ReturnT, typename ScopeT, typename... Args>
-		functor_base(ReturnT(ScopeT::*)(Args...) noexcept, ScopeT*)->functor_base<ReturnT(Args...) noexcept>;
-
 #endif
 	};
 
-#ifdef __cpp_concepts
-	template <typename FunctionT> requires requires { impl::functor_base<FunctionT>{}; }
-#else
-	template <typename FunctionT>
-#endif
-	struct functor : public impl::functor_base<FunctionT>
+	/**
+	 * @brief Function object that can point to free functions or member functions that match its signature
+	*/
+	template <typename T>
+	struct functor;
+
+	/**
+	 * @brief Function object that can point to free functions or member functions that match its signature
+	*/
+	template <typename ReturnT, typename... ArgTs>
+	struct functor<ReturnT(ArgTs...)> : public impl::functor_impl<false, ReturnT, ArgTs...>
 	{
-	private:
-		using parent_type = impl::functor_base<FunctionT>;
-	public:
-		using parent_type::parent_type;
-		using parent_type::operator=;
+		using impl::functor_impl<false, ReturnT, ArgTs...>::functor_impl;
+		using impl::functor_impl<false, ReturnT, ArgTs...>::operator=;
 	};
+
+#ifdef __cpp_noexcept_function_type
+	/**
+	 * @brief Function object that can point to free functions or member functions that match its signature
+	*/
+	template <typename ReturnT, typename... ArgTs>
+	struct functor<ReturnT(ArgTs...) noexcept> : public impl::functor_impl<true, ReturnT, ArgTs...>
+	{
+		using impl::functor_impl<true, ReturnT, ArgTs...>::functor_impl;
+		using impl::functor_impl<true, ReturnT, ArgTs...>::operator=;
+	};
+#endif
 	
 #ifdef __cpp_deduction_guides
-
 	template <typename ReturnT, typename... Args>
 	functor(ReturnT(*)(Args...))->functor<ReturnT(Args...)>;
-
-	template <typename ReturnT, typename... Args>
-	functor(ReturnT(*)(Args...) noexcept)->functor<ReturnT(Args...) noexcept>;
 
 	template <typename ReturnT, typename ScopeT, typename... Args>
 	functor(ReturnT(ScopeT::*)(Args...), ScopeT*)->functor<ReturnT(Args...)>;
 
+	// noexcept deduction guides if in current c++ version
+#ifdef __cpp_noexcept_function_type
+	template <typename ReturnT, typename... Args>
+	functor(ReturnT(*)(Args...) noexcept)->functor<ReturnT(Args...) noexcept>;
+
 	template <typename ReturnT, typename ScopeT, typename... Args>
 	functor(ReturnT(ScopeT::*)(Args...) noexcept, ScopeT*)->functor<ReturnT(Args...) noexcept>;
-
 #endif
-
-}
+#endif
+};
 
 #endif
