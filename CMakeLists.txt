@@ -24,8 +24,16 @@ if(JCLIB_ALLOW_DEPRECATED)
 		JCLIB_ALLOW_DEPRECATED=true)
 endif()
 
+#
+#	Takes an optional additional arguement for the test's source file
+#
 macro(JCLIB_ADD_TEST testName)
-	add_executable(JCLib_${testName}Testing "${testName}.cpp")
+	if (${ARGC} EQUAL "2")
+		add_executable(JCLib_${testName}Testing "${ARGV1}")
+	else()
+		add_executable(JCLib_${testName}Testing "${testName}.cpp")
+	endif()
+	set(testSourceFile )
 	target_link_libraries(JCLib_${testName}Testing PRIVATE JCLib)
 	add_test("JCLib_${testName}_test" JCLib_${testName}Testing)
 	set_target_properties(JCLib_${testName}Testing PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED True)
