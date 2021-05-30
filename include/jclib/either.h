@@ -1,4 +1,12 @@
 #pragma once
+
+/*
+	Unfinished but was included previous versions so the file is provided completely empty
+*/
+
+// chad mode #if false
+#if false
+
 #ifndef JCLIB_EITHER_H
 #define JCLIB_EITHER_H
 
@@ -69,4 +77,6 @@ namespace jc
 
 };
 */
+#endif
+
 #endif
