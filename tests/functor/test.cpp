@@ -22,9 +22,18 @@ struct Bar
 	};
 };
 
+void another_freefunction(Bar& _b)
+{
+
+};
+
 int main()
 {
 	jc::functor<int(int, int)> _f{};
+
+	{
+		jc::functor<void(Bar&)> a{ &another_freefunction };
+	};
 
 	if (_f.good() || _f)
 		return -1;
@@ -36,6 +45,11 @@ int main()
 
 	if (_f.invoke(2, 2) != _f(2, 2))
 		return -1;
+
+
+	
+
+
 
 	Bar _b{};
 #ifdef __cpp_deduction_guides

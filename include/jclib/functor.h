@@ -87,11 +87,11 @@ namespace jc
 		 * @tparam ReturnT Function return type
 		 * @tparam ...ArgTs Function arguement types
 		*/
-		template <typename ReturnT, typename... ArgTs>
+		template <bool isNoexcept, typename ReturnT, typename... ArgTs>
 		struct function_pointer_base
 		{
 		private:
-			using this_type = function_pointer_base<ReturnT, ArgTs...>;
+			using this_type = function_pointer_base<isNoexcept, ReturnT, ArgTs...>;
 		public:
 			// Function return type
 			using return_type = ReturnT;
@@ -110,18 +110,20 @@ namespace jc
 		 * @tparam ReturnT Function return type
 		 * @tparam ...ArgTs Function arguement types
 		*/
-		template <typename ReturnT, typename... ArgTs>
-		struct free_function_pointer : public function_pointer_base<ReturnT, ArgTs...>
+		template <bool isNoexcept, typename ReturnT, typename... ArgTs>
+		struct free_function_pointer : public function_pointer_base<isNoexcept, ReturnT, ArgTs...>
 		{
 		private:
 			// alias to ease the pain
-			using parent_type = function_pointer_base<ReturnT, ArgTs...>;
+			using parent_type = function_pointer_base<isNoexcept, ReturnT, ArgTs...>;
 
 		public:
 			using return_type = typename parent_type::return_type;
 			
 			// Internal function pointer type
-			using function_pointer_type = return_type(*)(ArgTs...);
+			using function_pointer_type = std::conditional_t<isNoexcept,
+				return_type(*)(ArgTs...) noexcept,
+				return_type(*)(ArgTs...)>;
 
 			parent_type* clone() const final
 			{
@@ -143,25 +145,27 @@ namespace jc
 			function_pointer_type ptr_;
 
 		};
-	
+
 		/**
 		 * @brief Base type for member function pointer type erasure, this is the reason why inheritance is even being used
 		 * @tparam ReturnT Function return type
 		 * @tparam ClassT The member function's class type
 		 * @tparam ...ArgTs Function arguement types
 		*/
-		template <typename ReturnT, class ClassT, typename... ArgTs>
-		struct member_function_pointer : public function_pointer_base<ReturnT, ArgTs...>
+		template <bool isNoexcept, typename ReturnT, class ClassT, typename... ArgTs>
+		struct member_function_pointer : public function_pointer_base<isNoexcept, ReturnT, ArgTs...>
 		{
 		private:
-			using parent_type = function_pointer_base<ReturnT, ArgTs...>;
+			using parent_type = function_pointer_base<isNoexcept, ReturnT, ArgTs...>;
 
 		public:
 			using class_type = ClassT;
 			using return_type = typename parent_type::return_type;
 
 			// Internal function pointer type
-			using function_pointer_type = return_type(class_type::*)(ArgTs...);
+			using function_pointer_type = std::conditional_t<isNoexcept,
+				return_type(class_type::*)(ArgTs...) noexcept,
+				return_type(class_type::*)(ArgTs...)>;
 
 			parent_type* clone() const final
 			{
@@ -185,7 +189,7 @@ namespace jc
 			class_type* class_;
 
 		};
-		
+
 		/**
 		 * @brief function_pointer_base RAII wrapper and functor interface implementation
 		 * @tparam isNoexcept Specifies the function pointer is noexcept
@@ -196,23 +200,20 @@ namespace jc
 		struct functor_impl
 		{
 		private:
-			using free_function_type = jc::type_switch_t<isNoexcept,
-				ReturnT(*)(ArgTs...),
-				jc::add_noexcept_t<ReturnT(*)(ArgTs...)>
-			>;
+			using free_function_object_type = free_function_pointer<isNoexcept, ReturnT, ArgTs...>;
+			using free_function_type = typename free_function_object_type::function_pointer_type;
 
-			template <typename _T>
-			using member_function_type = jc::type_switch_t<isNoexcept,
-				ReturnT(_T::*)(ArgTs...),
-				jc::add_noexcept_t<ReturnT(_T::*)(ArgTs...)>
-			>;
+			template <typename ClassT>
+			using member_function_object_type = member_function_pointer<isNoexcept, ReturnT, ClassT, ArgTs...>;
+			template <typename ClassT>
+			using member_function_type = typename member_function_object_type<ClassT>::function_pointer_type;
 
 		public:
 
 			/**
 			 * @brief Underlying pointer type owned / managed
 			*/
-			using pointer = function_pointer_base<ReturnT, ArgTs...>*;
+			using pointer = function_pointer_base<isNoexcept, ReturnT, ArgTs...>*;
 
 			using return_type = ReturnT;
 
@@ -326,29 +327,44 @@ namespace jc
 			JCLIB_CONSTEXPR functor_impl() noexcept = default;
 
 			/**
-			 * @param _function Must be an owning pointer to a function object; set to nullptr by the constructor
+			 * @brief Calls the default constructor
 			*/
-			JCLIB_CONSTEXPR explicit functor_impl(pointer& _function) noexcept :
-				ptr_{ _function }
+			JCLIB_CONSTEXPR functor_impl(std::nullptr_t) noexcept :
+				ptr_{ nullptr }
+			{};
+
+			/**
+			 * @brief Behaves as if reset() was called
+			*/
+			functor_impl& operator=(std::nullptr_t) noexcept
 			{
-				_function = nullptr;
+				this->reset();
+				this->ptr_ = nullptr;
+				return *this;
 			};
 
+			/**
+			 * @param _function Must be an owning pointer to a function object; set to nullptr by the constructor
+			*/
+			JCLIB_CONSTEXPR explicit functor_impl(pointer _function) noexcept :
+				ptr_{ _function }
+			{};
+
 			JCLIB_CONSTEXPR functor_impl(free_function_type _function) :
-				functor_impl{ new free_function_pointer<ReturnT, ArgTs...>{_function} }
+				functor_impl{ new free_function_object_type{_function} }
 			{};
 
 			// calls reset()
 			functor_impl& operator=(free_function_type _function)
 			{
 				this->reset();
-				this->ptr_ = new impl::free_function_pointer<ReturnT, ArgTs...>{ _function };
+				this->ptr_ = new free_function_object_type{ _function };
 				return *this;
 			};
 
 			template <typename ScopeT>
 			JCLIB_CONSTEXPR functor_impl(member_function_type<ScopeT> _function, ScopeT* _class) :
-				functor_impl{ new member_function_pointer<ReturnT, ScopeT, ArgTs...>{ _function, _class } }
+				functor_impl{ new member_function_object_type<ScopeT>{ _function, _class } }
 			{};
 
 			// calls reset()
@@ -356,7 +372,7 @@ namespace jc
 			functor_impl& operator=(std::pair<member_function_type<ScopeT>, ScopeT*> _memberFunction)
 			{
 				this->reset();
-				this->ptr_ = new member_function_pointer<ReturnT, ScopeT, ArgTs...>
+				this->ptr_ = new member_function_object_type<ScopeT>
 				{
 					_memberFunction.first, _memberFunction.second
 				};
