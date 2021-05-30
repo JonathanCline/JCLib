@@ -1,0 +1,2 @@
+
+JCLIB_ADD_TEST(Timer)
