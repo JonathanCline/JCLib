@@ -21,7 +21,7 @@ namespace jc
 	 * @tparam Clock Clock type to use for measuring time
 	*/
 	template <typename ClockT, typename DurationT = typename ClockT::duration> JCLIB_REQUIRES(jc::cx_clock<ClockT>)
-	class basic_timer
+		class basic_timer
 	{
 	public:
 		/**
@@ -33,7 +33,7 @@ namespace jc
 		using time_point = typename clock_type::time_point;
 
 	private:
-		
+
 		//	Indirection for getting the current time, this exists in case
 		// I decide to support clock types with non-static now()
 		JCLIB_CONSTEXPR time_point now() const noexcept
@@ -50,7 +50,7 @@ namespace jc
 		{
 			return this->tmdur_;
 		};
-		
+
 		/**
 		 * @brief Sets the timer's duration, does not start() the timer
 		 * @param _dt Duration after which the timer is finished()
@@ -155,5 +155,5 @@ namespace jc
 			jc::sleep(_remaining);
 		};
 	};
-
+};
 #endif
