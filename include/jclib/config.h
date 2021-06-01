@@ -43,39 +43,41 @@
 #endif
 
 
-namespace jc::impl
+namespace jc
 {
-	/**
-	 * @brief Represents a version as a set of major, minor, and patch numbers
-	*/
-	struct version
+	namespace impl
 	{
-	private:
-		JCLIB_CONSTEXPR static unsigned fold(const version& _v) noexcept
+		/**
+		 * @brief Represents a version as a set of major, minor, and patch numbers
+		*/
+		struct version
 		{
-			return ((unsigned)_v.major << 16u) | ((unsigned)_v.minor << 8u) | ((unsigned)_v.patch);
+		private:
+			JCLIB_CONSTEXPR static unsigned fold(const version& _v) noexcept
+			{
+				return ((unsigned)_v.major << 16u) | ((unsigned)_v.minor << 8u) | ((unsigned)_v.patch);
+			};
+
+		public:
+			friend JCLIB_CONSTEXPR inline bool operator==(const version& lhs, const version& rhs) noexcept
+			{
+				return (lhs.major == rhs.major && lhs.minor == rhs.minor && lhs.patch == rhs.patch);
+			};
+			friend JCLIB_CONSTEXPR inline bool operator>(const version& lhs, const version& rhs) noexcept
+			{
+				return fold(lhs) > fold(rhs);
+			};
+
+			unsigned char major = 0;
+			unsigned char minor = 0;
+			unsigned char patch = 0;
 		};
 
-	public:
-		friend JCLIB_CONSTEXPR inline bool operator==(const version& lhs, const version& rhs) noexcept
-		{
-			return (lhs.major == rhs.major && lhs.minor == rhs.minor && lhs.patch == rhs.patch);
-		};
-		friend JCLIB_CONSTEXPR inline bool operator>(const version& lhs, const version& rhs) noexcept
-		{
-			return fold(lhs) > fold(rhs);
-		};
-
-		unsigned char major = 0;
-		unsigned char minor = 0;
-		unsigned char patch = 0;
+		/**
+		 * @brief jclib version
+		*/
+		JCLIB_CONSTANT static version LIBRARY_VERSION{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
 	};
-
-	/**
-	 * @brief jclib version
-	*/
-	JCLIB_CONSTANT static inline version LIBRARY_VERSION = version{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
-
 };
 
 
@@ -143,6 +145,15 @@ namespace jc::impl
 // Number containing the library version, should be fine for use in comparisons
 #ifndef JCLIB_VERSION_N
 #define JCLIB_VERSION_N ((JCLIB_VERSION_MAJOR << 16) | (JCLIB_VERSION_MINOR << 8) | (JCLIB_VERSION_PATCH))
+#endif
+
+// Convenience macro for c++20 requires clauses
+#ifndef JCLIB_REQUIRES
+#ifdef __cpp_concepts
+#define JCLIB_REQUIRES(x) requires x
+#else
+#define JCLIB_REQUIRES(x)
+#endif
 #endif
 
 namespace jc

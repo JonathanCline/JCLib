@@ -156,6 +156,4 @@ namespace jc
 		};
 	};
 
-};
-
 #endif

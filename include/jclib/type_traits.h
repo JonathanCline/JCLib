@@ -21,7 +21,7 @@
 	Contains any using directives for standard library type traits used in SAELib along with SAELib specific type traits
 */
 
-#include "JCLib/config.h"
+#include "jclib/config.h"
 
 #include <type_traits>
 #include <limits>
