@@ -2,12 +2,6 @@
 #ifndef JCLIB_FUNCTOR_H
 #define JCLIB_FUNCTOR_H
 
-#define _JCLIB_FUNCTOR_
-
-/*
-	Consider this stable.
-*/
-
 /*
 	Copyright 2020 Jonathan Cline
 	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
@@ -20,11 +14,6 @@
 	COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
-/*
-	Confirmed to compile on MSVC for c++ versions 14, 17, 20   (as of 2/28/2021) 
-*/
-
 
 /*
 	jc::functor<> works almost identically to the std::function<> type.
@@ -72,11 +61,11 @@
 #include "jclib/type.h"
 #include "jclib/type_traits.h"
 
+#define _JCLIB_FUNCTOR_
 
 #include <utility>
 #include <new>
 #include <tuple>
-
 
 namespace jc
 {
@@ -220,14 +209,15 @@ namespace jc
 			/**
 			 * @brief True if the function type is noexcept
 			*/
+#ifdef __cpp_inline_variables
 			JCLIB_CONSTANT static inline bool is_noexcept_v = isNoexcept;
-
+#endif
 			/**
 			 * @brief Returns true if the function type is noexcept
 			*/
 			JCLIB_CONSTEXPR static bool is_noexcept() noexcept
 			{
-				return is_noexcept_v;
+				return isNoexcept;
 			};
 
 		private:

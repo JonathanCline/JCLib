@@ -2,8 +2,6 @@
 #ifndef JCLIB_CONFIG_H
 #define JCLIB_CONFIG_H
 
-#define _JCLIB_CONFIG_
-
 /*
 	Copyright 2021 Jonathan Cline
 	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
@@ -17,17 +15,7 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-
-
-
-
-
-
-
-
-
-
-
+#define _JCLIB_CONFIG_
 
 #ifdef __cpp_constexpr
 #define JCLIB_CONSTEXPR constexpr
@@ -41,7 +29,6 @@
 #else
 #define JCLIB_CONSTANT const
 #endif
-
 
 namespace jc
 {
@@ -79,11 +66,6 @@ namespace jc
 		JCLIB_CONSTANT static version LIBRARY_VERSION{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
 	};
 };
-
-
-
-
-
 
 #ifndef JCLIB_ABORT
 #include <utility>
