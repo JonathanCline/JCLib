@@ -41,6 +41,9 @@ namespace jc
 	using false_type = bool_constant<false>;
 #endif
 
+	using std::enable_if;
+	using std::enable_if_t;
+
 	/**
 	 * @brief A fancy way of saying void
 	 * @tparam ...Ts 
@@ -73,7 +76,7 @@ namespace jc
 
 #ifdef __cpp_inline_variables
 	template <typename T, typename... Ts>
-	JCLIB_CONSTANT static inline bool is_any_of_v = is_any_of<T, Ts...>::value;
+	JCLIB_CONSTEXPR inline bool is_any_of_v = is_any_of<T, Ts...>::value;
 #endif
 
 	/*
@@ -212,13 +215,19 @@ namespace jc
 		template <typename Op, typename... ArgTs>
 		struct invocable_impl <Op, std::tuple<ArgTs...>,
 			void_t<decltype(std::declval<Op>()(std::declval<ArgTs>()...))>
-		> : true_type {};
+		> : true_type
+		{
+			using return_type = decltype(std::declval<Op>()(std::declval<ArgTs>()...));
+		};
 
 		// needed to handle case where the function has no arguements
 		template <typename Op>
 		struct invocable_impl <Op, std::tuple<void>,
 			void_t<decltype(std::declval<Op>()())>
-		> : true_type {};
+		> : true_type
+		{
+			using return_type = decltype(std::declval<Op>()());
+		};
 
 		// free function case, should be handled by the general case but im leaving this in for now
 		template <typename ReturnT, typename... ArgTs>
@@ -226,13 +235,19 @@ namespace jc
 			void_t<decltype(
 				(*std::declval<ReturnT(*)(ArgTs...)>())(std::declval<ArgTs>()...)
 				)>
-		> : true_type {};
+		> : true_type
+		{
+			using return_type = ReturnT;
+		};
 
 		// needed to handle case where the function has no arguements
 		template <typename ReturnT>
 		struct invocable_impl<ReturnT(*)(), std::tuple<void>,
 			void_t<decltype((*std::declval<ReturnT(*)()>())())>
-		> : true_type {};
+		> : true_type
+		{
+			using return_type = ReturnT;
+		};
 
 		// member function case
 		template <typename ReturnT, typename ClassT, typename... ArgTs>
@@ -240,14 +255,19 @@ namespace jc
 			void_t<decltype(
 				(std::declval<ClassT*>()->*std::declval<ReturnT(ClassT::*)(ArgTs...)>())(std::declval<ArgTs>()...)
 				)>
-		> : true_type {};
+		> : true_type
+		{
+			using return_type = ReturnT;
+		};
 
 		// needed to handle case where the function has no arguements
 		template <typename ReturnT, typename ClassT>
 		struct invocable_impl<ReturnT(ClassT::*)(), std::tuple<void>,
 			void_t<decltype((std::declval<ClassT*>()->*std::declval<ReturnT(ClassT::*)()>())())>
-		> : true_type {};
-
+		> : true_type
+		{
+			using return_type = ReturnT;
+		};
 	};
 
 	template <typename Op, typename... Ts>
@@ -257,6 +277,35 @@ namespace jc
 	template <typename Op, typename... Ts>
 	JCLIB_CONSTEXPR inline bool is_invocable_v = is_invocable<Op, Ts...>::value;
 #endif
+
+	namespace impl
+	{
+		template <typename Op, typename Args, typename = void>
+		struct invoke_result_impl;
+		
+		template <typename Op, typename... Args>
+		struct invoke_result_impl <Op, std::tuple<Args...>, enable_if_t<is_invocable<Op, Args...>::value>>
+		{
+			using type = typename invocable_impl<Op, std::tuple<Args...>>::return_type;
+		};
+
+		template <typename Op>
+		struct invoke_result_impl <Op, std::tuple<void>, enable_if_t<is_invocable<Op>::value>>
+		{
+			using type = typename invocable_impl<Op, std::tuple<void>>::return_type;
+		};
+	};
+
+	template <typename Op, typename... Ts>
+	struct invoke_result : impl::invoke_result_impl<Op, std::tuple<Ts...>> {};
+	
+	template <typename Op, typename... Ts>
+	using invoke_result_t = typename invoke_result<Op, Ts...>::type;
+
+
+
+
+
 
 	using std::is_function;
 
@@ -344,9 +393,6 @@ namespace jc
 	JCLIB_CONSTEXPR static bool is_noexcept_function_v = is_noexcept_function<T>::value;
 #endif
 
-	using std::enable_if;
-	using std::enable_if_t;
-
 	template <typename IterT>
 #ifdef __cpp_concepts
 	requires requires (IterT& a) { *a; }
@@ -380,6 +426,12 @@ namespace jc
 #endif
 	JCLIB_CONSTEXPR static bool is_iterator_to_v = is_iterator_to<IterT, T>::value;
 #endif
+
+	using std::remove_reference;
+	using std::remove_reference_t;
+
+	using std::remove_cv;
+	using std::remove_cv_t;
 
 };
 

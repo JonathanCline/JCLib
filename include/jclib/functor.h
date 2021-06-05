@@ -79,8 +79,6 @@ namespace jc
 		template <bool isNoexcept, typename ReturnT, typename... ArgTs>
 		struct function_pointer_base
 		{
-		private:
-			using this_type = function_pointer_base<isNoexcept, ReturnT, ArgTs...>;
 		public:
 			// Function return type
 			using return_type = ReturnT;
@@ -88,7 +86,10 @@ namespace jc
 			// Function argument typelist (tuple)
 			using argument_typelist = std::tuple<ArgTs...>;
 
-			virtual this_type* clone() const = 0;
+			
+			virtual JCLIB_NODISCARD("owning pointer") function_pointer_base* clone() const = 0;
+			
+			
 			virtual return_type invoke(ArgTs... _a) const = 0;
 
 			virtual ~function_pointer_base() = default;
@@ -131,7 +132,7 @@ namespace jc
 			JCLIB_CONSTEXPR free_function_pointer() noexcept = default;
 
 		private:
-			function_pointer_type ptr_;
+			function_pointer_type ptr_ = nullptr;
 
 		};
 
@@ -174,8 +175,8 @@ namespace jc
 			JCLIB_CONSTEXPR member_function_pointer() noexcept = default;
 
 		private:
-			function_pointer_type ptr_;
-			class_type* class_;
+			function_pointer_type ptr_ = nullptr;
+			class_type* class_ = nullptr;
 
 		};
 

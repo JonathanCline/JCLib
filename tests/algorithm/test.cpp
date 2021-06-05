@@ -1,7 +1,5 @@
 #include "jclib/algorithm.h"
 
-
-
 int main()
 {
 	int _vals[] = { 0, 1, 2, 3, 4 };
