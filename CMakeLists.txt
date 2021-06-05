@@ -27,17 +27,30 @@ endif()
 #
 #	Takes an optional additional arguement for the test's source file
 #
-macro(JCLIB_ADD_TEST testName)
-	if (${ARGC} EQUAL "2")
-		add_executable(JCLib_${testName}Testing "${ARGV1}")
-	else()
-		add_executable(JCLib_${testName}Testing "${testName}.cpp")
-	endif()
-	set(testSourceFile )
-	target_link_libraries(JCLib_${testName}Testing PRIVATE JCLib)
-	add_test("JCLib_${testName}_test" JCLib_${testName}Testing)
-	set_target_properties(JCLib_${testName}Testing PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED True)
-endmacro(JCLIB_ADD_TEST )
+macro(JCLIB_ADD_TEST_CXX testName testSource cxxVersion)
+
+	set(tname JCLib_test_${testName}_${cxxVersion})
+	set(ctname JCLib_test_${testName}_${cxxVersion}_t)
+
+	add_executable(${tname} ${testSource})
+	
+	target_link_libraries(${tname} PRIVATE JCLib)
+	add_test("${ctname}" ${tname})
+	target_compile_features(${tname} PRIVATE cxx_std_${cxxVersion})
+
+endmacro(JCLIB_ADD_TEST_CXX )
+
+#
+#	C++ versions to check
+#
+set(cxxversions 14 17 20)
+
+macro(JCLIB_ADD_TEST testName testSource)
+	foreach(cxv IN LISTS cxxversions)
+		JCLIB_ADD_TEST_CXX(${testName} ${testSource} ${cxv})
+	endforeach()
+endmacro(JCLIB_ADD_TEST)
+
 
 if(JCLIB_BUILD_TESTS)
 	enable_testing()

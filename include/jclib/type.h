@@ -2,8 +2,6 @@
 #ifndef JCLIB_TYPE_H
 #define JCLIB_TYPE_H
 
-#define _JCLIB_TYPE_
-
 /*
 	Copyright 2021 Jonathan Cline
 	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
@@ -23,6 +21,8 @@
 
 #include "jclib/config.h"
 #include "jclib/type_traits.h"
+
+#define _JCLIB_TYPE_
 
 #include <tuple>
 
