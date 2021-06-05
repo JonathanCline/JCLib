@@ -2,8 +2,6 @@
 #ifndef JCLIB_CONCEPTS_H
 #define JCLIB_CONCEPTS_H
 
-#define _JCLIB_CONCEPTS_
-
 /*
 	Copyright 2021 Jonathan Cline
 	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
@@ -18,15 +16,16 @@
 */
 
 /*
-	This is a semi-standin concepts library that was created before MSVC had a standard concepts library. 
-	Also contains various concepts that are frequently useful
+		This is a semi-standin concepts library that was created before MSVC (or any other c++ implementation)
+	had a standard concepts library. Also contains various concepts that are frequently useful
 */
 
 #include "jclib/config.h"
 
 #if defined(__cpp_concepts) && defined(__cpp_lib_concepts)
-
 #include "jclib/type_traits.h"
+
+#define _JCLIB_CONCEPTS_
 
 #include <concepts>
 
