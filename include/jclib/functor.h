@@ -115,7 +115,7 @@ namespace jc
 				return_type(*)(ArgTs...) noexcept,
 				return_type(*)(ArgTs...)>;
 
-			parent_type* clone() const final
+			JCLIB_NODISCARD("owning pointer") parent_type* clone() const final
 			{
 				return new free_function_pointer{ *this };
 			};
@@ -211,7 +211,7 @@ namespace jc
 			 * @brief True if the function type is noexcept
 			*/
 #ifdef __cpp_inline_variables
-			JCLIB_CONSTANT static inline bool is_noexcept_v = isNoexcept;
+			JCLIB_CONSTEXPR static bool is_noexcept_v = isNoexcept;
 #endif
 			/**
 			 * @brief Returns true if the function type is noexcept
@@ -222,7 +222,7 @@ namespace jc
 			};
 
 		private:
-			JCLIB_CONSTEXPR auto& get() noexcept
+			JCLIB_CONSTEXPR pointer& get() noexcept
 			{
 				return this->ptr_;
 			};
@@ -307,9 +307,7 @@ namespace jc
 			*/
 			return_type operator()(ArgTs... _args) const noexcept(functor_impl::is_noexcept())
 			{
-				JCLIB_ASSERT(this->good());
-				const pointer& _function = this->get();
-				return _function->invoke(_args...);
+				return this->invoke(std::forward<ArgTs>(_args)...);
 			};
 
 			/**
@@ -330,7 +328,7 @@ namespace jc
 			functor_impl& operator=(std::nullptr_t) noexcept
 			{
 				this->reset();
-				this->ptr_ = nullptr;
+				JCLIB_ASSERT(this->ptr_ == nullptr);
 				return *this;
 			};
 
@@ -393,7 +391,7 @@ namespace jc
 			};
 
 			// Calls reset()
-			~functor_impl()
+			~functor_impl() noexcept
 			{
 				this->reset();
 			};
