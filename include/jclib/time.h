@@ -28,38 +28,6 @@
 
 namespace jc
 {
-	/**
-	 * @brief Check if a type fufills the standard clock type requirements
-	 * see https://en.cppreference.com/w/cpp/named_req/Clock
-	 * @tparam T Type to check
-	*/
-	template <typename T, typename = void>
-	struct is_clock : false_type {};
-
-	/**
-	 * @brief Check if a type fufills the standard clock type requirements
-	 * see https://en.cppreference.com/w/cpp/named_req/Clock
-	 * @tparam T Type to check
-	*/
-	template <typename T>
-	struct is_clock <T, void_t<
-		typename T::rep,
-		typename T::period,
-		typename T::duration,
-		typename T::time_point,
-		decltype(T::is_steady),
-		decltype(T::now())
-		>> : true_type {};
-
-#ifdef __cpp_inline_variables
-	/**
-	 * @brief Check if a type fufills the standard clock type requirements
-	 * see https://en.cppreference.com/w/cpp/named_req/Clock
-	 * @tparam T Type to check
-	*/
-	template <typename T>
-	JCLIB_CONSTEXPR static inline bool is_clock_v = is_clock<T>::value;
-#endif
 
 #ifdef __cpp_concepts
 	/**
@@ -78,9 +46,43 @@ namespace jc
 	};
 #endif
 
+#ifdef __cpp_concepts
+	/**
+	 * @brief Check if a type fufills the standard clock type requirements
+	 * see https://en.cppreference.com/w/cpp/named_req/Clock
+	 * @tparam T Type to check
+	*/
+	template <typename T>
+	struct is_clock : bool_constant<cx_clock<T>> {};
+#else
+	/**
+	 * @brief Check if a type fufills the standard clock type requirements
+	 * see https://en.cppreference.com/w/cpp/named_req/Clock
+	 * @tparam T Type to check
+	*/
+	template <typename T, typename = void>
+	struct is_clock : false_type {};
 
+	template <typename T>
+	struct is_clock <T, void_t<
+		typename T::rep,
+		typename T::period,
+		typename T::duration,
+		typename T::time_point,
+		decltype(T::is_steady),
+		decltype(T::now())
+		>> : true_type {};
+#endif
 
-
+#ifdef __cpp_inline_variables
+	/**
+	 * @brief Check if a type fufills the standard clock type requirements
+	 * see https://en.cppreference.com/w/cpp/named_req/Clock
+	 * @tparam T Type to check
+	*/
+	template <typename T>
+	JCLIB_CONSTEXPR static inline bool is_clock_v = is_clock<T>::value;
+#endif
 };
 
 #endif
