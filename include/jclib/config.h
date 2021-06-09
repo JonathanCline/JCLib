@@ -68,7 +68,7 @@ namespace jc
 };
 
 #ifndef JCLIB_ABORT
-#include <utility>
+#include <exception>
 #define JCLIB_ABORT(...) std::terminate()
 #endif
 
