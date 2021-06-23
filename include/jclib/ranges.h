@@ -16,6 +16,7 @@
 */
 
 #include "jclib/type_traits.h"
+#include "jclib/functional.h"
 
 #define _JCLIB_RANGES_
 
@@ -23,7 +24,7 @@ namespace jc
 {
 	namespace ranges
 	{
-
+		
 		template <typename T, typename = void>
 		struct range_ftor;
 
@@ -112,6 +113,188 @@ namespace jc
 
 	using ranges::begin;
 	using ranges::end;
+
+	namespace ranges
+	{
+#ifdef __cpp_concepts
+		template <typename T>
+		concept range = is_range_v<T>;
+#endif
+		namespace impl
+		{
+			template <typename UnderlyingT, typename OpT>
+			struct condition_iterator
+			{
+			private:
+				using underlying_type = UnderlyingT;
+			public:
+				friend inline constexpr bool operator==(const condition_iterator& _lhs, const underlying_type& _rhs) noexcept
+				{
+					return _lhs.at_ == _rhs;
+				};
+				friend inline constexpr bool operator==(const underlying_type& _lhs, const condition_iterator& _rhs) noexcept
+				{
+					return _rhs == _lhs;
+				};
+				friend inline constexpr bool operator==(const condition_iterator& _lhs, const condition_iterator& _rhs) noexcept
+				{
+					return _lhs.at_ == _rhs;
+				};
+
+				friend inline constexpr bool operator!=(const condition_iterator& _lhs, const underlying_type& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+				friend inline constexpr bool operator!=(const underlying_type& _lhs, const condition_iterator& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+				friend inline constexpr bool operator!=(const condition_iterator& _lhs, const condition_iterator& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+
+				constexpr auto& operator*()
+				{
+					return *this->at_;
+				};
+				constexpr auto& operator*() const
+				{
+					return *this->at_;
+				};
+
+				constexpr auto* operator->()
+				{
+					return &*this->at_;
+				};
+				constexpr auto* operator->() const
+				{
+					return &*this->at_;
+				};
+
+			private:
+				constexpr bool check_condition(underlying_type _val)
+				{
+					return invoke(*this->op_, *_val);
+				};
+
+			public:
+
+				constexpr condition_iterator& operator++()
+				{
+					while (++this->at_ != this->end_ && !this->check_condition(this->at_));
+					return *this;
+				};
+				constexpr condition_iterator operator++(int)
+				{
+					condition_iterator _out{ *this };
+					++(*this);
+					return _out;
+				};
+
+				constexpr condition_iterator() noexcept :
+					op_{ nullptr }
+				{};
+				constexpr condition_iterator(underlying_type _at, underlying_type _end, OpT& _op) noexcept :
+					at_{ _at }, end_{ _end }, op_{ &_op }
+				{
+					while (this->at_ != this->end_ && !this->check_condition(this->at_))
+					{
+						++this->at_;
+					};
+				};
+
+			private:
+				underlying_type at_;
+				underlying_type end_;
+				OpT* op_;
+			};
+		};
+
+
+
+
+		template <typename RangeT, typename OpT, typename = void>
+		struct filter_view;
+		
+		template <typename RangeT, typename OpT>
+		struct filter_view <RangeT, OpT,
+			enable_if_t<is_range<RangeT>::value&& is_invocable<OpT, value_t<RangeT>>::value>
+		>
+		{
+		public:
+			using iterator = impl::condition_iterator<iterator_t<RangeT>, OpT>;
+
+		private:
+			OpT filter_;
+			iterator begin_;
+			iterator end_;
+
+		public:
+			constexpr iterator begin() const noexcept
+			{
+				return this->begin_;
+			};
+			constexpr iterator end() const noexcept
+			{
+				return this->end_;
+			};
+
+			constexpr filter_view(RangeT& _range, OpT&& _op) :
+				filter_{ std::move(_op) },
+				begin_{ ranges::begin(_range), ranges::end(_range),  this->filter_ },
+				end_{ ranges::end(_range), ranges::end(_range), this->filter_ }
+			{};
+
+		};
+
+	};
+
+	namespace views
+	{
+
+		namespace impl
+		{
+			template <typename OpT>
+			struct filter_impl
+			{
+				template <typename RangeT>
+				friend constexpr inline auto operator|(RangeT& _range, filter_impl<OpT> _filter) -> ranges::filter_view<RangeT, OpT>
+				{
+					return ranges::filter_view<RangeT, OpT>{ _range, std::move(_filter.op) };
+				};
+			
+				constexpr filter_impl(OpT&& _op) noexcept :
+					op{ std::move(_op) }
+				{};
+				constexpr filter_impl(const OpT& _op) :
+					op{ _op }
+				{};
+
+				OpT op;
+			};
+
+			struct filter_t
+			{
+				template <typename OpT>
+				constexpr filter_impl<remove_cvref_t<OpT>> operator()(OpT&& _op) const noexcept
+				{
+					return filter_impl<remove_cvref_t<OpT>>{ std::forward<OpT>(_op) };
+				};
+			};
+		};
+
+#ifdef __cpp_inline_variables
+		constexpr inline impl::filter_t filter{};
+#else
+		template <typename OpT>
+		constexpr auto filter(OpT&& _op)
+		{
+			return impl::filter_impl<remove_cvref_t<OpT>>{ std::forward<OpT>(_op) };
+		};
+#endif
+
+	};
 
 };
 

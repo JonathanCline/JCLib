@@ -2,6 +2,14 @@
 #include "jclib/functional.h"
 
 #include <vector>
+#include <numeric>
+
+
+constexpr bool is_even(int i)
+{
+	return (i % 2) == 0;
+};
+
 
 int main()
 {
@@ -59,6 +67,20 @@ int main()
 			return 2;
 		};
 	};
+
+	{
+		std::vector<int> _ivec{};
+		_ivec.resize(10);
+		std::iota(_ivec.begin(), _ivec.end(), 1);
+
+		for (auto v : _ivec | jc::views::filter(&is_even))
+		{
+			if (!is_even(v))
+			{
+				return 3;
+			};
+		};
+	}
 
 	return 0;
 };
