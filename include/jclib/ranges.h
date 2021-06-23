@@ -21,128 +21,97 @@
 
 namespace jc
 {
-	/**
-	 * @brief jc::begin() function customization point
-	*/
-	template <typename T, typename = void>
-	struct begin_ftor;
-
-	template <typename T, size_t N>
-	struct begin_ftor<T[N]>
+	namespace ranges
 	{
-		using type = T[N];
-		JCLIB_CONSTEXPR static auto begin(type& _t) noexcept
+
+		template <typename T, typename = void>
+		struct range_ftor;
+
+		template <typename T, size_t N>
+		struct range_ftor<T[N], void>
 		{
-			return &_t[0];
+			constexpr auto begin(T(&_val)[N]) const noexcept
+			{
+				return &_val[0];
+			};
+			constexpr auto end(T(&_val)[N]) const noexcept
+			{
+				return &_val[N];
+			};
 		};
-	};
-	template <typename T>
-	struct begin_ftor<T, void_t<decltype(std::declval<T&>().begin())>>
-	{
-		using type = T;
-		JCLIB_CONSTEXPR static auto begin(type& _t) noexcept
+
+		template <typename T>
+		struct range_ftor < T, void_t<
+			decltype(std::declval<remove_reference_t<T>>().begin()),
+			decltype(std::declval<remove_reference_t<T>>().end())
+			>>
 		{
-			return _t.begin();
+			constexpr auto begin(remove_reference_t<T>& _val) const noexcept
+			{
+				return _val.begin();
+			};
+			constexpr auto end(remove_reference_t<T>& _val) const noexcept
+			{
+				return _val.end();
+			};
 		};
-	};
 
-	/**
-	 * @brief Returns iterator or equivalent to the beginning of the range
-	*/
-	template <typename T>
-	JCLIB_CONSTEXPR auto begin(T& _range) noexcept -> decltype(begin_ftor<T>::begin(std::declval<T&>()))
-	{
-		return begin_ftor<T>::begin(_range);
-	};
+		template <typename T, typename = void>
+		struct is_range : false_type {};
 
-	/**
-	 * @brief Returns const_iterator or equivalent to the beginning of the range
-	*/
-	template <typename T>
-	JCLIB_CONSTEXPR auto cbegin(const T& _range) noexcept -> decltype(begin_ftor<T>::begin(std::declval<const T&>()))
-	{
-		return begin_ftor<T>::begin(_range);
-	};
-
-
-	/**
-	 * @brief jc::end() function customization point
-	*/
-	template <typename T, typename = void>
-	struct end_ftor;
-
-	template <typename T, size_t N>
-	struct end_ftor<T[N]>
-	{
-		using type = T[N];
-		JCLIB_CONSTEXPR static auto end(type& _t) noexcept
-		{
-			return &_t[N];
-		};
-	};
-	template <typename T>
-	struct end_ftor<T, void_t<decltype(std::declval<T&>().end())>>
-	{
-		using type = T;
-		JCLIB_CONSTEXPR static auto end(type& _t) noexcept
-		{
-			return _t.end();
-		};
-	};
-
-	/**
-	 * @brief Returns iterator or equivalent to the end of the range
-	*/
-	template <typename T>
-	JCLIB_CONSTEXPR auto end(T& _range) noexcept -> decltype(end_ftor<T>::end(std::declval<T&>()))
-	{
-		return end_ftor<T>::end(_range);
-	};
-
-	/**
-	 * @brief Returns const_iterator or equivalent to the end of the range
-	*/
-	template <typename T>
-	JCLIB_CONSTEXPR auto end(const T& _range) noexcept -> decltype(end_ftor<T>::end(std::declval<const T&>()))
-	{
-		return end_ftor<T>::end(_range);
-	};
-
-#ifdef __cpp_concepts
-	template <typename T>
-	concept cx_range = requires(T& _range)
-	{
-		begin(_range);
-		end(_range);
-	};
-
-	template <typename T>
-	struct is_range : bool_constant<cx_range<T>> {};
-#else
-	template <typename T, typename = void>
-	struct is_range : false_type {};
-
-	template <typename T>
-	struct is_range<T, void_t<
-		decltype(begin(std::declval<T&>())),
-		decltype(end(std::declval<T&>()))
-		>> : true_type{};
-#endif
+		template <typename T>
+		struct is_range<T,
+			void_t<decltype(std::declval<range_ftor<T>>().begin(std::declval<T&>()))>
+		> : true_type {};
 
 #ifdef __cpp_inline_variables
-	template <typename T>
-	JCLIB_CONSTEXPR inline bool is_range_v = is_range<T>::value;
+		template <typename T>
+		constexpr inline bool is_range_v = is_range<T>::value;
 #endif
 
-	template <typename T> JCLIB_REQUIRES(cx_range<T>)
-	using range_iterator_t = decltype(begin_ftor<T>::begin(std::declval<T&>()));
 
-	template <typename T> JCLIB_REQUIRES(cx_range<T>)
-	using range_value_t = std::remove_reference_t<decltype(*std::declval<range_iterator_t<T>>())>;
+		template <typename T, typename = void>
+		struct iterator;
+		template <typename T>
+		struct iterator<T, enable_if_t<is_range<T>::value>>
+		{
+			using type = decltype(std::declval<range_ftor<T>>().begin(std::declval<T&>()));
+		};
+
+		template <typename T>
+		using iterator_t = typename iterator<T>::type;
+
+		template <typename T, typename = void>
+		struct value;
+		template <typename T>
+		struct value <T, enable_if_t<is_range<T>::value>>
+		{
+			using type = remove_reference_t<decltype(*std::declval<iterator_t<T>>())>;
+		};
+
+		template <typename T>
+		using value_t = typename value<T>::type;
 
 
 
 
+
+		template <typename T>
+		constexpr auto begin(T& _value) -> iterator_t<T>
+		{
+			return range_ftor<T>{}.begin(_value);
+		};
+
+		template <typename T>
+		constexpr auto end(T& _value) -> iterator_t<T>
+		{
+			return range_ftor<T>{}.end(_value);
+		};
+
+	};
+
+	using ranges::begin;
+	using ranges::end;
 
 };
 
