@@ -4,12 +4,17 @@
 #include <vector>
 #include <numeric>
 
+#include <functional>
+
+
+
+
+
 
 constexpr bool is_even(int i)
 {
 	return (i % 2) == 0;
 };
-
 
 int main()
 {
@@ -67,7 +72,7 @@ int main()
 			return 2;
 		};
 	};
-
+	
 	{
 		std::vector<int> _ivec{};
 		_ivec.resize(10);
@@ -80,7 +85,31 @@ int main()
 				return 3;
 			};
 		};
-	}
+	};
+
+	{
+		constexpr int _completeCount = 10;
+		constexpr int _evenCount = _completeCount / 2;
+		using iotav = decltype(jc::views::iota(1, _completeCount));
+
+		if (!jc::ranges::is_view<iotav>::value || !jc::ranges::is_range<iotav>::value)
+		{
+			return 4;
+		};
+
+		int _count = 0;
+		for (auto v : jc::views::iota(0, _completeCount) | jc::views::filter(&is_even))
+		{
+			++_count;
+		};
+
+		if (_count != _evenCount)
+		{
+			return 4;
+		};
+	};
+
+
 
 	return 0;
 };

@@ -17,6 +17,7 @@
 
 #include "jclib/type_traits.h"
 #include "jclib/functional.h"
+#include "jclib/concepts.h"
 
 #define _JCLIB_RANGES_
 
@@ -114,12 +115,43 @@ namespace jc
 	using ranges::begin;
 	using ranges::end;
 
+#ifdef __cpp_concepts
+	namespace ranges
+	{
+		template <typename T>
+		concept range = is_range_v<T>;
+
+		template <typename T>
+		concept view = is_range_v<T> && std::is_move_constructible_v<T> && std::is_move_assignable_v<T>;
+	};
+
+	template <typename T>
+	concept cx_range = ranges::range<T>;
+
+	template <typename T>
+	concept cx_view = ranges::view<T>;
+#endif
+
 	namespace ranges
 	{
 #ifdef __cpp_concepts
 		template <typename T>
-		concept range = is_range_v<T>;
+		struct is_view : bool_constant<view<T>> {};
+#else
+		template <typename T, typename = void>
+		struct is_view : false_type {};
+		template <typename T>
+		struct is_view<T, enable_if_t<is_range<T>::value>> : true_type {};
 #endif
+
+#ifdef __cpp_inline_variables
+		template <typename T>
+		constexpr inline bool is_view_v = is_view<T>::value;
+#endif
+	};
+
+	namespace ranges
+	{
 		namespace impl
 		{
 			template <typename UnderlyingT, typename OpT>
@@ -210,17 +242,22 @@ namespace jc
 				OpT* op_;
 			};
 		};
+	};
 
-
-
-
+	namespace ranges
+	{
+#ifdef __cpp_concepts
+		template <range RangeT, cx_invocable<value_t<RangeT>> OpT>
+		struct filter_view
+#else
 		template <typename RangeT, typename OpT, typename = void>
 		struct filter_view;
-		
+
 		template <typename RangeT, typename OpT>
 		struct filter_view <RangeT, OpT,
 			enable_if_t<is_range<RangeT>::value&& is_invocable<OpT, value_t<RangeT>>::value>
 		>
+#endif
 		{
 		public:
 			using iterator = impl::condition_iterator<iterator_t<RangeT>, OpT>;
@@ -245,23 +282,20 @@ namespace jc
 				begin_{ ranges::begin(_range), ranges::end(_range),  this->filter_ },
 				end_{ ranges::end(_range), ranges::end(_range), this->filter_ }
 			{};
-
 		};
-
 	};
-
 	namespace views
 	{
-
 		namespace impl
 		{
 			template <typename OpT>
 			struct filter_impl
 			{
 				template <typename RangeT>
-				friend constexpr inline auto operator|(RangeT& _range, filter_impl<OpT> _filter) -> ranges::filter_view<RangeT, OpT>
+				friend constexpr inline auto operator|(RangeT&& _range, filter_impl<OpT> _filter) ->
+					ranges::filter_view<remove_reference_t<RangeT>, OpT>
 				{
-					return ranges::filter_view<RangeT, OpT>{ _range, std::move(_filter.op) };
+					return ranges::filter_view<remove_reference_t<RangeT>, OpT>{ _range, std::move(_filter.op) };
 				};
 			
 				constexpr filter_impl(OpT&& _op) noexcept :
@@ -284,16 +318,120 @@ namespace jc
 			};
 		};
 
-#ifdef __cpp_inline_variables
-		constexpr inline impl::filter_t filter{};
-#else
-		template <typename OpT>
-		constexpr auto filter(OpT&& _op)
-		{
-			return impl::filter_impl<remove_cvref_t<OpT>>{ std::forward<OpT>(_op) };
-		};
-#endif
 
+
+
+
+
+
+
+		constexpr static impl::filter_t filter{};
+
+	};
+
+
+	namespace ranges
+	{
+		template <typename T, typename = void>
+		struct iota_view;
+
+		template <typename T>
+		struct iota_view<T, enable_if_t<is_integral<T>::value>>
+		{
+		public:
+			struct iterator
+			{
+			public:
+				using difference_type = std::ptrdiff_t;
+
+				constexpr bool operator==(const iterator& rhs) const noexcept
+				{
+					return this->at_ == rhs.at_;
+				};
+				constexpr bool operator!=(const iterator& rhs) const noexcept
+				{
+					return !(*this == rhs);
+				};
+
+				constexpr difference_type operator-(const iterator& rhs) const noexcept
+				{
+					return (difference_type)(this->at_ - rhs.at_);
+				};
+
+				constexpr T& operator*() noexcept { return this->at_; };
+				constexpr const T& operator*() const noexcept { return this->at_; };
+
+				constexpr T* operator->() noexcept { return &this->at_; };
+				constexpr const T* operator->() const noexcept { return &this->at_; };
+
+				constexpr iterator& operator++()
+				{
+					++this->at_;
+					return *this;
+				};
+				constexpr iterator operator++(int)
+				{
+					auto _out{ *this };
+					++(*this);
+					return _out;
+				};
+				constexpr iterator& operator+=(difference_type _diff)
+				{
+					this->at_ += _diff;
+					return *this;
+				};
+
+				constexpr iterator& operator--()
+				{
+					--this->at_;
+					return *this;
+				};
+				constexpr iterator operator--(int)
+				{
+					auto _out{ *this };
+					--(*this);
+					return _out;
+				};
+				constexpr iterator& operator-=(difference_type _diff)
+				{
+					return *this += -_diff;
+				};
+
+				constexpr iterator() noexcept = default;
+				constexpr iterator(T _at) noexcept :
+					at_{ _at }
+				{};
+			private:
+				T at_{ 0 };
+			};
+		private:
+			iterator begin_;
+			iterator end_;
+		public:
+			constexpr iterator begin() const noexcept { return this->begin_; };
+			constexpr iterator end() const noexcept { return this->end_; };
+
+			constexpr iota_view(T _init, T _max) noexcept :
+				begin_{ _init },
+				end_{ _max }
+			{};
+		};
+	};
+
+	namespace views
+	{
+		namespace impl
+		{
+			struct iota_t
+			{
+				template <typename T>
+				constexpr auto operator()(T _init, T _max) const noexcept -> ranges::iota_view<enable_if_t<is_integral<T>::value, T>>
+				{
+					return ranges::iota_view<T>{ _init, _max };
+				};
+			};
+		};
+		constexpr static impl::iota_t iota{};
 	};
 
 };
