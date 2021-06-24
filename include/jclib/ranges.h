@@ -19,13 +19,16 @@
 #include "jclib/functional.h"
 #include "jclib/concepts.h"
 
+#include <algorithm>
+#include <iterator>
+
 #define _JCLIB_RANGES_
 
 namespace jc
 {
 	namespace ranges
 	{
-		
+
 		template <typename T, typename = void>
 		struct range_ftor;
 
@@ -115,6 +118,95 @@ namespace jc
 	using ranges::begin;
 	using ranges::end;
 
+	namespace ranges
+	{
+		namespace impl
+		{
+			template <typename T>
+			struct distance_ftor
+			{
+				constexpr auto operator()(const T& _begin, const T& _end) const noexcept
+				{
+					return std::distance(_begin, _end);
+				};
+			};
+			template <typename T>
+			struct distance_ftor<T*>
+			{
+				constexpr auto operator()(const T* _begin, const T* _end) const noexcept
+				{
+					return _end - _begin;
+				};
+			};
+		};
+
+		template <typename RangeT, typename = iterator_t<remove_reference_t<RangeT>>>
+		constexpr auto distance(RangeT&& _range) noexcept
+		{
+			const auto _begin = begin(_range);
+			const auto _end = end(_range);
+			return impl::distance_ftor<iterator_t<remove_reference_t<RangeT>>>{}(_begin, _end);
+		};
+
+		namespace impl
+		{
+			template <typename T>
+			struct empty_view_part {};
+
+			template <bool B, typename T>
+			struct view_part { using type = std::conditional_t<B, T, empty_view_part<T>>; };
+			template <bool B, typename T>
+			using view_part_t = typename view_part<B, T>::type;
+
+
+
+			template <typename T>
+			struct view_part_size
+			{
+			private:
+				constexpr auto* as_crtp() noexcept
+				{
+					return static_cast<T*>(this);
+				};
+				constexpr const auto* as_crtp() const noexcept
+				{
+					return static_cast<const T*>(this);
+				};
+			public:
+				constexpr auto size() const noexcept
+				{
+					return distance(*this->as_crtp());
+				};
+			};
+
+
+
+
+		};
+
+
+		/**
+		 * @brief CRTP base type implementing common view functionality
+		 * @tparam T view type to make functions for
+		*/
+		template <typename T>
+		struct view_interface :
+			public impl::view_part_size<T>
+		{
+		private:
+			constexpr auto* as_crtp() noexcept
+			{
+				return static_cast<T*>(this);
+			};
+			constexpr const auto* as_crtp() const noexcept
+			{
+				return static_cast<const T*>(this);
+			};
+		public:
+
+		};
+	};
+
 #ifdef __cpp_concepts
 	namespace ranges
 	{
@@ -160,6 +252,9 @@ namespace jc
 			private:
 				using underlying_type = UnderlyingT;
 			public:
+				using iterator_category = std::forward_iterator_tag;
+				using difference_type = std::ptrdiff_t;
+
 				friend inline constexpr bool operator==(const condition_iterator& _lhs, const underlying_type& _rhs) noexcept
 				{
 					return _lhs.at_ == _rhs;
@@ -243,7 +338,23 @@ namespace jc
 			};
 		};
 	};
+}
 
+namespace std
+{
+	template <typename T, typename OpT>
+	struct iterator_traits<jc::ranges::impl::condition_iterator<T, OpT>>
+	{
+		using difference_type = std::ptrdiff_t;
+		using iterator_category = std::forward_iterator_tag;
+		using reference = decltype(*std::declval<jc::ranges::impl::condition_iterator<T, OpT>>());
+		using value_type = std::remove_reference_t<reference>;
+		using pointer = value_type*;
+	};
+};
+
+namespace jc
+{
 	namespace ranges
 	{
 #ifdef __cpp_concepts
@@ -258,6 +369,7 @@ namespace jc
 			enable_if_t<is_range<RangeT>::value&& is_invocable<OpT, value_t<RangeT>>::value>
 		>
 #endif
+			: public view_interface<filter_view<RangeT, OpT>>
 		{
 		public:
 			using iterator = impl::condition_iterator<iterator_t<RangeT>, OpT>;

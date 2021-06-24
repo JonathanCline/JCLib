@@ -78,6 +78,13 @@ int main()
 		_ivec.resize(10);
 		std::iota(_ivec.begin(), _ivec.end(), 1);
 
+		auto _filterView = _ivec | jc::views::filter(&is_even);
+		const auto _len = _filterView.size();
+		if (_len != 5)
+		{
+			return 3;
+		};
+
 		for (auto v : _ivec | jc::views::filter(&is_even))
 		{
 			if (!is_even(v))

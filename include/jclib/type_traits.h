@@ -111,6 +111,7 @@ namespace jc
 	using std::is_floating_point;
 	using std::is_signed;
 	using std::is_unsigned;
+	using std::is_pointer;
 
 #ifdef __cpp_inline_variables
 	using std::is_fundamental_v;
@@ -119,6 +120,7 @@ namespace jc
 	using std::is_floating_point_v;
 	using std::is_signed_v;
 	using std::is_unsigned_v;
+	using std::is_pointer_v;
 #endif
 
 	template <typename T>
