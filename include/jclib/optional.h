@@ -15,10 +15,78 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <jclib/config.h>
+
 #define _JCLIB_OPTIONAL_
 
 namespace jc
 {
+	/**
+	 * @brief Value type held by an empty optional
+	*/
+	struct nullopt_t {};
+
+	/**
+	 * @brief Value held by an empty optional
+	*/
+	constexpr static nullopt_t nullopt{};
+
+	/**
+	 * @brief Contains either the specified type or nullopt, should be nearly identical to std::optional
+	 * @tparam T Optionally held value type
+	*/
+	template <typename T>
+	struct optional
+	{
+	public:
+		using value_type = T;
+
+		constexpr bool has_value() const noexcept
+		{
+			return this->hasval_;
+		};
+		constexpr explicit operator bool() const noexcept
+		{
+			return this->has_value();
+		};
+		
+		constexpr value_type& value()
+		{
+			JCLIB_ASSERT(this->has_value());
+			return this->val_;
+		};
+		constexpr const value_type& value() const
+		{
+			JCLIB_ASSERT(this->has_value());
+			return this->val_;
+		};
+
+		constexpr value_type& operator*()
+		{
+			return this->value();
+		};
+		constexpr const value_type& operator*() const
+		{
+			return this->value();
+		};
+
+		constexpr value_type* operator->()
+		{
+			return &this->value();
+		};
+		constexpr const value_type* operator->() const
+		{
+			return &this->value();
+		};
+
+	private:
+		union
+		{
+			T val_;
+			nullopt_t nullval_{ nullopt };
+		};
+		bool hasval_ = false;
+	};
 
 };
 

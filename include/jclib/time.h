@@ -25,6 +25,7 @@
 #define _JCLIB_TIME_
 
 #include <chrono>
+#include <ctime>
 
 namespace jc
 {
@@ -83,6 +84,25 @@ namespace jc
 	template <typename T>
 	JCLIB_CONSTEXPR static inline bool is_clock_v = is_clock<T>::value;
 #endif
+
+
+	namespace impl
+	{
+		inline std::tm localtime(const std::time_t& _time)
+		{
+			// Switch for if using MSVC stdlib as 
+			std::tm _out{};
+#ifdef _MSC_VER
+			const auto _result = ::localtime_s(&_out, &_time);
+			JCLIB_ASSERT(_result == 0);
+#else
+			const auto _result = ::localtime_s(&_time, &_out);
+			JCLIB_ASSERT(_result == &_out);
+#endif
+			return _out;
+		};
+	};
+
 };
 
 #endif
