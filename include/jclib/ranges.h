@@ -113,10 +113,73 @@ namespace jc
 			return range_ftor<T>{}.end(_value);
 		};
 
+
+		namespace impl
+		{
+			template <typename T>
+			struct as_forward
+			{
+				using type = decltype(std::forward<T>(std::declval<T&&>()));
+			};
+			template <typename T>
+			using as_forward_t = typename as_forward<T>::type;
+
+			template <typename OutT, typename InT, typename = void>
+			struct range_cast_impl;
+
+			template <typename RangeT>
+			struct range_cast_impl<RangeT, RangeT, enable_if_t<is_range<remove_reference_t<RangeT>>::value>>
+			{
+				using in_type = RangeT;
+				using out_type = as_forward_t<RangeT>;
+
+				constexpr as_forward_t<RangeT> operator()(in_type&& _range)
+				{
+					return std::forward<RangeT>(_range);
+				};
+			};
+
+			template <typename OutT, typename InT>
+			struct range_cast_impl<OutT, InT,
+				enable_if_t<!is_same<OutT, remove_cvref_t<InT>>::value &&
+							 is_constructible<OutT, as_forward_t<InT>>::value>
+			>
+			{
+				using in_type = InT;
+				using out_type = OutT;
+
+				constexpr OutT operator()(in_type&& _in) const noexcept
+				{
+					return OutT{ std::forward<InT>(_in) };
+				};
+			};
+
+			template <typename OutT, typename InT>
+			struct range_cast_impl<OutT, InT,
+				enable_if_t<!is_constructible<OutT, InT>::value>
+			>
+			{
+				using in_type = InT;
+				using out_type = OutT;
+
+				constexpr OutT operator()(in_type _in) const noexcept
+				{
+					return OutT(begin(_in), end(_in));
+				};
+			};
+		};
+
+		template <typename OutT, typename InT>
+		constexpr inline OutT range_cast(InT&& _range)
+		{
+			return impl::range_cast_impl<OutT, InT>{}(std::forward<InT>(_range));
+		};
+
 	};
 
 	using ranges::begin;
 	using ranges::end;
+	using ranges::range_cast;
 
 	namespace ranges
 	{
@@ -409,7 +472,7 @@ namespace jc
 				{
 					return ranges::filter_view<remove_reference_t<RangeT>, OpT>{ _range, std::move(_filter.op) };
 				};
-			
+
 				constexpr filter_impl(OpT&& _op) noexcept :
 					op{ std::move(_op) }
 				{};
@@ -447,25 +510,25 @@ namespace jc
 		template <typename T, typename = void>
 		struct iota_view;
 
-		template <typename T>
-		struct iota_view<T, enable_if_t<is_integral<T>::value>>
+		namespace impl
 		{
-		public:
-			struct iterator
+			template <typename T>
+			struct iota_iterator
 			{
 			public:
+				using iterator_category = std::bidirectional_iterator_tag;
 				using difference_type = std::ptrdiff_t;
 
-				constexpr bool operator==(const iterator& rhs) const noexcept
+				constexpr bool operator==(const iota_iterator& rhs) const noexcept
 				{
 					return this->at_ == rhs.at_;
 				};
-				constexpr bool operator!=(const iterator& rhs) const noexcept
+				constexpr bool operator!=(const iota_iterator& rhs) const noexcept
 				{
 					return !(*this == rhs);
 				};
 
-				constexpr difference_type operator-(const iterator& rhs) const noexcept
+				constexpr difference_type operator-(const iota_iterator& rhs) const noexcept
 				{
 					return (difference_type)(this->at_ - rhs.at_);
 				};
@@ -476,46 +539,53 @@ namespace jc
 				constexpr T* operator->() noexcept { return &this->at_; };
 				constexpr const T* operator->() const noexcept { return &this->at_; };
 
-				constexpr iterator& operator++()
+				constexpr iota_iterator& operator++()
 				{
 					++this->at_;
 					return *this;
 				};
-				constexpr iterator operator++(int)
+				constexpr iota_iterator operator++(int)
 				{
 					auto _out{ *this };
 					++(*this);
 					return _out;
 				};
-				constexpr iterator& operator+=(difference_type _diff)
+				constexpr iota_iterator& operator+=(difference_type _diff)
 				{
 					this->at_ += _diff;
 					return *this;
 				};
 
-				constexpr iterator& operator--()
+				constexpr iota_iterator& operator--()
 				{
 					--this->at_;
 					return *this;
 				};
-				constexpr iterator operator--(int)
+				constexpr iota_iterator operator--(int)
 				{
 					auto _out{ *this };
 					--(*this);
 					return _out;
 				};
-				constexpr iterator& operator-=(difference_type _diff)
+				constexpr iota_iterator& operator-=(difference_type _diff)
 				{
 					return *this += -_diff;
 				};
 
-				constexpr iterator() noexcept = default;
-				constexpr iterator(T _at) noexcept :
+				constexpr iota_iterator() noexcept = default;
+				constexpr iota_iterator(T _at) noexcept :
 					at_{ _at }
 				{};
 			private:
 				T at_{ 0 };
 			};
+		};
+
+		template <typename T>
+		struct iota_view<T, enable_if_t<is_integral<T>::value>>
+		{
+		public:
+			using iterator = impl::iota_iterator<T>;
 		private:
 			iterator begin_;
 			iterator end_;
@@ -529,7 +599,23 @@ namespace jc
 			{};
 		};
 	};
+}
 
+namespace std
+{
+	template <typename T>
+	struct iterator_traits<jc::ranges::impl::iota_iterator<T>>
+	{
+		using difference_type = std::ptrdiff_t;
+		using iterator_category = std::forward_iterator_tag;
+		using reference = decltype(*std::declval<jc::ranges::impl::iota_iterator<T>>());
+		using value_type = std::remove_reference_t<reference>;
+		using pointer = value_type*;
+	};
+};
+
+namespace jc
+{
 	namespace views
 	{
 		namespace impl

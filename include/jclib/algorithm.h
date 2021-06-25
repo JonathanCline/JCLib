@@ -17,9 +17,9 @@
 
 #include "jclib/ranges.h"
 
-#include <algorithm>
-
 #define _JCLIB_ALGORITHM_
+
+#include <algorithm>
 
 namespace jc
 {
@@ -35,6 +35,7 @@ namespace jc
 	{
 		return std::find_if(jc::begin(_range), jc::end(_range), std::forward<Op>(_pred));
 	};
+
 };
 
 #endif

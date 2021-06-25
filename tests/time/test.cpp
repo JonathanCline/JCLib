@@ -1,37 +1,11 @@
 #include <jclib/time.h>
+#include <jclib/ranges.h>
 
 #include <ctime>
 #include <iostream>
 
-
-
-template <typename... Ts>
-
-std::string format()
-
-
-
-
-
-
-
-
-
-
-
-
 int main()
 {
-
-
-
-
-
-
-
-
-
-
 	{
 		using clock = std::chrono::steady_clock;
 		if (!jc::is_clock<clock>::value)
