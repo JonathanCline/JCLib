@@ -163,6 +163,10 @@ namespace jc
 	template <typename T>
 	concept cx_function_pointer = is_function_pointer_v<T>;
 
+	template <typename FunctionT, typename... ArgTs>
+	concept cx_invocable = is_invocable_v<FunctionT, ArgTs...>;
+
+
 
 	/*
 		Member function pointer concepts

@@ -23,22 +23,18 @@
 
 namespace jc
 {
-	using std::find;
-	using std::find_if;
-
-	template <typename RangeT, typename T> JCLIB_REQUIRES(cx_range<RangeT>)
-	JCLIB_CONSTEXPR static auto find(RangeT& _range, const T& _val) -> range_iterator_t<RangeT>
+	template <typename RangeT, typename T>
+	JCLIB_CONSTEXPR static auto find(RangeT&& _range, const T& _val) ->
+		ranges::iterator_t<remove_reference_t<RangeT>>
 	{
-		return find(begin(_range), end(_range), _val);
+		return std::find(jc::begin(_range), jc::end(_range), _val);
 	};
-	template <typename RangeT, typename Op> JCLIB_REQUIRES(cx_range<RangeT>)
-	JCLIB_CONSTEXPR static auto find_if(RangeT& _range, Op&& _pred) -> range_iterator_t<RangeT>
+	template <typename RangeT, typename Op>
+	JCLIB_CONSTEXPR static auto find_if(RangeT&& _range, Op&& _pred) ->
+		ranges::iterator_t<remove_reference_t<RangeT>>
 	{
-		return find_if(begin(_range), end(_range), std::forward<Op>(_pred));
+		return std::find_if(jc::begin(_range), jc::end(_range), std::forward<Op>(_pred));
 	};
-
-
-
 };
 
 #endif
