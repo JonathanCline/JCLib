@@ -21,8 +21,9 @@
 */
 
 #include "jclib/config.h"
+#include "jclib/feature.h"
 
-#if defined(__cpp_concepts) && defined(__cpp_lib_concepts)
+#ifdef JCLIB_FEATURE_CONCEPTS
 #include "jclib/type_traits.h"
 
 #define _JCLIB_CONCEPTS_
@@ -31,6 +32,16 @@
 
 namespace jc
 {
+	/*
+		Logical concept
+	*/
+
+	template <bool Val>
+	concept cx_not = !Val;
+
+
+
+
 	/*
 		Type comparison
 	*/

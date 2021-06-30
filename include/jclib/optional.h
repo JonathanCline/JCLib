@@ -15,7 +15,8 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <jclib/config.h>
+#include "jclib/config.h"
+#include "jclib/type_traits.h"
 
 #define _JCLIB_OPTIONAL_
 
@@ -31,12 +32,38 @@ namespace jc
 	*/
 	constexpr static nullopt_t nullopt{};
 
+	namespace impl
+	{
+		struct optional_destructor_trivial {};
+		
+		template <typename OptionalT, typename T>
+		struct optional_destructor_non_trivial
+		{
+		private:
+			inline auto* as_crtp() noexcept { return static_cast<OptionalT*>(this); };
+			inline const auto* as_crtp() const noexcept { return static_cast<const OptionalT*>(this); };
+		public:
+			~optional_destructor_non_trivial()
+			{
+				auto* _crtp = this->as_crtp();
+				if (_crtp->has_value())
+				{
+					_crtp->val_.~T();
+				};
+			};
+		};
+	};
+
 	/**
 	 * @brief Contains either the specified type or nullopt, should be nearly identical to std::optional
 	 * @tparam T Optionally held value type
 	*/
 	template <typename T>
-	struct optional
+	struct optional : std::conditional_t
+	<
+		std::is_trivially_destructible<T>::value,
+		impl::optional_destructor_trivial, impl::optional_destructor_non_trivial<optional<T>, T>
+	>
 	{
 	public:
 		using value_type = T;

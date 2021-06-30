@@ -63,7 +63,7 @@ namespace jc
 		/**
 		 * @brief jclib version
 		*/
-		JCLIB_CONSTANT static version LIBRARY_VERSION{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
+		constexpr static version LIBRARY_VERSION{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
 	};
 };
 

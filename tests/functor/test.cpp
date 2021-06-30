@@ -90,7 +90,20 @@ int main()
 		return -1;
 
 
+	{
+		// Test const member function
+		struct ConstFoo
+		{
+			int id() const
+			{
+				return 2;
+			};
+		};
+		ConstFoo _foo{};
+		jc::functor<int(void)> _func{ &ConstFoo::id, &_foo };
 
+
+	};
 
 
 

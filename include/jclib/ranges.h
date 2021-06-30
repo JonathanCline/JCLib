@@ -18,6 +18,7 @@
 #include "jclib/type_traits.h"
 #include "jclib/functional.h"
 #include "jclib/concepts.h"
+#include "jclib/iterator.h"
 
 #include <algorithm>
 #include <iterator>
@@ -633,5 +634,158 @@ namespace jc
 	};
 
 };
+
+namespace jc
+{
+	namespace ranges
+	{
+		template <typename RangeT, typename = iterator_t<RangeT>>
+		struct all_view : view_interface<all_view<RangeT>>
+		{
+		public:
+			using iterator = iterator_t<RangeT>;
+		private:
+			iterator begin_;
+			iterator end_;
+		public:
+			constexpr iterator begin() const noexcept { return this->begin_; };
+			constexpr iterator end() const noexcept { return this->end_; };
+
+			constexpr all_view(RangeT& _range) :
+				begin_{ ranges::begin(_range) }, end_{ ranges::end(_range) }
+			{};
+		};
+	};
+	namespace views
+	{
+		namespace impl
+		{
+			struct all_t
+			{
+				template <typename RangeT>
+				constexpr auto operator()(RangeT&& _range) const noexcept -> ranges::all_view<remove_reference_t<RangeT>>
+				{
+					return ranges::all_view<remove_reference_t<RangeT>>(_range);
+				};
+
+				template <typename RangeT>
+				constexpr friend inline auto operator|(RangeT&& _range, const all_t& _all) noexcept ->
+					ranges::all_view<remove_reference_t<RangeT>>
+				{
+					return _all(_range);
+				};
+			};
+		};
+		constexpr static impl::all_t all{};
+	};
+};
+
+namespace jc
+{
+	namespace ranges
+	{
+		template <typename RangeT, typename = iterator_t<RangeT>>
+		struct drop_view : view_interface<drop_view<RangeT>>
+		{
+		public:
+			using iterator = iterator_t<RangeT>;
+		private:
+			iterator begin_;
+			iterator end_;
+		public:
+			constexpr iterator begin() const noexcept { return this->begin_; };
+			constexpr iterator end() const noexcept { return this->end_; };
+			constexpr drop_view(RangeT& _range, size_t _count) :
+				begin_{ jc::next(ranges::begin(_range), static_cast<jc::difference_type_t<RangeT>>(_count)) }, end_{ ranges::end(_range) }
+			{};
+		};
+	};
+	namespace views
+	{
+		namespace impl
+		{
+			struct drop_impl_t
+			{
+				template <typename RangeT>
+				constexpr friend inline auto operator|(RangeT&& _range, drop_impl_t _drop) noexcept ->
+					ranges::drop_view<remove_reference_t<RangeT>>
+				{
+					return ranges::drop_view<remove_reference_t<RangeT>>{ std::forward<RangeT>(_range), _drop.count_ };
+				};
+				size_t count_;
+			};
+
+			struct drop_t
+			{
+				constexpr drop_impl_t operator()(size_t _count) const noexcept
+				{
+					return drop_impl_t{ _count };
+				};
+				template <typename RangeT>
+				constexpr auto operator()(RangeT&& _range, size_t _count) const noexcept
+				{
+					return _range | drop_impl_t{ _count };
+				};
+			};
+
+		};
+		constexpr static impl::drop_t drop{};
+	};
+};
+
+namespace jc
+{
+	namespace ranges
+	{
+		template <typename IterT, typename = void>
+		struct iter_view;
+
+		template <typename IterT>
+		struct iter_view <IterT, enable_if_t<is_iterator<IterT>::value>>
+			: public view_interface<iter_view<IterT>>
+		{
+			using iterator = IterT;
+		private:
+			iterator begin_;
+			iterator end_;
+		public:
+			JCLIB_CONSTEXPR iterator begin() const noexcept { return this->begin_; };
+			JCLIB_CONSTEXPR iterator end() const noexcept { return this->end_; };
+
+			JCLIB_CONSTEXPR iter_view(IterT _begin, IterT _end) noexcept :
+				begin_{ _begin }, end_{ _end }
+			{};
+		};
+	};
+	namespace views
+	{
+		namespace impl
+		{
+			struct iter_t
+			{
+				template <typename IterT>
+				constexpr ranges::iter_view<IterT> operator()(IterT _begin, IterT _end) const noexcept
+				{
+					return ranges::iter_view<IterT>{ _begin, _end };
+				};
+				template <typename RangeT>
+				constexpr ranges::iter_view<ranges::iterator_t<RangeT>> operator()(RangeT&& _range) const noexcept
+				{
+					return ranges::iter_view<ranges::iterator_t<RangeT>>
+					{
+						ranges::begin(_range),
+							ranges::end(_range)
+					};
+				};
+			};
+		};
+		constexpr static impl::iter_t iter{};
+	};
+};
+
+
+
+
+
 
 #endif
