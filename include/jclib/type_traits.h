@@ -162,6 +162,7 @@ namespace jc
 	using std::is_trivially_copyable;
 	using std::is_trivially_move_constructible;
 	using std::is_trivially_move_assignable;
+	using std::is_trivially_destructible;
 
 #ifdef __cpp_inline_variables
 	using std::is_trivially_default_constructible_v;
@@ -170,8 +171,8 @@ namespace jc
 	using std::is_trivially_copyable_v;
 	using std::is_trivially_move_constructible_v;
 	using std::is_trivially_move_assignable_v;
+	using std::is_trivially_destructible_v;
 #endif
-
 
 	template <typename T>
 	struct is_trivially_moveable : public bool_constant<
@@ -203,6 +204,19 @@ namespace jc
 	JCLIB_CONSTEXPR inline bool is_forwardable_to_v = is_forwardable_to<From, To>::value;
 #endif
 	
+
+	/*
+		Misc. Type Traits
+	*/
+
+	using std::is_base_of;
+	using std::is_abstract;
+
+#ifdef JCLIB_FEATURE_INLINE_VARIABLES
+	using std::is_base_of_v;
+	using std::is_abstract_v;
+#endif
+
 
 	/*
 		Function related
@@ -266,6 +280,28 @@ namespace jc
 		template <typename ReturnT, typename ClassT>
 		struct invocable_impl<ReturnT(ClassT::*)(), std::tuple<void>,
 			void_t<decltype((std::declval<ClassT*>()->*std::declval<ReturnT(ClassT::*)()>())())>
+		> : true_type
+		{
+			using return_type = ReturnT;
+		};
+
+		// const member function case
+		template <typename ReturnT, typename ClassT, typename... ArgTs>
+		struct invocable_impl<ReturnT(ClassT::*)(ArgTs...) const, std::tuple<ArgTs...>,
+			void_t<decltype(
+				(std::declval<const ClassT*>()->*std::declval<ReturnT(ClassT::*)(ArgTs...) const>())(std::declval<ArgTs>()...)
+				)>
+		> : true_type
+		{
+			using return_type = ReturnT;
+		};
+
+		// const member function with no args case
+		template <typename ReturnT, typename ClassT>
+		struct invocable_impl<ReturnT(ClassT::*)() const, std::tuple<void>,
+			void_t<decltype(
+				(std::declval<const ClassT*>()->*std::declval<ReturnT(ClassT::*)() const>())()
+				)>
 		> : true_type
 		{
 			using return_type = ReturnT;
@@ -446,6 +482,9 @@ namespace jc
 
 	template <typename T>
 	using remove_cvref_t = typename remove_cvref<T>::type;
+
+	using std::remove_pointer;
+	using std::remove_pointer_t;
 
 };
 

@@ -10,7 +10,6 @@
 #define JCLIB_TEST_TYPETRAIT(trait, type) (trait<type>::value)
 #endif
 
-
 #define FAIL_TEST(result) { std::cout << "Failed at line " << __LINE__ << '\n'; return result; }
 
 int main()

@@ -100,9 +100,6 @@ int main()
 			};
 		};
 		ConstFoo _foo{};
-		jc::functor<int(void)> _func{ &ConstFoo::id, &_foo };
-
-
 	};
 
 

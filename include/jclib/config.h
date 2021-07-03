@@ -72,8 +72,12 @@ namespace jc
 #define JCLIB_ABORT(...) std::terminate()
 #endif
 
-#ifndef JCLIB_ASSERT
 #if defined(JCLIB_DEBUG_MODE) || !defined(NDEBUG)
+#define JCLIB_DEBUG true
+#endif
+
+#ifndef JCLIB_ASSERT
+#ifdef JCLIB_DEBUG
 #define JCLIB_ASSERT(cond) if ( ! ( cond ) ) { JCLIB_ABORT(); }
 #else
 #define JCLIB_ASSERT(cond) {}

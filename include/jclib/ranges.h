@@ -29,7 +29,6 @@ namespace jc
 {
 	namespace ranges
 	{
-
 		template <typename T, typename = void>
 		struct range_ftor;
 
@@ -101,13 +100,24 @@ namespace jc
 
 
 
-
+		/**
+		 * @brief Returns the begin iterator of a range
+		 * @tparam T Range type
+		 * @param _value Range value
+		 * @return Iterator or iterator-like pointing to the first value in the range
+		*/
 		template <typename T>
 		constexpr auto begin(T& _value) -> iterator_t<T>
 		{
 			return range_ftor<T>{}.begin(_value);
 		};
 
+		/**
+		 * @brief Returns the end iterator of a range
+		 * @tparam T Range type
+		 * @param _value Range value
+		 * @return Iterator or iterator-like pointing to one past the last value in a range
+		*/
 		template <typename T>
 		constexpr auto end(T& _value) -> iterator_t<T>
 		{
@@ -151,7 +161,7 @@ namespace jc
 
 				constexpr OutT operator()(in_type&& _in) const noexcept
 				{
-					return OutT{ std::forward<InT>(_in) };
+					return OutT( std::forward<InT>(_in) );
 				};
 			};
 
@@ -169,7 +179,14 @@ namespace jc
 				};
 			};
 		};
-
+		
+		/**
+		 * @brief Generic cast function that constructs the output range from the input
+		 * @tparam OutT Output range type to be constructed
+		 * @tparam InT Range type to cast from
+		 * @param _range Range value that to cast from
+		 * @return Casted range
+		*/
 		template <typename OutT, typename InT>
 		constexpr inline OutT range_cast(InT&& _range)
 		{
@@ -177,6 +194,8 @@ namespace jc
 		};
 
 	};
+
+	// Any commonly used ranges functionality should be included here for ease of use
 
 	using ranges::begin;
 	using ranges::end;
@@ -207,8 +226,8 @@ namespace jc
 		template <typename RangeT, typename = iterator_t<remove_reference_t<RangeT>>>
 		constexpr auto distance(RangeT&& _range) noexcept
 		{
-			const auto _begin = begin(_range);
-			const auto _end = end(_range);
+			const auto _begin = jc::ranges::begin(_range);
+			const auto _end = jc::ranges::end(_range);
 			return impl::distance_ftor<iterator_t<remove_reference_t<RangeT>>>{}(_begin, _end);
 		};
 
@@ -223,7 +242,10 @@ namespace jc
 			using view_part_t = typename view_part<B, T>::type;
 
 
-
+			/**
+			 * @brief Implements the size function for a view
+			 * @tparam T View type that is inheriting from this
+			*/
 			template <typename T>
 			struct view_part_size
 			{
@@ -239,7 +261,7 @@ namespace jc
 			public:
 				constexpr auto size() const noexcept
 				{
-					return distance(*this->as_crtp());
+					return jc::ranges::distance(*this->as_crtp());
 				};
 			};
 
@@ -400,6 +422,8 @@ namespace jc
 				underlying_type end_;
 				OpT* op_;
 			};
+
+
 		};
 	};
 }
