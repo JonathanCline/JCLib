@@ -111,6 +111,7 @@ namespace jc
 	using std::is_floating_point;
 	using std::is_signed;
 	using std::is_unsigned;
+	using std::is_pointer;
 
 #ifdef __cpp_inline_variables
 	using std::is_fundamental_v;
@@ -119,6 +120,7 @@ namespace jc
 	using std::is_floating_point_v;
 	using std::is_signed_v;
 	using std::is_unsigned_v;
+	using std::is_pointer_v;
 #endif
 
 	template <typename T>
@@ -160,6 +162,7 @@ namespace jc
 	using std::is_trivially_copyable;
 	using std::is_trivially_move_constructible;
 	using std::is_trivially_move_assignable;
+	using std::is_trivially_destructible;
 
 #ifdef __cpp_inline_variables
 	using std::is_trivially_default_constructible_v;
@@ -168,8 +171,8 @@ namespace jc
 	using std::is_trivially_copyable_v;
 	using std::is_trivially_move_constructible_v;
 	using std::is_trivially_move_assignable_v;
+	using std::is_trivially_destructible_v;
 #endif
-
 
 	template <typename T>
 	struct is_trivially_moveable : public bool_constant<
@@ -201,6 +204,19 @@ namespace jc
 	JCLIB_CONSTEXPR inline bool is_forwardable_to_v = is_forwardable_to<From, To>::value;
 #endif
 	
+
+	/*
+		Misc. Type Traits
+	*/
+
+	using std::is_base_of;
+	using std::is_abstract;
+
+#ifdef JCLIB_FEATURE_INLINE_VARIABLES
+	using std::is_base_of_v;
+	using std::is_abstract_v;
+#endif
+
 
 	/*
 		Function related
@@ -264,6 +280,28 @@ namespace jc
 		template <typename ReturnT, typename ClassT>
 		struct invocable_impl<ReturnT(ClassT::*)(), std::tuple<void>,
 			void_t<decltype((std::declval<ClassT*>()->*std::declval<ReturnT(ClassT::*)()>())())>
+		> : true_type
+		{
+			using return_type = ReturnT;
+		};
+
+		// const member function case
+		template <typename ReturnT, typename ClassT, typename... ArgTs>
+		struct invocable_impl<ReturnT(ClassT::*)(ArgTs...) const, std::tuple<ArgTs...>,
+			void_t<decltype(
+				(std::declval<const ClassT*>()->*std::declval<ReturnT(ClassT::*)(ArgTs...) const>())(std::declval<ArgTs>()...)
+				)>
+		> : true_type
+		{
+			using return_type = ReturnT;
+		};
+
+		// const member function with no args case
+		template <typename ReturnT, typename ClassT>
+		struct invocable_impl<ReturnT(ClassT::*)() const, std::tuple<void>,
+			void_t<decltype(
+				(std::declval<const ClassT*>()->*std::declval<ReturnT(ClassT::*)() const>())()
+				)>
 		> : true_type
 		{
 			using return_type = ReturnT;
@@ -432,6 +470,21 @@ namespace jc
 
 	using std::remove_cv;
 	using std::remove_cv_t;
+
+	using std::remove_const;
+	using std::remove_const_t;
+
+	template <typename T>
+	struct remove_cvref
+	{
+		using type = remove_cv_t<remove_reference_t<T>>;
+	};
+
+	template <typename T>
+	using remove_cvref_t = typename remove_cvref<T>::type;
+
+	using std::remove_pointer;
+	using std::remove_pointer_t;
 
 };
 

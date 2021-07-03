@@ -28,13 +28,17 @@ namespace jc
 		released = false
 	};
 
-	template <void(*OnRelease)()>
-	struct guard
+	template <typename OnRelease, typename = void>
+	struct guard;
+
+	template <typename OnRelease>
+	struct guard<OnRelease, enable_if_t<is_invocable<OnRelease>::value>>
 	{
+	private:
+		JCLIB_CONSTEXPR static auto on_release() noexcept { return OnRelease{}; };
+
 	public:
 		using guard_state = jc::guard_state;
-
-		JCLIB_CONSTEXPR static auto on_release() noexcept { return OnRelease; };
 
 		JCLIB_CONSTEXPR bool held() const noexcept
 		{
@@ -51,8 +55,7 @@ namespace jc
 			this->state_ = guard_state::released;
 			return _out;
 		};
-
-		JCLIB_CONSTEXPR void release() noexcept(is_noexcept_function<decltype(OnRelease)>)
+		JCLIB_CONSTEXPR void release() noexcept(noexcept(std::declval<OnRelease>()()))
 		{
 			if (this->held())
 			{
@@ -63,13 +66,13 @@ namespace jc
 
 		JCLIB_CONSTEXPR guard() noexcept = default;
 		
-		guard(const guard&) = delete;
-		guard& operator=(const guard&) = delete;
+		JCLIB_CONSTEXPR guard(const guard&) = delete;
+		JCLIB_CONSTEXPR guard& operator=(const guard&) = delete;
 
 		JCLIB_CONSTEXPR guard(guard&& other) noexcept :
 			state_{ other.drop() }
 		{};
-		guard& operator=(guard&& other) noexcept
+		JCLIB_CONSTEXPR guard& operator=(guard&& other) noexcept
 		{
 			this->release();
 			this->state_ = other.drop();
@@ -85,6 +88,27 @@ namespace jc
 		guard_state state_ = guard_state::held;
 	};
 
+	namespace impl
+	{
+		template <void(*OnRelease)()>
+		struct guard_fwrap
+		{
+			JCLIB_CONSTEXPR void operator()() const noexcept
+			{
+				return OnRelease();
+			};
+		};
+	};
+
+	template <void(*OnRelease)()>
+	struct fguard : public guard<impl::guard_fwrap<OnRelease>>
+	{
+	private:
+		using parent_type = guard<impl::guard_fwrap<OnRelease>>;
+	public:
+		using parent_type::parent_type;
+		using parent_type::operator=;
+	};
 };
 
 #endif

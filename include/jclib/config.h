@@ -63,17 +63,21 @@ namespace jc
 		/**
 		 * @brief jclib version
 		*/
-		JCLIB_CONSTANT static version LIBRARY_VERSION{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
+		constexpr static version LIBRARY_VERSION{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
 	};
 };
 
 #ifndef JCLIB_ABORT
-#include <utility>
+#include <exception>
 #define JCLIB_ABORT(...) std::terminate()
 #endif
 
-#ifndef JCLIB_ASSERT
 #if defined(JCLIB_DEBUG_MODE) || !defined(NDEBUG)
+#define JCLIB_DEBUG true
+#endif
+
+#ifndef JCLIB_ASSERT
+#ifdef JCLIB_DEBUG
 #define JCLIB_ASSERT(cond) if ( ! ( cond ) ) { JCLIB_ABORT(); }
 #else
 #define JCLIB_ASSERT(cond) {}
