@@ -175,7 +175,7 @@ namespace jc
 
 				constexpr OutT operator()(in_type _in) const noexcept
 				{
-					return OutT(begin(_in), end(_in));
+					return OutT(jc::ranges::begin(_in), jc::ranges::end(_in));
 				};
 			};
 		};
@@ -776,6 +776,7 @@ namespace jc
 			JCLIB_CONSTEXPR iterator begin() const noexcept { return this->begin_; };
 			JCLIB_CONSTEXPR iterator end() const noexcept { return this->end_; };
 
+			JCLIB_CONSTEXPR iter_view() noexcept = default;
 			JCLIB_CONSTEXPR iter_view(IterT _begin, IterT _end) noexcept :
 				begin_{ _begin }, end_{ _end }
 			{};
