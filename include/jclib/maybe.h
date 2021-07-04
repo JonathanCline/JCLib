@@ -28,7 +28,7 @@ namespace jc
 	/**
 	 * @brief Exception thrown on attempted access on an invalid value
 	*/
-	struct bad_access_exception : exception {};
+	struct bad_access_exception : public std::exception { using std::exception::exception; };
 
 	/**
 	 * @brief Alternate tag type for function overload selection
@@ -45,6 +45,8 @@ namespace jc
 		template <typename MaybeT>
 		struct maybe_part
 		{
+		public:
+			~maybe_part() = default;
 		protected:
 			constexpr inline auto* as_crtp() noexcept { return static_cast<MaybeT*>(this); };
 			constexpr inline const auto* as_crtp() const noexcept { return static_cast<const MaybeT*>(this); };
@@ -97,6 +99,8 @@ namespace jc
 			{
 				
 			};
+		public:
+			~maybe_destructor_trivial() = default;
 		};
 
 		template <typename MaybeT, typename T, typename AltT>
@@ -145,12 +149,12 @@ namespace jc
 			
 			constexpr alternate_type& unsafe_alternate() noexcept
 			{
-				JCLIB_ASSERT(this->has_value());
+				JCLIB_ASSERT(!this->has_value());
 				return this->alt_;
 			};
 			constexpr const alternate_type& unsafe_alternate() const noexcept
 			{
-				JCLIB_ASSERT(this->has_value());
+				JCLIB_ASSERT(!this->has_value());
 				return this->alt_;
 			};
 
@@ -289,53 +293,6 @@ namespace jc
 				alt_{ std::move(_alt) }, has_value_{ false }
 			{};
 
-			/*
-			constexpr auto operator=(const value_type& _value)
-				noexcept(noexcept(value_type{ std::declval<const value_type&>() })) ->
-				enable_if_t<is_copy_assignable<value_type>::value, this_type&>
-			{
-				if (!this->has_value())
-				{
-					maybe_destructor_type::destroy_alternate();
-				};
-				this->unsafe_value() = _value;
-				return *this;
-			};
-			constexpr maybe_base& operator=(value_type&& _value) noexcept ->
-				enable_if_t<is_move_assignable<value_type>::value, this_type&>
-			{
-				if (!this->has_value())
-				{
-					maybe_destructor_type::destroy_alternate();
-				};
-				this->unsafe_value() = std::move(_value);
-				return *this;
-			};
-			*/
-			/*
-			constexpr auto operator=(const alternate_type& _alt)
-				noexcept(noexcept(alternate_type{ std::declval<const alternate_type&>() })) ->
-				enable_if_t<is_copy_assignable<alternate_type>::value, this_type&>
-			{
-				if (this->has_value())
-				{
-					maybe_destructor_type::destroy_value();
-				};
-				this->unsafe_alternate() = _alt;
-				return *this;
-			};
-			constexpr maybe_base& operator=(alternate_type&& _alt) noexcept ->
-				enable_if_t<is_move_assignable<alternate_type>::value, this_type&>
-			{
-				if (this->has_value())
-				{
-					maybe_destructor_type::destroy_value();
-				};
-				this->unsafe_alternate() = std::move(_alt);
-				return *this;
-			};
-			*/
-
 			constexpr maybe_base(const maybe_base& other)
 			{
 				if (other.has_value())
@@ -408,7 +365,6 @@ namespace jc
 				return *this;
 			};
 
-			~maybe_base() noexcept = default;
 
 		private:
 			union
@@ -425,7 +381,7 @@ namespace jc
 	struct maybe;
 
 	template <typename T, typename AltT>
-	struct maybe<T, AltT, enable_if_t<jc::is_convertible<T, AltT>::value>>:
+	struct maybe<T, AltT, enable_if_t<jc::is_convertible<AltT, T>::value>>:
 		public impl::maybe_base<T, AltT>
 	{
 		using impl::maybe_base<T, AltT>::maybe_base;
@@ -433,15 +389,37 @@ namespace jc
 	};
 
 	template <typename T, typename AltT>
-	struct maybe<T, AltT, enable_if_t<!jc::is_convertible<T, AltT>::value>> :
+	struct maybe<T, AltT, enable_if_t<!jc::is_convertible<AltT, T>::value>> :
 		public impl::maybe_base<T, AltT>
 	{
+	private:
+		using parent_type = impl::maybe_base<T, AltT>;
+	public:
 		constexpr maybe(const T& _val) :
 			impl::maybe_base<T, AltT>{ _val }
 		{};
 		constexpr maybe(T&& _val) noexcept :
 			impl::maybe_base<T, AltT>{ std::move(_val) }
 		{};
+
+		constexpr maybe& operator=(const T& _val)
+		{
+			if (!parent_type::has_value())
+			{
+				parent_type::destroy_alternate();
+			};
+			parent_type::unsafe_value() = _val;
+			return *this;
+		};
+		constexpr maybe& operator=(T&& _val) noexcept
+		{
+			if (!parent_type::has_value())
+			{
+				parent_type::destroy_alternate();
+			};
+			parent_type::unsafe_value() = std::move(_val);
+			return *this;
+		};
 
 		constexpr maybe(alternate_t, const AltT& _val) :
 			impl::maybe_base<T, AltT>{ jc::alternate, _val }
@@ -456,6 +434,25 @@ namespace jc
 		constexpr maybe(AltT&& _val) noexcept :
 			maybe{ jc::alternate, std::move(_val) }
 		{};
+
+		constexpr maybe& operator=(const AltT& _val)
+		{
+			if (parent_type::has_value())
+			{
+				parent_type::destroy_value();
+			};
+			parent_type::unsafe_alternate() = _val;
+			return *this;
+		};
+		constexpr maybe& operator=(AltT&& _val) noexcept
+		{
+			if (parent_type::has_value())
+			{
+				parent_type::destroy_value();
+			};
+			parent_type::unsafe_alternate() = std::move(_val);
+			return *this;
+		};
 
 		using impl::maybe_base<T, AltT>::operator=;
 	};
