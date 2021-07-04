@@ -1,6 +1,5 @@
 #include <jclib/optional.h>
 
-
 int main()
 {
 	{

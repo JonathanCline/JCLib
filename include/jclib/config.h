@@ -149,4 +149,12 @@ namespace jc
 
 }
 
+#ifdef JCLIB_NO_EXCEPTIONS
+// True/False depending on if exceptions are allowed
+#define JCLIB_EXCEPTIONS false
+#else
+// True/False depending on if exceptions are allowed
+#define JCLIB_EXCEPTIONS true
+#endif
+
 #endif
