@@ -86,6 +86,18 @@ namespace jc
 		};
 	};
 
+
+
+
+
+	template <typename RangeT, typename ValT = jc::ranges::value_t<RangeT>>
+	constexpr inline RangeT& fill(RangeT& _range, const ValT& _value)
+	{
+		std::fill(jc::begin(_range), jc::end(_range), _value);
+		return _range;
+	};
+
+
 };
 
 #endif

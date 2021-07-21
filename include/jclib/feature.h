@@ -66,4 +66,38 @@
 
 
 
+/*
+	Test for __cpp_lib_constexpr_dynamic_alloc
+*/
+
+#define JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC 201907L
+#if defined(__cpp_lib_constexpr_dynamic_alloc) && JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC != __cpp_lib_constexpr_dynamic_alloc
+#error Feature testing value mismatch
+#endif
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC || __cpp_lib_constexpr_dynamic_alloc >= JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC
+#define JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
+#else
+#ifdef JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
+#error Feature testing macro was defined when it shouldn't be
+#endif
+#endif
+
+
+
+/*
+	Test for __cpp_lib_three_way_comparison
+*/
+
+#define JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON 201907L
+#if defined(__cpp_lib_three_way_comparison) && JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON != __cpp_lib_three_way_comparison
+#error Feature testing value mismatch
+#endif
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON || __cpp_lib_three_way_comparison >= JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON
+#define JCLIB_FEATURE_THREE_WAY_COMPARISON
+#else
+#ifdef JCLIB_FEATURE_THREE_WAY_COMPARISON
+#error Feature testing macro was defined when it shouldn't be
+#endif
+#endif
+
 #endif

@@ -55,6 +55,10 @@ namespace jc
 	template <typename T, typename... Ts>
 	concept cx_any_of = is_any_of_v<T, Ts...>;
 
+	template <typename T, typename U>
+	concept cx_element_of = is_element_of_v<T, U>;
+
+
 	/*
 		Character concept
 	*/
