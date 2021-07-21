@@ -19,6 +19,7 @@
 #include "jclib/functional.h"
 #include "jclib/concepts.h"
 #include "jclib/iterator.h"
+#include "jclib/optional.h"
 
 #include <algorithm>
 #include <iterator>
@@ -66,7 +67,7 @@ namespace jc
 
 		template <typename T>
 		struct is_range<T,
-			void_t<decltype(std::declval<range_ftor<T>>().begin(std::declval<T&>()))>
+			void_t<decltype(std::declval<range_ftor<jc::remove_reference_t<T>>>().begin(std::declval<jc::remove_reference_t<T>&>()))>
 		> : true_type {};
 
 #ifdef __cpp_inline_variables
@@ -80,7 +81,7 @@ namespace jc
 		template <typename T>
 		struct iterator<T, enable_if_t<is_range<T>::value>>
 		{
-			using type = decltype(std::declval<range_ftor<T>>().begin(std::declval<T&>()));
+			using type = decltype(std::declval<range_ftor<jc::remove_reference_t<T>>>().begin(std::declval<jc::remove_reference_t<T>&>()));
 		};
 
 		template <typename T>
@@ -422,8 +423,6 @@ namespace jc
 				underlying_type end_;
 				OpT* op_;
 			};
-
-
 		};
 	};
 }
@@ -808,8 +807,203 @@ namespace jc
 	};
 };
 
+namespace jc
+{
+	namespace ranges
+	{
+		namespace impl
+		{
+			template <typename UnderlyingT, typename OpT, typename Enable = void>
+			struct transform_iterator;
 
+			template <typename UnderlyingT, typename OpT>
+			struct transform_iterator<UnderlyingT, OpT, enable_if_t<
+				jc::is_invocable<OpT, decltype(*std::declval<UnderlyingT>())>::value
+			>>
+			{
+			private:
+				using underlying_type = UnderlyingT;
+				using transformed_type = jc::invoke_result_t<OpT, const decltype(*std::declval<underlying_type>())>;
 
+			public:
+				using iterator_category = std::forward_iterator_tag;
+				using difference_type = std::ptrdiff_t;
+
+				friend inline JCLIB_CONSTEXPR bool operator==(const transform_iterator& _lhs, const underlying_type& _rhs) noexcept
+				{
+					return _lhs.at_ == _rhs;
+				};
+				friend inline JCLIB_CONSTEXPR bool operator==(const underlying_type& _lhs, const transform_iterator& _rhs) noexcept
+				{
+					return _rhs == _lhs;
+				};
+				friend inline JCLIB_CONSTEXPR bool operator==(const transform_iterator& _lhs, const transform_iterator& _rhs) noexcept
+				{
+					return _lhs.at_ == _rhs;
+				};
+
+				friend inline JCLIB_CONSTEXPR bool operator!=(const transform_iterator& _lhs, const underlying_type& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+				friend inline JCLIB_CONSTEXPR bool operator!=(const underlying_type& _lhs, const transform_iterator& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+				friend inline JCLIB_CONSTEXPR bool operator!=(const transform_iterator& _lhs, const transform_iterator& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+
+			private:
+				JCLIB_CONSTEXPR transformed_type get() const
+				{
+					return jc::invoke(*this->op_, *this->at_);
+				};
+
+				struct transformed_ptr
+				{
+					JCLIB_CONSTEXPR transformed_type& operator*() noexcept
+					{
+						return this->value_;
+					};
+					JCLIB_CONSTEXPR const transformed_type& operator*() const noexcept
+					{
+						return this->value_;
+					};
+
+					JCLIB_CONSTEXPR transformed_type* operator->() noexcept
+					{
+						return &this->value_;
+					};
+					JCLIB_CONSTEXPR const transformed_type* operator->() const noexcept
+					{
+						return &this->value_;
+					};
+
+					transformed_type value_;
+				};
+
+			public:
+				JCLIB_CONSTEXPR transformed_type operator*() const
+				{
+					return this->get();
+				};
+				JCLIB_CONSTEXPR auto* operator->() const
+				{
+					return transformed_ptr{ this->get() };
+				};
+
+			public:
+
+				constexpr transform_iterator& operator++()
+				{
+					++this->at_;
+					return *this;
+				};
+				constexpr transform_iterator operator++(int)
+				{
+					condition_iterator _out{ *this };
+					++(*this);
+					return _out;
+				};
+
+				constexpr transform_iterator() noexcept :
+					op_{ nullptr }
+				{};
+				constexpr transform_iterator(underlying_type _at, underlying_type _end, OpT& _op) noexcept :
+					at_{ _at }, end_{ _end }, op_{ &_op }
+				{};
+
+			private:
+				underlying_type at_{};
+				underlying_type end_{};
+				OpT* op_;
+			};
+
+			template <typename RangeT, typename OpT>
+			struct transform_view_impl : jc::ranges::view_interface<transform_view_impl<RangeT, OpT>>
+			{
+			private:
+				using raw_iterator = jc::ranges::iterator_t<RangeT>;
+			public:
+				using iterator = impl::transform_iterator<raw_iterator, OpT>;
+
+				constexpr iterator begin() const noexcept { return this->begin_; };
+				constexpr iterator end() const noexcept { return this->end_; };
+
+				constexpr transform_view_impl(RangeT& _range, OpT _op) :
+					op_{ std::move(_op) },
+					begin_{ iterator{ jc::ranges::begin(_range), jc::ranges::end(_range), this->op_ } },
+					end_{ iterator{ jc::ranges::end(_range), jc::ranges::end(_range), this->op_} }
+				{};
+
+			private:
+				OpT op_;
+				iterator begin_;
+				iterator end_;
+			};
+		};
+
+		template <typename RangeT, typename OpT, typename Enable = void>
+		struct transform_view;
+
+#ifdef JCLIB_FEATURE_CONCEPTS
+		template <typename RangeT, typename OpT>
+		requires jc::cx_range<RangeT> &&
+				 jc::cx_invocable<OpT, const jc::ranges::value_t<RangeT>&>
+		struct transform_view<RangeT, OpT, void>
+#else
+		template <typename RangeT, typename OpT>
+		struct transform_view<RangeT, OpT, jc::enable_if_t
+			<
+			jc::ranges::is_range<RangeT>::value&&
+			jc::is_invocable<OpT, const jc::ranges::value_t<RangeT>&>::value
+			>>
+#endif
+			: jc::ranges::impl::transform_view_impl<RangeT, OpT>
+		{
+		private:
+			using parent_type = jc::ranges::impl::transform_view_impl<RangeT, OpT>;
+		public:
+			using parent_type::operator=;
+			using parent_type::parent_type;
+		};
+	};
+
+	namespace views
+	{
+		namespace impl
+		{
+			template <typename OpT>
+			struct transform_op_t
+			{
+				template <typename RangeT>
+				JCLIB_CONSTEXPR friend inline auto operator|(RangeT&& _range, transform_op_t _op) noexcept ->
+					jc::ranges::transform_view<remove_reference_t<RangeT>, OpT>
+				{
+					return ranges::transform_view<remove_reference_t<RangeT>, OpT>
+					{
+						std::forward<RangeT>(_range), std::move(_op.op_)
+					};
+				};
+
+				OpT op_;
+			};
+
+			struct transform_t
+			{
+				template <typename OpT>
+				JCLIB_CONSTEXPR auto operator()(OpT _op) const noexcept
+				{
+					return transform_op_t<OpT>{ std::move(_op) };
+				};
+			};
+
+		};
+		JCLIB_CONSTEXPR static impl::transform_t transform{};
+	};
+};
 
 
 

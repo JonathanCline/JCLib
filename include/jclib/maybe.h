@@ -277,19 +277,19 @@ namespace jc
 
 			constexpr maybe_base() = default;
 
-			constexpr maybe_base(const value_type& _value)
+			constexpr explicit maybe_base(const value_type& _value)
 				noexcept(noexcept(value_type{ std::declval<const value_type&>() })) :
 				value_{ _value }, has_value_{ true }
 			{};
-			constexpr maybe_base(value_type&& _value) noexcept :
+			constexpr explicit maybe_base(value_type&& _value) noexcept :
 				value_{ std::move(_value) }, has_value_{ true }
 			{};
 
-			constexpr maybe_base(alternate_t, const alternate_type& _alt)
+			constexpr explicit maybe_base(alternate_t, const alternate_type& _alt)
 				noexcept(noexcept(alternate_type{ std::declval<const alternate_type&>() })) :
 				alt_{ _alt }, has_value_{ false }
 			{};
-			constexpr maybe_base(alternate_t, alternate_type&& _alt) noexcept :
+			constexpr explicit maybe_base(alternate_t, alternate_type&& _alt) noexcept :
 				alt_{ std::move(_alt) }, has_value_{ false }
 			{};
 
