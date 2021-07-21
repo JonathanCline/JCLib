@@ -1,11 +1,69 @@
 #include <jclib/functional.h>
 
+#include <vector>
+#include <numeric>
+#include <string>
+#include <functional>
+#include <array>
+
 #include <iostream>
 
-#define FAIL(_code, _msg) { std::cout << "Failed test at '" <<  __LINE__ << "': " <<  _msg << '\n'; return _code; }
+#define FAIL_I(_code, _msg) \
+{	\
+	std::vector<std::string> _parts	\
+	{ "Failed test at '", std::to_string(__LINE__), "': ", _msg }; \
+	for(auto& v : _parts) { std::cout << v; }; std::cout << '\n';	 \
+	return _code; \
+}
+
 #define SUBTEST(_fn, ...) { const auto _res = _fn( __VA_ARGS__ ); if (_res != 0) { return _res; };  }
 
+inline int newtest()
+{
+	static int count = 0;
+	return ++count;
+};
+
+#define NEWTEST() const auto _testCode = ::newtest(); {}
+#define FAIL(_msg) FAIL_I(_testCode, _msg)
+#define PASS() { return 0; }
+
+#define TIMPL_FRONT(_first, ...) _first
+
+#define ASSERT(_condition, ...) if(!( _condition )) { FAIL(TIMPL_FRONT(__VA_ARGS__)); }
+
+
+
+
+
 int add(int a, int b) { return a + b; };
+
+
+int test_piping()
+{
+	NEWTEST();
+
+	constexpr auto add_2 = jc::plus & 2;
+	constexpr auto n = 2 | add_2;
+
+
+	PASS();
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -26,26 +84,30 @@ int main()
 {
 	if (!jc::has_operator<jc::plus_t, Foo, int>::value)
 	{
-		FAIL(1, "Failed to detect plus operator");
+		NEWTEST();
+		FAIL("Failed to detect plus operator");
 	};
 	if (!jc::has_operator<jc::minus_t, Foo>::value)
 	{
-		FAIL(1, "Failed to detect minus operator");
+		NEWTEST();
+		FAIL("Failed to detect minus operator");
 	};
 	if (jc::has_operator<jc::minus_t, Foo, int>::value)
 	{
-		FAIL(1, "Detected minus (with other type = int) operator when there wasn't one defined");
+		NEWTEST();
+		FAIL("Detected minus(with other type = int) operator when there wasn't one defined");
 	};
-
-
 
 	{
 		std::tuple<int, int> _args{ 2, 3 };
 		if (jc::apply(add, _args) != 5)
 		{
-			FAIL(2, "Apply did not return the correct value");
+			NEWTEST();
+			FAIL("Apply did not return the correct value");
 		};
 	};
+
+	SUBTEST(test_piping);
 
 	return 0;
 };

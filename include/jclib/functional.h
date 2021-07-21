@@ -160,6 +160,7 @@ namespace jc
 	concept cx_binary_operator = is_binary_operator_v<T>;
 #endif
 
+
 	namespace impl
 	{
 		struct bind_first_t {};
@@ -176,11 +177,21 @@ namespace jc
 		struct bound_op<bind_first_t, OpT, T> : unary_operator_tag
 		{
 			template <typename U>
-			constexpr auto operator()(U&& rhs) const ->
+			constexpr auto operator()(const U& rhs) const ->
 				jc::invoke_result_t<OpT, T, U>
 			{
 				return jc::invoke(this->op, this->value, rhs);
 			};
+
+			template <typename U>
+			friend constexpr inline auto operator|(const U& lhs, const bound_op& rhs)
+			{
+				return rhs(lhs);
+			};
+
+			constexpr bound_op(OpT _op, T _value) :
+				op{ _op }, value{ _value }
+			{};
 
 			OpT op;
 			T value;
@@ -190,16 +201,57 @@ namespace jc
 		struct bound_op<bind_second_t, OpT, T> : unary_operator_tag
 		{
 			template <typename U>
-			constexpr auto operator()(U&& lhs) const ->
+			constexpr auto operator()(const U& lhs) const ->
 				jc::invoke_result_t<OpT, U, T>
 			{
 				return jc::invoke(this->op, lhs, this->value);
 			};
 
+			template <typename U>
+			friend constexpr inline auto operator|(const U& lhs, const bound_op& rhs)
+			{
+				return rhs(lhs);
+			};
+
+			constexpr bound_op(OpT _op, T _value) :
+				op{ _op }, value{ _value }
+			{};
+
 			OpT op;
 			T value;
 		};
 	};
+
+	/**
+	 * @brief CRTP type for allowing arguement binding
+	 * @tparam OperatorT Operator type being CRTPd
+	*/
+	template <typename OperatorT>
+	struct binary_operator : binary_operator_tag
+	{
+		template <typename T>
+		friend inline constexpr auto operator&(const T& _value, const OperatorT& _op)
+		{
+			return impl::bound_op<impl::bind_first_t, OperatorT, T>
+			{
+				_op,
+				_value
+			};
+		};
+
+		template <typename T>
+		friend inline constexpr auto operator&(const OperatorT& _op, const T& _value)
+		{
+			return impl::bound_op<impl::bind_second_t, OperatorT, T>
+			{
+				_op,
+				_value
+			};
+		};
+	};
+
+
+
 
 	struct placeholder_t {};
 	constexpr static placeholder_t placeholder{};
@@ -221,7 +273,7 @@ namespace jc
 	};
 
 
-	struct less_t : binary_operator_tag
+	struct less_t : binary_operator<less_t>
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -232,7 +284,7 @@ namespace jc
 	};
 	constexpr static less_t less{};
 
-	struct greater_t : binary_operator_tag
+	struct greater_t : binary_operator<greater_t>
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -243,7 +295,7 @@ namespace jc
 	};
 	constexpr static greater_t greater{};
 
-	struct equals_t : binary_operator_tag
+	struct equals_t : binary_operator<equals_t>
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -254,7 +306,7 @@ namespace jc
 	};
 	constexpr static equals_t equals{};
 
-	struct unequals_t : binary_operator_tag
+	struct unequals_t : binary_operator<unequals_t>
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -265,18 +317,18 @@ namespace jc
 	};
 	constexpr static unequals_t unequals{};
 
-	struct plus_t : binary_operator_tag
+	struct plus_t : binary_operator<plus_t>
 	{
 		template <typename T, typename U>
-		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
-			decltype(std::declval<T&&>() + std::declval<U&&>())
+		constexpr inline auto operator()(const T& lhs, const U& rhs) const noexcept ->
+			decltype(std::declval<const T&>() + std::declval<const U&>())
 		{
 			return lhs + rhs;
 		};
 	};
 	constexpr static plus_t plus{};
 
-	struct minus_t : binary_operator_tag
+	struct minus_t : binary_operator<minus_t>
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -287,7 +339,7 @@ namespace jc
 	};
 	constexpr static minus_t minus{};
 
-	struct times_t : binary_operator_tag
+	struct times_t : binary_operator<times_t>
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -298,7 +350,7 @@ namespace jc
 	};
 	constexpr static times_t times{};
 
-	struct divide_t : binary_operator_tag
+	struct divide_t : binary_operator<divide_t>
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -319,7 +371,7 @@ namespace jc
 	};
 	constexpr static invert_t invert{};
 
-	struct conjunct_t : binary_operator_tag
+	struct conjunct_t : binary_operator<conjunct_t>
 	{
 		template <typename T, typename U>
 		constexpr auto operator()(T&& lhs, U&& rhs) const noexcept
@@ -374,73 +426,6 @@ namespace jc
 	template <typename Op, typename T, typename U = T>
 	constexpr inline bool has_operator_v = has_operator<Op, T, U>::value;
 #endif
-
-
-	/**
-	 * @brief Namespace contains piping operations. Add a using namespace directive
-	 to enable usage in a particular scope.
-	*/
-	namespace piping
-	{
-		template <typename T, typename OpT>
-		constexpr auto inline operator|(T&& _value, OpT&& _op) ->
-			jc::enable_if_t<is_unary_operator<remove_cvref_t<OpT>>::value,
-			jc::invoke_result_t<OpT, remove_reference_t<T>>>
-		{
-			return jc::invoke(std::forward<OpT>(_op), std::forward<T>(_value));
-		};
-
-		namespace impl
-		{
-			enum : bool
-			{
-				bindFront,
-				bindBack
-			};
-
-			template <bool Where>
-			struct bound_pos;
-			template <>
-			struct bound_pos<bindFront>
-			{
-				using type = jc::impl::bind_first_t;
-			};
-			template <>
-			struct bound_pos<bindBack>
-			{
-				using type = jc::impl::bind_second_t;
-			};
-
-			template <bool Where>
-			using bound_pos_t = typename bound_pos<Where>::type;
-
-			template <typename OpT, typename T, bool Where>
-			using bound_op_t = typename jc::impl::bound_op<bound_pos_t<Where>, OpT, T>;
-		};
-
-		template <typename T, typename OpT>
-		constexpr auto inline operator&(T&& _value, OpT&& _op) ->
-			enable_if_t<is_binary_operator<OpT>::value,
-				impl::bound_op_t<remove_cvref_t<OpT>, remove_cvref_t<T>, impl::bindFront>>
-		{
-			using output_type = impl::bound_op_t<remove_cvref_t<OpT>, remove_cvref_t<T>, impl::bindFront>;
-			return output_type{ _op, std::forward<T>(_value) };
-		};
-
-		template <typename T, typename OpT>
-		constexpr auto inline operator&(OpT&& _op, T&& _value) ->
-			enable_if_t<is_binary_operator<remove_cvref_t<OpT>>::value,
-			impl::bound_op_t<remove_cvref_t<OpT>, remove_cvref_t<T>, impl::bindBack>>
-		{
-			using output_type = typename impl::bound_op_t<remove_cvref_t<OpT>, remove_cvref_t<T>, impl::bindBack>;
-			return output_type{ _op, std::forward<T>(_value) };
-		};
-
-
-	};
-
-	
-
 
 };
 
