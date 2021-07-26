@@ -19,6 +19,7 @@
 #include "jclib/functional.h"
 #include "jclib/concepts.h"
 #include "jclib/iterator.h"
+#include "jclib/optional.h"
 
 #include <algorithm>
 #include <iterator>
@@ -66,7 +67,7 @@ namespace jc
 
 		template <typename T>
 		struct is_range<T,
-			void_t<decltype(std::declval<range_ftor<T>>().begin(std::declval<T&>()))>
+			void_t<decltype(std::declval<range_ftor<jc::remove_reference_t<T>>>().begin(std::declval<jc::remove_reference_t<T>&>()))>
 		> : true_type {};
 
 #ifdef __cpp_inline_variables
@@ -80,7 +81,7 @@ namespace jc
 		template <typename T>
 		struct iterator<T, enable_if_t<is_range<T>::value>>
 		{
-			using type = decltype(std::declval<range_ftor<T>>().begin(std::declval<T&>()));
+			using type = decltype(std::declval<range_ftor<jc::remove_reference_t<T>>>().begin(std::declval<jc::remove_reference_t<T>&>()));
 		};
 
 		template <typename T>
@@ -152,8 +153,8 @@ namespace jc
 
 			template <typename OutT, typename InT>
 			struct range_cast_impl<OutT, InT,
-				enable_if_t<!is_same<OutT, remove_cvref_t<InT>>::value &&
-							 is_constructible<OutT, as_forward_t<InT>>::value>
+				enable_if_t<!is_same<OutT, remove_cvref_t<InT>>::value&&
+				is_constructible<OutT, as_forward_t<InT>>::value>
 			>
 			{
 				using in_type = InT;
@@ -161,7 +162,7 @@ namespace jc
 
 				constexpr OutT operator()(in_type&& _in) const noexcept
 				{
-					return OutT( std::forward<InT>(_in) );
+					return OutT(std::forward<InT>(_in));
 				};
 			};
 
@@ -175,11 +176,11 @@ namespace jc
 
 				constexpr OutT operator()(in_type _in) const noexcept
 				{
-					return OutT(begin(_in), end(_in));
+					return OutT(jc::ranges::begin(_in), jc::ranges::end(_in));
 				};
 			};
 		};
-		
+
 		/**
 		 * @brief Generic cast function that constructs the output range from the input
 		 * @tparam OutT Output range type to be constructed
@@ -203,34 +204,77 @@ namespace jc
 
 	namespace ranges
 	{
-		namespace impl
-		{
-			template <typename T>
-			struct distance_ftor
-			{
-				constexpr auto operator()(const T& _begin, const T& _end) const noexcept
-				{
-					return std::distance(_begin, _end);
-				};
-			};
-			template <typename T>
-			struct distance_ftor<T*>
-			{
-				constexpr auto operator()(const T* _begin, const T* _end) const noexcept
-				{
-					return _end - _begin;
-				};
-			};
-		};
-
+		/**
+		 * @brief Returns the distance between the begin and end of a range
+		 * @tparam RangeT Range type
+		 * @param _range Range value
+		 * @return Distance between ends of range
+		*/
 		template <typename RangeT, typename = iterator_t<remove_reference_t<RangeT>>>
 		constexpr auto distance(RangeT&& _range) noexcept
 		{
 			const auto _begin = jc::ranges::begin(_range);
 			const auto _end = jc::ranges::end(_range);
-			return impl::distance_ftor<iterator_t<remove_reference_t<RangeT>>>{}(_begin, _end);
+			return jc::distance(_begin, _end);
 		};
+	};
+};
 
+
+namespace jc
+{
+	namespace ranges
+	{
+		/**
+		 * @brief View into a range that only shows values that pass a given filtering function
+		 * @tparam RangeT Range type to view
+		 * @tparam OpT Filter function type
+		 * @tparam Enable
+		 */
+		template <typename RangeT, typename OpT, typename Enable = void>
+		struct filter_view;
+
+		/**
+		 * @brief View into a range given a begin and end iterator or iterator-like type
+		 * @tparam IterT Iterator type
+		 * @tparam Enable
+		*/
+		template <typename IterT, typename Enable = void>
+		struct iter_view;
+
+		/**
+		 * @brief View into a range that preforms a transform operation when viewed
+		 * @tparam RangeT Range type to view
+		 * @tparam OpT Transform function type
+		 * @tparam Enable 
+		*/
+		template <typename RangeT, typename OpT, typename Enable = void>
+		struct transform_view;
+
+		/**
+		 * @brief Transparent view into a range
+		 * @tparam RangeT Range type to view
+		 * @tparam Enable
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct all_view;
+
+		/**
+		 * @brief View into a range that drops 
+		 * @tparam RangeT Range type to view
+		 * @tparam Enable
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct drop_view;
+
+	};
+};
+
+namespace jc
+{
+
+	namespace ranges
+	{
 		namespace impl
 		{
 			template <typename T>
@@ -266,10 +310,7 @@ namespace jc
 			};
 
 
-
-
 		};
-
 
 		/**
 		 * @brief CRTP base type implementing common view functionality
@@ -288,8 +329,29 @@ namespace jc
 			{
 				return static_cast<const T*>(this);
 			};
+	
 		public:
+			template <typename OpT>
+			constexpr auto filter(OpT&& _op) ->
+				filter_view<T, jc::remove_cvref_t<OpT>>
+			{
+				return filter_view<T, jc::remove_cvref_t<OpT>>
+				{
+					*this->as_crtp(),
+					std::forward<OpT>(_op)
+				};
+			};
 
+			template <typename OpT>
+			constexpr auto transform(OpT&& _op) ->
+				transform_view<T, jc::remove_cvref_t<OpT>>
+			{
+				return transform_view<T, jc::remove_cvref_t<OpT>>
+				{
+					*this->as_crtp(), std::forward<OpT>(_op)
+				};
+			};
+		
 		};
 	};
 
@@ -328,6 +390,18 @@ namespace jc
 #endif
 	};
 
+};
+
+
+
+/*
+	Filter view
+*/
+
+#pragma region FILTER_VIEW
+
+namespace jc
+{
 	namespace ranges
 	{
 		namespace impl
@@ -422,11 +496,9 @@ namespace jc
 				underlying_type end_;
 				OpT* op_;
 			};
-
-
 		};
 	};
-}
+};
 
 namespace std
 {
@@ -445,44 +517,53 @@ namespace jc
 {
 	namespace ranges
 	{
-#ifdef __cpp_concepts
-		template <range RangeT, cx_invocable<value_t<RangeT>> OpT>
-		struct filter_view
-#else
-		template <typename RangeT, typename OpT, typename = void>
-		struct filter_view;
+		namespace impl
+		{
+			template <typename RangeT, typename OpT>
+			struct filter_view_impl :
+				public view_interface<filter_view_impl<RangeT, OpT>>
+			{
+			public:
+				using iterator = impl::condition_iterator<iterator_t<RangeT>,
+					jc::remove_cvref_t<OpT>>;
+
+				constexpr iterator begin() const noexcept
+				{
+					return this->begin_;
+				};
+				constexpr iterator end() const noexcept
+				{
+					return this->end_;
+				};
+
+				constexpr filter_view_impl(RangeT& _range, jc::remove_cvref_t<OpT>&& _op) :
+					filter_{ std::move(_op) },
+					begin_{ ranges::begin(_range), ranges::end(_range),  this->filter_ },
+					end_{ ranges::end(_range), ranges::end(_range), this->filter_ }
+				{};
+
+			private:
+				jc::remove_cvref_t<OpT> filter_;
+				iterator begin_;
+				iterator end_;
+			};
+
+		};
 
 		template <typename RangeT, typename OpT>
-		struct filter_view <RangeT, OpT,
-			enable_if_t<is_range<RangeT>::value&& is_invocable<OpT, value_t<RangeT>>::value>
-		>
-#endif
-			: public view_interface<filter_view<RangeT, OpT>>
+		struct filter_view <RangeT, OpT, enable_if_t<
+			is_range<RangeT>::value &&
+			is_invocable<OpT, value_t<RangeT>>::value
+		>> :
+			public impl::filter_view_impl<RangeT, OpT>
 		{
-		public:
-			using iterator = impl::condition_iterator<iterator_t<RangeT>, OpT>;
-
 		private:
-			OpT filter_;
-			iterator begin_;
-			iterator end_;
-
+			using parent_type = impl::filter_view_impl<RangeT, OpT>;
 		public:
-			constexpr iterator begin() const noexcept
-			{
-				return this->begin_;
-			};
-			constexpr iterator end() const noexcept
-			{
-				return this->end_;
-			};
-
-			constexpr filter_view(RangeT& _range, OpT&& _op) :
-				filter_{ std::move(_op) },
-				begin_{ ranges::begin(_range), ranges::end(_range),  this->filter_ },
-				end_{ ranges::end(_range), ranges::end(_range), this->filter_ }
-			{};
+			using parent_type::parent_type;
+			using parent_type::operator=;
 		};
+
 	};
 	namespace views
 	{
@@ -511,24 +592,29 @@ namespace jc
 			struct filter_t
 			{
 				template <typename OpT>
-				constexpr filter_impl<remove_cvref_t<OpT>> operator()(OpT&& _op) const noexcept
+				constexpr filter_impl<remove_cvref_t<OpT>> operator()(OpT _op) const noexcept
 				{
-					return filter_impl<remove_cvref_t<OpT>>{ std::forward<OpT>(_op) };
+					return filter_impl<OpT>{ _op };
 				};
 			};
 		};
 
-
-
-
-
-
-
-
 		constexpr static impl::filter_t filter{};
-
 	};
+};
 
+#pragma endregion FILTER_VIEW
+
+
+
+/*
+	Iota view
+*/
+
+#pragma region IOTA_VIEW
+
+namespace jc
+{
 
 	namespace ranges
 	{
@@ -604,25 +690,45 @@ namespace jc
 			private:
 				T at_{ 0 };
 			};
+
+			template <typename T>
+			struct iota_view_impl :
+				public ranges::view_interface<iota_view_impl<T>>
+			{
+			public:
+				using iterator = impl::iota_iterator<T>;
+
+				JCLIB_CONSTEXPR iterator begin() const noexcept
+				{
+					return this->begin_;
+				};
+				JCLIB_CONSTEXPR iterator end() const noexcept
+				{
+					return this->end_;
+				};
+
+				JCLIB_CONSTEXPR iota_view_impl(T _init, T _max) noexcept :
+					begin_{ _init },
+					end_{ _max }
+				{};
+
+			private:
+				iterator begin_;
+				iterator end_;
+			};
 		};
 
 		template <typename T>
-		struct iota_view<T, enable_if_t<is_integral<T>::value>>
+		struct iota_view<T, jc::enable_if_t<jc::is_integral<T>::value>> :
+			public impl::iota_view_impl<T>
 		{
-		public:
-			using iterator = impl::iota_iterator<T>;
 		private:
-			iterator begin_;
-			iterator end_;
+			using parent_type = impl::iota_view_impl<T>;
 		public:
-			constexpr iterator begin() const noexcept { return this->begin_; };
-			constexpr iterator end() const noexcept { return this->end_; };
-
-			constexpr iota_view(T _init, T _max) noexcept :
-				begin_{ _init },
-				end_{ _max }
-			{};
+			using parent_type::parent_type;
+			using parent_type::operator=;
 		};
+		
 	};
 }
 
@@ -648,7 +754,8 @@ namespace jc
 			struct iota_t
 			{
 				template <typename T>
-				constexpr auto operator()(T _init, T _max) const noexcept -> ranges::iota_view<enable_if_t<is_integral<T>::value, T>>
+				constexpr auto operator()(T _init, T _max) const noexcept ->
+					ranges::iota_view<T>
 				{
 					return ranges::iota_view<T>{ _init, _max };
 				};
@@ -656,30 +763,56 @@ namespace jc
 		};
 		constexpr static impl::iota_t iota{};
 	};
-
 };
+
+#pragma endregion IOTA_VIEW
+
+
+
+/*
+	All view
+*/
+
+#pragma region ALL_VIEW
 
 namespace jc
 {
 	namespace ranges
 	{
-		template <typename RangeT, typename = iterator_t<RangeT>>
-		struct all_view : view_interface<all_view<RangeT>>
+		namespace impl
 		{
-		public:
-			using iterator = iterator_t<RangeT>;
-		private:
-			iterator begin_;
-			iterator end_;
-		public:
-			constexpr iterator begin() const noexcept { return this->begin_; };
-			constexpr iterator end() const noexcept { return this->end_; };
+			template <typename RangeT>
+			struct all_view_impl : public view_interface<all_view_impl<RangeT>>
+			{
+			public:
+				using iterator = iterator_t<RangeT>;
 
-			constexpr all_view(RangeT& _range) :
-				begin_{ ranges::begin(_range) }, end_{ ranges::end(_range) }
-			{};
+				constexpr iterator begin() const noexcept { return this->begin_; };
+				constexpr iterator end() const noexcept { return this->end_; };
+
+				constexpr all_view_impl(RangeT& _range) :
+					begin_{ ranges::begin(_range) }, end_{ ranges::end(_range) }
+				{};
+
+			private:
+				iterator begin_;
+				iterator end_;
+			};
 		};
+
+		template <typename RangeT>
+		struct all_view<RangeT, jc::void_t<jc::ranges::iterator_t<RangeT>>> :
+			public impl::all_view_impl<RangeT>
+		{
+		private:
+			using parent_type = impl::all_view_impl<RangeT>;
+		public:
+			using parent_type::parent_type;
+			using parent_type::operator=;
+		};
+
 	};
+
 	namespace views
 	{
 		namespace impl
@@ -704,26 +837,58 @@ namespace jc
 	};
 };
 
+#pragma endregion ALL_VIEW
+
+
+
+/*
+	Drop view
+*/
+
+#pragma region DROP_VIEW
+
 namespace jc
 {
 	namespace ranges
 	{
-		template <typename RangeT, typename = iterator_t<RangeT>>
-		struct drop_view : view_interface<drop_view<RangeT>>
+		namespace impl
 		{
-		public:
-			using iterator = iterator_t<RangeT>;
-		private:
-			iterator begin_;
-			iterator end_;
-		public:
-			constexpr iterator begin() const noexcept { return this->begin_; };
-			constexpr iterator end() const noexcept { return this->end_; };
-			constexpr drop_view(RangeT& _range, size_t _count) :
-				begin_{ jc::next(ranges::begin(_range), static_cast<jc::difference_type_t<RangeT>>(_count)) }, end_{ ranges::end(_range) }
-			{};
+			template <typename RangeT>
+			struct drop_view_impl : public view_interface<drop_view_impl<RangeT>>
+			{
+			public:
+				using iterator = iterator_t<RangeT>;
+			public:
+				JCLIB_CONSTEXPR iterator begin() const noexcept { return this->begin_; };
+				JCLIB_CONSTEXPR iterator end() const noexcept { return this->end_; };
+
+				JCLIB_CONSTEXPR drop_view_impl(RangeT& _range, size_t _count) :
+					begin_
+					{
+						jc::next(ranges::begin(_range),
+						static_cast<jc::difference_type_t<RangeT>>(_count))
+					},
+					end_{ ranges::end(_range) }
+				{};
+			private:
+				iterator begin_;
+				iterator end_;
+			};
 		};
+
+		template <typename RangeT>
+		struct drop_view<RangeT, enable_if_t<jc::ranges::is_range<RangeT>::value>> : 
+			public impl::drop_view_impl<RangeT>
+		{
+		private:
+			using parent_type = impl::drop_view_impl<RangeT>;
+		public:
+			using parent_type::parent_type;
+			using parent_type::operator=;
+		};
+
 	};
+
 	namespace views
 	{
 		namespace impl
@@ -757,13 +922,20 @@ namespace jc
 	};
 };
 
+#pragma endregion DROP_VIEW
+
+
+
+/*
+	Iter view
+*/
+
+#pragma region ITER_VIEW
+
 namespace jc
 {
 	namespace ranges
 	{
-		template <typename IterT, typename = void>
-		struct iter_view;
-
 		template <typename IterT>
 		struct iter_view <IterT, enable_if_t<is_iterator<IterT>::value>>
 			: public view_interface<iter_view<IterT>>
@@ -776,11 +948,13 @@ namespace jc
 			JCLIB_CONSTEXPR iterator begin() const noexcept { return this->begin_; };
 			JCLIB_CONSTEXPR iterator end() const noexcept { return this->end_; };
 
+			JCLIB_CONSTEXPR iter_view() noexcept = default;
 			JCLIB_CONSTEXPR iter_view(IterT _begin, IterT _end) noexcept :
 				begin_{ _begin }, end_{ _end }
 			{};
 		};
 	};
+
 	namespace views
 	{
 		namespace impl
@@ -807,8 +981,211 @@ namespace jc
 	};
 };
 
+#pragma endregion ITER_VIEW
 
 
+
+/*
+	Transform view
+*/
+
+#pragma region TRANSFORM_VIEW
+
+namespace jc
+{
+	namespace ranges
+	{
+		namespace impl
+		{
+			template <typename UnderlyingT, typename OpT, typename Enable = void>
+			struct transform_iterator;
+
+			template <typename UnderlyingT, typename OpT>
+			struct transform_iterator<UnderlyingT, OpT, enable_if_t<
+				jc::is_invocable<OpT, decltype(*std::declval<UnderlyingT>())>::value
+			>>
+			{
+			private:
+				using underlying_type = UnderlyingT;
+				using transformed_type = jc::invoke_result_t<OpT, const decltype(*std::declval<underlying_type>())>;
+
+			public:
+				using iterator_category = std::forward_iterator_tag;
+				using difference_type = std::ptrdiff_t;
+
+				friend inline JCLIB_CONSTEXPR bool operator==(const transform_iterator& _lhs, const underlying_type& _rhs) noexcept
+				{
+					return _lhs.at_ == _rhs;
+				};
+				friend inline JCLIB_CONSTEXPR bool operator==(const underlying_type& _lhs, const transform_iterator& _rhs) noexcept
+				{
+					return _rhs == _lhs;
+				};
+				friend inline JCLIB_CONSTEXPR bool operator==(const transform_iterator& _lhs, const transform_iterator& _rhs) noexcept
+				{
+					return _lhs.at_ == _rhs;
+				};
+
+				friend inline JCLIB_CONSTEXPR bool operator!=(const transform_iterator& _lhs, const underlying_type& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+				friend inline JCLIB_CONSTEXPR bool operator!=(const underlying_type& _lhs, const transform_iterator& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+				friend inline JCLIB_CONSTEXPR bool operator!=(const transform_iterator& _lhs, const transform_iterator& _rhs) noexcept
+				{
+					return !(_lhs == _rhs);
+				};
+
+			private:
+				JCLIB_CONSTEXPR transformed_type get() const
+				{
+					return jc::invoke(*this->op_, *this->at_);
+				};
+
+				struct transformed_ptr
+				{
+					JCLIB_CONSTEXPR transformed_type& operator*() noexcept
+					{
+						return this->value_;
+					};
+					JCLIB_CONSTEXPR const transformed_type& operator*() const noexcept
+					{
+						return this->value_;
+					};
+
+					JCLIB_CONSTEXPR transformed_type* operator->() noexcept
+					{
+						return &this->value_;
+					};
+					JCLIB_CONSTEXPR const transformed_type* operator->() const noexcept
+					{
+						return &this->value_;
+					};
+
+					transformed_type value_;
+				};
+
+			public:
+				JCLIB_CONSTEXPR transformed_type operator*() const
+				{
+					return this->get();
+				};
+				JCLIB_CONSTEXPR auto* operator->() const
+				{
+					return transformed_ptr{ this->get() };
+				};
+
+			public:
+
+				constexpr transform_iterator& operator++()
+				{
+					++this->at_;
+					return *this;
+				};
+				constexpr transform_iterator operator++(int)
+				{
+					condition_iterator _out{ *this };
+					++(*this);
+					return _out;
+				};
+
+				constexpr transform_iterator() noexcept :
+					op_{ nullptr }
+				{};
+				constexpr transform_iterator(underlying_type _at, underlying_type _end, OpT& _op) noexcept :
+					at_{ _at }, end_{ _end }, op_{ &_op }
+				{};
+
+			private:
+				underlying_type at_{};
+				underlying_type end_{};
+				OpT* op_;
+			};
+
+			template <typename RangeT, typename OpT>
+			struct transform_view_impl : jc::ranges::view_interface<transform_view_impl<RangeT, remove_cvref_t<OpT>>>
+			{
+			private:
+				using raw_iterator = jc::ranges::iterator_t<RangeT>;
+			public:
+				using iterator = impl::transform_iterator<raw_iterator, remove_cvref_t<OpT>>;
+
+				constexpr iterator begin() const noexcept { return this->begin_; };
+				constexpr iterator end() const noexcept { return this->end_; };
+
+				constexpr transform_view_impl(RangeT& _range, remove_cvref_t<OpT>&& _op) :
+					op_{ std::forward<OpT>(_op) },
+					begin_{ iterator{ jc::ranges::begin(_range), jc::ranges::end(_range), this->op_ } },
+					end_{ iterator{ jc::ranges::end(_range), jc::ranges::end(_range), this->op_} }
+				{};
+
+			private:
+				remove_cvref_t<OpT> op_;
+				iterator begin_;
+				iterator end_;
+			};
+		};
+
+#ifdef JCLIB_FEATURE_CONCEPTS
+		template <typename RangeT, typename OpT>
+		requires jc::cx_range<RangeT> &&
+				 jc::cx_invocable<OpT, const jc::ranges::value_t<RangeT>&>
+		struct transform_view<RangeT, OpT, void>
+#else
+		template <typename RangeT, typename OpT>
+		struct transform_view<RangeT, OpT, jc::enable_if_t
+			<
+			jc::ranges::is_range<RangeT>::value&&
+			jc::is_invocable<OpT, const jc::ranges::value_t<RangeT>&>::value
+			>>
+#endif
+			: jc::ranges::impl::transform_view_impl<RangeT, OpT>
+		{
+		private:
+			using parent_type = jc::ranges::impl::transform_view_impl<RangeT, OpT>;
+		public:
+			using parent_type::operator=;
+			using parent_type::parent_type;
+		};
+	};
+
+	namespace views
+	{
+		namespace impl
+		{
+			template <typename OpT>
+			struct transform_op_t
+			{
+				template <typename RangeT>
+				JCLIB_CONSTEXPR friend inline auto operator|(RangeT&& _range, transform_op_t _op) noexcept ->
+					jc::ranges::transform_view<remove_reference_t<RangeT>, remove_cvref_t<OpT>>
+				{
+					return ranges::transform_view<remove_reference_t<RangeT>, remove_cvref_t<OpT>>
+					{
+						_range, std::move(_op.op_)
+					};
+				};
+
+				OpT op_;
+			};
+
+			struct transform_t
+			{
+				template <typename OpT>
+				JCLIB_CONSTEXPR auto operator()(OpT _op) const noexcept
+				{
+					return transform_op_t<OpT>{ std::move(_op) };
+				};
+			};
+		};
+		JCLIB_CONSTEXPR static impl::transform_t transform{};
+	};
+};
+
+#pragma endregion TRANSFORM_VIEW
 
 
 

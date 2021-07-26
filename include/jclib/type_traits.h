@@ -26,6 +26,7 @@
 #include <type_traits>
 #include <limits>
 #include <utility>
+#include <cstdint>
 
 namespace jc
 {
@@ -57,12 +58,80 @@ namespace jc
 
 	using std::is_same;
 	using std::is_convertible;
-	using std::disjunction;
+
+
+
+
+
+
+
+	// Shamelessly copied from https://en.cppreference.com/w/cpp/types/disjunction
+	
+	template<typename...>
+	struct disjunction :
+		jc::false_type
+	{};
+
+	template<typename B1>
+	struct disjunction<B1> : B1
+	{};
+
+	template<typename B1, typename... Bn>
+	struct disjunction<B1, Bn...> :
+#ifdef __cpp_fold_expressions
+		jc::bool_constant<bool(B1::value) || (bool(Bn::value) || ...)>
+#else
+		std::conditional_t<bool(B1::value), B1, jc::disjunction<Bn...>>
+#endif
+	{};
+
+
+
+	// Shamelessly copied from https://en.cppreference.com/w/cpp/types/conjunction
+
+	template<typename...>
+	struct conjunction :
+		jc::true_type
+	{};
+
+	template<typename B1>
+	struct conjunction<B1> : B1
+	{};
+
+	template<typename B1, typename... Bn>
+	struct conjunction<B1, Bn...> :
+#ifdef __cpp_fold_expressions
+		jc::bool_constant<bool(B1::value) && (bool(Bn::value) && ...)>
+#else
+		std::conditional_t<bool(B1::value), jc::conjunction<Bn...>, B1>
+#endif
+	{};
+
+
+
+
+	template <typename B, typename Enable = void>
+	struct negation;
+
+	template<class B>
+	struct negation<B, void_t<decltype(B::value)>> :
+		jc::bool_constant<!bool(B::value)>
+	{};
+
+
 
 #ifdef __cpp_inline_variables
 	using std::is_same_v;
 	using std::is_convertible_v;
-	using std::disjunction_v;
+
+	template <typename... Bs>
+	constexpr inline auto conjunction_v = conjunction<Bs...>::value;
+
+	template <typename... Bs>
+	constexpr inline auto disjunction_v = disjunction<Bs...>::value;
+
+	template <typename B>
+	constexpr inline auto negation_v = negation<B>::value;
 #endif
 
 	template <typename T, typename... Ts>
@@ -70,7 +139,7 @@ namespace jc
 #ifdef __cpp_fold_expressions
 		bool_constant<(std::is_same_v<T, Ts> || ...)>
 #else
-		disjunction<std::is_same<T, Ts>, Ts...>
+		disjunction<std::is_same<T, Ts>...>
 #endif
 	{};
 
@@ -79,22 +148,48 @@ namespace jc
 	JCLIB_CONSTEXPR inline bool is_any_of_v = is_any_of<T, Ts...>::value;
 #endif
 
+	template <typename T, typename U>
+	struct is_element_of;
+
+	template <typename T, template <typename... Ts> typename U, typename... Ts>
+	struct is_element_of<T, U<Ts...>> : bool_constant<is_any_of<T, Ts...>::value> {};
+
+#if __cpp_inline_variables
+	template <typename T, typename U>
+	constexpr inline auto is_element_of_v = is_element_of<T, U>::value;
+#endif
+
+
+
+
 	/*
 		Character type traits
 	*/
 
-
-	template <typename T>
-	struct is_character : public is_any_of<T,
-		unsigned char,
-		char,
-		wchar_t,
+	namespace impl
+	{
+		/**
+		 * @brief Character types tuple
+		*/
+		using character_typelist = std::tuple
+		<
+			char,
+			wchar_t,
 #ifdef __cpp_char8_t
-		char8_t,
+			char8_t,
 #endif
-		char16_t,
-		char32_t
-	> {};
+			char16_t,
+			char32_t
+		>;
+	};
+
+	/**
+	 * @brief Is true if the given type is a character type
+	*/
+	template <typename T>
+	struct is_character :
+		public bool_constant<is_element_of<T, impl::character_typelist>::value>
+	{};
 
 #ifdef __cpp_inline_variables
 	template <typename T>
@@ -124,7 +219,8 @@ namespace jc
 #endif
 
 	template <typename T>
-	struct is_integer : public bool_constant<is_integer<T>::value && std::numeric_limits<T>::is_integer> {};
+	struct is_integer : public bool_constant<is_integral<T>::value && std::numeric_limits<T>::is_integer>
+	{};
 	
 #ifdef __cpp_inline_variables
 	template <typename T>
@@ -309,7 +405,7 @@ namespace jc
 	};
 
 	template <typename Op, typename... Ts>
-	struct is_invocable : impl::invocable_impl<Op, std::tuple<Ts...>> {};
+	using is_invocable = impl::invocable_impl<Op, std::tuple<Ts...>>;
 
 #ifdef __cpp_inline_variables
 	template <typename Op, typename... Ts>
@@ -335,7 +431,7 @@ namespace jc
 	};
 
 	template <typename Op, typename... Ts>
-	struct invoke_result : impl::invoke_result_impl<Op, std::tuple<Ts...>> {};
+	using invoke_result = impl::invoke_result_impl<Op, std::tuple<Ts...>>;
 	
 	template <typename Op, typename... Ts>
 	using invoke_result_t = typename invoke_result<Op, Ts...>::type;
@@ -485,6 +581,114 @@ namespace jc
 
 	using std::remove_pointer;
 	using std::remove_pointer_t;
+
+
+
+	/*
+		Type conversion related
+	*/
+
+	/**
+	 * @brief Associates a size with the signed and unsigned integer types with matching size
+	*/
+	template <size_t Size>
+	struct integers_with_size;
+
+	/**
+	 * @brief Signed/Unsigned 8 bit integer types
+	*/
+	template <>
+	struct integers_with_size<1>
+	{
+		using signed_type = int8_t;
+		using unsigned_type = uint8_t;
+
+		static_assert(sizeof(signed_type) == 1 && sizeof(unsigned_type) == 1, "");
+	};
+
+	/**
+	 * @brief Signed/Unsigned 16 bit integer types
+	*/
+	template <>
+	struct integers_with_size<2>
+	{
+		using signed_type = int16_t;
+		using unsigned_type = uint16_t;
+
+		static_assert(sizeof(signed_type) == 2 && sizeof(unsigned_type) == 2, "");
+	};
+
+	/**
+	 * @brief Signed/Unsigned 16 bit integer types
+	*/
+	template <>
+	struct integers_with_size<4>
+	{
+		using signed_type = int32_t;
+		using unsigned_type = uint32_t;
+
+		static_assert(sizeof(signed_type) == 4 && sizeof(unsigned_type) == 4, "");
+	};
+
+	/**
+	 * @brief Signed/Unsigned 16 bit integer types
+	*/
+	template <>
+	struct integers_with_size<8>
+	{
+		using signed_type = int64_t;
+		using unsigned_type = uint64_t;
+
+		static_assert(sizeof(signed_type) == 8 && sizeof(unsigned_type) == 8, "");
+	};
+
+
+	template <typename T, typename Enable = void>
+	struct signed_equivalent;
+
+	/**
+	 * @brief Provides an equivalent sized integer type
+	 * @tparam T Type to find equivalent sized integer
+	*/
+	template <typename T>
+	struct signed_equivalent<T,
+		void_t<typename integers_with_size<sizeof(T)>::signed_type>>
+	{
+		using type = typename integers_with_size<sizeof(T)>::signed_type;
+	};
+
+	/**
+	 * @brief Provides an equivalent sized integer type
+	 * @tparam T Type to find equivalent sized integer
+	*/
+	template <typename T>
+	using signed_equivalent_t = typename signed_equivalent<T>::type;
+
+
+
+	template <typename T, typename Enable = void>
+	struct unsigned_equivalent;
+
+	/**
+	 * @brief Provides an equivalent unsized integer type
+	 * @tparam T Type to find equivalent unsized integer
+	*/
+	template <typename T>
+	struct unsigned_equivalent<T,
+		void_t<typename integers_with_size<sizeof(T)>::unsigned_type>>
+	{
+		using type = typename integers_with_size<sizeof(T)>::unsigned_type;
+	};
+
+	/**
+	 * @brief Provides an equivalent unsized integer type
+	 * @tparam T Type to find equivalent unsized integer
+	*/
+	template <typename T>
+	using unsigned_equivalent_t = typename unsigned_equivalent<T>::type;
+
+
+
 
 };
 

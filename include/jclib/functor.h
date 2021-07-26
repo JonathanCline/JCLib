@@ -384,7 +384,7 @@ namespace jc
 			functor_impl& operator=(functor_impl&& _other) noexcept
 			{
 				// Check that these are not owning the same function object (this should never happen, ever)
-				JCLIB_ASSERT(this->get() != &_other.get());
+				JCLIB_ASSERT(this->get() != _other.get());
 				this->reset();
 				this->ptr_ = _other.extract();
 				return *this;

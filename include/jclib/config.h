@@ -142,11 +142,30 @@ namespace jc
 #endif
 #endif
 
-namespace jc
-{
+// Likely attribute for C++20 (+?)
+#ifndef JCLIB_LIKELY
+#if __has_cpp_attribute(likely)
+#define JCLIB_LIKELY [[likely]]
+#else
+#define JCLIB_LIKELY
+#endif
+#endif
 
+// Unlikely attribute for C++20 (+?)
+#ifndef JCLIB_UNLIKELY
+#if __has_cpp_attribute(unlikely)
+#define JCLIB_UNLIKELY [[unlikely]]
+#else
+#define JCLIB_UNLIKELY
+#endif
+#endif
 
-
-}
+#ifdef JCLIB_NO_EXCEPTIONS
+// True/False depending on if exceptions are allowed
+#define JCLIB_EXCEPTIONS false
+#else
+// True/False depending on if exceptions are allowed
+#define JCLIB_EXCEPTIONS true
+#endif
 
 #endif

@@ -183,6 +183,25 @@ namespace jc
 		return impl::distance_ftor<T>{}(_begin, _end);
 	};
 
+
+	template <typename T>
+	constexpr inline auto midpoint(T _begin, T _end) noexcept ->
+		enable_if_t<is_iterator<T>::value, T>
+	{
+		difference_type_t<T> _halfway = jc::distance(_begin, _end);
+		if ((_halfway % 2) == 0)
+		{
+			_halfway = (_halfway / 2);
+		}
+		else
+		{
+			_halfway = (_halfway / 2);
+		};
+		return jc::next(_begin, _halfway);
+	};
+
+
+
 };
 
 #endif

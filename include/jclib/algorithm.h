@@ -36,6 +36,68 @@ namespace jc
 		return std::find_if(jc::begin(_range), jc::end(_range), std::forward<Op>(_pred));
 	};
 
+	template <typename IterT, typename T, typename PredT>
+	JCLIB_CONSTEXPR inline auto binary_search(IterT _begin, const IterT _trueEnd, const T& _val, PredT&& _pred) -> enable_if_t<
+			is_invocable<PredT, iterator_to<IterT>, T>::value && is_forward_iterator<IterT>::value,
+		IterT>
+	{
+		auto _end = _trueEnd;
+		auto _middle = jc::midpoint(_begin, _end);
+		for (_middle; jc::distance(_begin, _end) > 1;)
+		{
+			_middle = jc::midpoint(_begin, _end);
+			if (!jc::invoke(_pred, *_middle, _val))
+			{
+				_end = _middle;
+			}
+			else
+			{
+				_begin = _middle;
+			};
+		};
+		if (_middle != _trueEnd && *_middle != _val)
+		{
+			_middle = _trueEnd;
+		};
+		return _middle;
+	};
+
+	struct less_than_t
+	{
+		template <typename T, typename U>
+		JCLIB_CONSTEXPR bool operator()(T&& a, U&& b) const noexcept
+		{
+			return a < b;
+		};
+	};
+
+	template <typename IterT, typename T>
+	JCLIB_CONSTEXPR inline auto binary_search(IterT _begin, IterT _end, const T& _val)
+	{
+		return jc::binary_search(_begin, _end, _val, less_than_t{});
+	};
+
+	namespace ranges
+	{
+		template <typename RangeT, typename T = ranges::value_t<remove_reference_t<RangeT>>>
+		JCLIB_CONSTEXPR inline auto binary_search(RangeT&& _range, const T& _value)
+		{
+			return jc::binary_search(jc::begin(_range), jc::end(_range), _value);
+		};
+	};
+
+
+
+
+
+	template <typename RangeT, typename ValT = jc::ranges::value_t<RangeT>>
+	constexpr inline RangeT& fill(RangeT& _range, const ValT& _value)
+	{
+		std::fill(jc::begin(_range), jc::end(_range), _value);
+		return _range;
+	};
+
+
 };
 
 #endif

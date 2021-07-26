@@ -39,5 +39,11 @@ int main()
 
 	delete[] _mblock_2;
 
+
+
+	auto _ptr = jc::make_unique<int>(2);
+
+
+
 	return 0;
 };
