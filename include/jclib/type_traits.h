@@ -62,8 +62,11 @@ namespace jc
 
 
 
-	// Shamelessly copied from https://en.cppreference.com/w/cpp/types/disjunction
 
+
+
+	// Shamelessly copied from https://en.cppreference.com/w/cpp/types/disjunction
+	
 	template<typename...>
 	struct disjunction :
 		jc::false_type
@@ -75,7 +78,11 @@ namespace jc
 
 	template<typename B1, typename... Bn>
 	struct disjunction<B1, Bn...> :
+#ifdef __cpp_fold_expressions
+		jc::bool_constant<bool(B1::value) || (bool(Bn::value) || ...)>
+#else
 		std::conditional_t<bool(B1::value), B1, jc::disjunction<Bn...>>
+#endif
 	{};
 
 
@@ -93,7 +100,11 @@ namespace jc
 
 	template<typename B1, typename... Bn>
 	struct conjunction<B1, Bn...> :
+#ifdef __cpp_fold_expressions
+		jc::bool_constant<bool(B1::value) && (bool(Bn::value) && ...)>
+#else
 		std::conditional_t<bool(B1::value), jc::conjunction<Bn...>, B1>
+#endif
 	{};
 
 
@@ -128,7 +139,7 @@ namespace jc
 #ifdef __cpp_fold_expressions
 		bool_constant<(std::is_same_v<T, Ts> || ...)>
 #else
-		disjunction<std::is_same<T, Ts>, Ts...>
+		disjunction<std::is_same<T, Ts>...>
 #endif
 	{};
 
