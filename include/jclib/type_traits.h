@@ -58,12 +58,69 @@ namespace jc
 
 	using std::is_same;
 	using std::is_convertible;
-	using std::disjunction;
+
+
+
+
+	// Shamelessly copied from https://en.cppreference.com/w/cpp/types/disjunction
+
+	template<typename...>
+	struct disjunction :
+		jc::false_type
+	{};
+
+	template<typename B1>
+	struct disjunction<B1> : B1
+	{};
+
+	template<typename B1, typename... Bn>
+	struct disjunction<B1, Bn...> :
+		std::conditional_t<bool(B1::value), B1, jc::disjunction<Bn...>>
+	{};
+
+
+
+	// Shamelessly copied from https://en.cppreference.com/w/cpp/types/conjunction
+
+	template<typename...>
+	struct conjunction :
+		jc::true_type
+	{};
+
+	template<typename B1>
+	struct conjunction<B1> : B1
+	{};
+
+	template<typename B1, typename... Bn>
+	struct conjunction<B1, Bn...> :
+		std::conditional_t<bool(B1::value), jc::conjunction<Bn...>, B1>
+	{};
+
+
+
+
+	template <typename B, typename Enable = void>
+	struct negation;
+
+	template<class B>
+	struct negation<B, void_t<decltype(B::value)>> :
+		jc::bool_constant<!bool(B::value)>
+	{};
+
+
 
 #ifdef __cpp_inline_variables
 	using std::is_same_v;
 	using std::is_convertible_v;
-	using std::disjunction_v;
+
+	template <typename... Bs>
+	constexpr inline auto conjunction_v = conjunction<Bs...>::value;
+
+	template <typename... Bs>
+	constexpr inline auto disjunction_v = disjunction<Bs...>::value;
+
+	template <typename B>
+	constexpr inline auto negation_v = negation<B>::value;
 #endif
 
 	template <typename T, typename... Ts>
@@ -98,18 +155,30 @@ namespace jc
 		Character type traits
 	*/
 
-
-	template <typename T>
-	struct is_character : public is_any_of<T,
-		unsigned char,
-		char,
-		wchar_t,
+	namespace impl
+	{
+		/**
+		 * @brief Character types tuple
+		*/
+		using character_typelist = std::tuple
+		<
+			char,
+			wchar_t,
 #ifdef __cpp_char8_t
-		char8_t,
+			char8_t,
 #endif
-		char16_t,
-		char32_t
-	> {};
+			char16_t,
+			char32_t
+		>;
+	};
+
+	/**
+	 * @brief Is true if the given type is a character type
+	*/
+	template <typename T>
+	struct is_character :
+		public bool_constant<is_element_of<T, impl::character_typelist>::value>
+	{};
 
 #ifdef __cpp_inline_variables
 	template <typename T>
@@ -139,7 +208,8 @@ namespace jc
 #endif
 
 	template <typename T>
-	struct is_integer : public bool_constant<is_integer<T>::value && std::numeric_limits<T>::is_integer> {};
+	struct is_integer : public bool_constant<is_integral<T>::value && std::numeric_limits<T>::is_integer>
+	{};
 	
 #ifdef __cpp_inline_variables
 	template <typename T>

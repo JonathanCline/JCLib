@@ -25,6 +25,11 @@
 #define _JCLIB_TIME_
 
 #include <chrono>
+
+#if defined(__STDC_LIB_EXT1__) && !defined(__STDC_WANT_LIB_EXT1__)
+#define __STDC_WANT_LIB_EXT1__ 1
+#endif
+
 #include <ctime>
 
 namespace jc
@@ -90,13 +95,13 @@ namespace jc
 	{
 		inline std::tm localtime(const std::time_t& _time)
 		{
-			// Switch for if using MSVC stdlib as 
+			// Select function based on detected compiler
 			std::tm _out{};
 #ifdef _MSC_VER
 			const auto _result = ::localtime_s(&_out, &_time);
 			JCLIB_ASSERT(_result == 0);
 #else
-			const auto _result = ::localtime_s(&_time, &_out);
+			const auto _result = ::localtime_r(&_time, &_out);
 			JCLIB_ASSERT(_result == &_out);
 #endif
 			return _out;
