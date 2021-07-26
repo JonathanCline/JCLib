@@ -20,6 +20,15 @@ struct Bar
 	{
 		return _a + _b;
 	};
+
+	int foobar_const(int _a, int _b) const
+	{
+		return _a + _b;
+	};
+	int foobar_const_noexcept(int _a, int _b) const noexcept
+	{
+		return _a + _b;
+	};
 };
 
 void another_freefunction(Bar& _b)
@@ -47,7 +56,18 @@ int main()
 		return -1;
 
 
-	
+	{
+
+		Bar _b{};
+
+		jc::functor<int(int, int)> _f{ &Bar::foobar, &_b };
+		jc::functor<int(int, int)> _fn{ &Bar::foobar_noexcept, &_b };
+
+		const Bar _constb{};
+		jc::functor<int(int, int)> _fc{ &Bar::foobar_const, &_constb };
+		jc::functor<int(int, int)> _fcn{ &Bar::foobar_const_noexcept, &_constb };
+
+	}
 
 
 
