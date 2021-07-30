@@ -168,4 +168,12 @@ namespace jc
 #define JCLIB_EXCEPTIONS true
 #endif
 
+namespace jc
+{
+	/**
+	 * @brief True if exceptions are enabled, false otherwise
+	*/
+	constexpr extern bool exceptions_v = JCLIB_EXCEPTIONS;
+};
+
 #endif
