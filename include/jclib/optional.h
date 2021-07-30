@@ -21,10 +21,26 @@
 
 #include <memory>
 
+#ifdef __cpp_lib_optional
+#include <optional>
+#endif
+
 #define _JCLIB_OPTIONAL_
 
 namespace jc
 {
+
+#ifdef __cpp_lib_optional
+	/**
+	 * @brief Value type held by an empty optional
+	*/
+	using std::nullopt_t;
+
+	/**
+	 * @brief Value held by an empty optional
+	*/
+	using std::nullopt;
+#else
 	/**
 	 * @brief Value type held by an empty optional
 	*/
@@ -34,6 +50,7 @@ namespace jc
 	 * @brief Value held by an empty optional
 	*/
 	constexpr static nullopt_t nullopt{};
+#endif
 
 	/**
 	 * @brief Contains either the specified type or nullopt, should be nearly identical to std::optional
@@ -116,6 +133,10 @@ namespace jc
 		};
 
 		constexpr optional() noexcept :
+			parent_type{ jc::alternate, nullopt }
+		{};
+
+		constexpr optional(jc::nullopt_t) noexcept :
 			parent_type{ jc::alternate, nullopt }
 		{};
 

@@ -60,10 +60,12 @@ namespace jc
 			{
 				jc::destroy_at(this->as_crtp()->unsafe_value());
 			};
+
 			constexpr inline void destroy_alternate() noexcept
 			{
 				jc::destroy_at(this->as_crtp()->unsafe_alternate());
 			};
+
 			constexpr inline void destroy()
 			{
 				const auto _crtp = this->as_crtp();
@@ -76,6 +78,7 @@ namespace jc
 					this->destroy_alternate();
 				};
 			};
+
 		public:
 			~maybe_destructor_nontrivial() noexcept
 			{
