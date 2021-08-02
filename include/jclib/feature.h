@@ -46,6 +46,12 @@
 #endif
 #endif
 
+#ifdef JCLIB_FEATURE_INLINE_VARIABLES
+#define JCLIB_FEATURE_INLINE_VARIABLES_V true
+#else
+#define JCLIB_FEATURE_INLINE_VARIABLES_V false
+#endif
+
 
 
 /*
@@ -62,6 +68,12 @@
 #ifdef JCLIB_FEATURE_CONCEPTS
 #error Feature testing macro was defined when it shouldn't be
 #endif
+#endif
+
+#ifdef JCLIB_FEATURE_CONCEPTS
+#define JCLIB_FEATURE_CONCEPTS_V true
+#else
+#define JCLIB_FEATURE_CONCEPTS_V false
 #endif
 
 
@@ -82,6 +94,12 @@
 #endif
 #endif
 
+#ifdef JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
+#define JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC_V true
+#else
+#define JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC_V false
+#endif
+
 
 
 /*
@@ -99,5 +117,63 @@
 #error Feature testing macro was defined when it shouldn't be
 #endif
 #endif
+
+#ifdef JCLIB_FEATURE_THREE_WAY_COMPARISON
+#define JCLIB_FEATURE_THREE_WAY_COMPARISON_V true
+#else
+#define JCLIB_FEATURE_THREE_WAY_COMPARISON_V false
+#endif
+
+
+
+
+/*
+	Test for __cpp_consteval
+*/
+
+#define JCLIB_FEATURE_VALUE_CONSTEVAL 201811L
+#if defined(__cpp_consteval) && JCLIB_FEATURE_VALUE_CONSTEVAL != __cpp_consteval
+#error Feature testing value mismatch
+#endif
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEVAL || __cpp_consteval >= JCLIB_FEATURE_VALUE_CONSTEVAL
+#define JCLIB_FEATURE_CONSTEVAL
+#else
+#ifdef JCLIB_FEATURE_CONSTEVAL
+#error Feature testing macro was defined when it shouldn't be
+#endif
+#endif
+
+#ifdef JCLIB_FEATURE_CONSTEVAL
+#define JCLIB_FEATURE_CONSTEVAL_V true
+#else
+#define JCLIB_FEATURE_CONSTEVAL_V false
+#endif
+
+
+
+
+/*
+	Test for __cpp_if_constexpr
+*/
+
+#define JCLIB_FEATURE_VALUE_CONSTEVAL 201811L
+#if defined(__cpp_consteval) && JCLIB_FEATURE_VALUE_CONSTEVAL != __cpp_consteval
+#error Feature testing value mismatch
+#endif
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEVAL || __cpp_consteval >= JCLIB_FEATURE_VALUE_CONSTEVAL
+#define JCLIB_FEATURE_CONSTEVAL
+#else
+#ifdef JCLIB_FEATURE_CONSTEVAL
+#error Feature testing macro was defined when it shouldn't be
+#endif
+#endif
+
+#ifdef JCLIB_FEATURE_CONSTEVAL
+#define JCLIB_FEATURE_CONSTEVAL_V true
+#else
+#define JCLIB_FEATURE_CONSTEVAL_V false
+#endif
+
+
 
 #endif

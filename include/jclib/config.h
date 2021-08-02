@@ -160,6 +160,15 @@ namespace jc
 #endif
 #endif
 
+// consteval qualifier, defaults to constexpr if consteval isnt available
+#ifndef JCLIB_CONSTEVAl
+#if __has_cpp_attribute(likely)
+#define JCLIB_CONSTEVAl consteval
+#else
+#define JCLIB_CONSTEVAl JCLIB_CONSTEXPR
+#endif
+#endif
+
 #ifdef JCLIB_NO_EXCEPTIONS
 // True/False depending on if exceptions are allowed
 #define JCLIB_EXCEPTIONS false

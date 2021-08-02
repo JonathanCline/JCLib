@@ -5,7 +5,7 @@ option(JCLIB_ALLOW_DEPRECATED "Allows deprecated features to be used" OFF)
 option(JCLIB_NO_EXCEPTIONS "Uses the nothrow versions by default for functions that provide one" OFF)
 
 project(JCLib 
-	VERSION 0.1.2
+	VERSION 0.2.0
 	DESCRIPTION "A collection of useful things and improvements for c++"
 	HOMEPAGE_URL "https://github.com/JonathanCline/JCLib")
 
