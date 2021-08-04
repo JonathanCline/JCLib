@@ -120,12 +120,8 @@ namespace jc
 		using maybe_destructor_t = typename maybe_destructor<MaybeT, T, AltT>::type;
 
 		template <typename T, typename AltT>
-		struct maybe_base : public impl::maybe_destructor_t<maybe_base<T, AltT>, T, AltT>
+		struct maybe_base
 		{
-		private:
-			using maybe_destructor_type = impl::maybe_destructor_t<maybe_base<T, AltT>, T, AltT>;
-			friend maybe_destructor_type;
-
 		public:
 			using value_type = T;
 			using pointer = value_type*;
@@ -137,7 +133,7 @@ namespace jc
 
 		private:
 			using this_type = maybe_base<value_type, alternate_type>;
-
+		
 		protected:
 			constexpr value_type& unsafe_value() noexcept
 			{
@@ -164,6 +160,28 @@ namespace jc
 			constexpr void set_has_value(bool _to)
 			{
 				this->has_value_ = _to;
+			};
+
+			constexpr inline void destroy_value() noexcept
+			{
+				jc::destroy_at(this->unsafe_value());
+			};
+
+			constexpr inline void destroy_alternate() noexcept
+			{
+				jc::destroy_at(this->unsafe_alternate());
+			};
+
+			constexpr inline void destroy()
+			{
+				if (this->has_value())
+				{
+					this->destroy_value();
+				}
+				else
+				{
+					this->destroy_alternate();
+				};
 			};
 
 		public:
@@ -315,7 +333,7 @@ namespace jc
 				{
 					if (!this->has_value())
 					{
-						maybe_destructor_type::destroy_alternate();
+						this->destroy_alternate();
 					};
 					this->value_ = other.unsafe_value();
 					this->has_value_ = true;
@@ -324,7 +342,7 @@ namespace jc
 				{
 					if (this->has_value())
 					{
-						maybe_destructor_type::destroy_value();
+						this->destroy_value();
 					};
 					this->alt_ = other.unsafe_alternate();
 					this->has_value_ = false;
@@ -351,7 +369,7 @@ namespace jc
 				{
 					if (!this->has_value())
 					{
-						maybe_destructor_type::destroy_alternate();
+						this->destroy_alternate();
 					};
 					this->value_ = std::move(other.unsafe_value());
 					this->has_value_ = true;
@@ -360,7 +378,7 @@ namespace jc
 				{
 					if (this->has_value())
 					{
-						maybe_destructor_type::destroy_value();
+						this->destroy_value();
 					};
 					this->alt_ = std::move(other.unsafe_alternate());
 					this->has_value_ = false;
@@ -368,6 +386,10 @@ namespace jc
 				return *this;
 			};
 
+			~maybe_base() noexcept
+			{
+				this->destroy();
+			};
 
 		private:
 			union
