@@ -1,8 +1,22 @@
 cmake_minimum_required (VERSION 3.8)
 
-option(JCLIB_BUILD_TESTS "Build test executables" ON)
+#
+#	Options related to which parts of the source get built
+#
+
+option(JCLIB_BUILD_TESTS "Build test executables" OFF)
+option(JCLIB_BUILD_SOURCE_GENERATOR "Enables the jclib source code generator to be built" OFF)
+
+#
+#	Options related to enabling / disabling / tweaking features within jclib
+#
+
 option(JCLIB_ALLOW_DEPRECATED "Allows deprecated features to be used" OFF)
 option(JCLIB_NO_EXCEPTIONS "Uses the nothrow versions by default for functions that provide one" OFF)
+
+#
+#
+#
 
 project(JCLib 
 	VERSION 0.2.0
@@ -13,8 +27,21 @@ include(CTest)
 
 add_library(${PROJECT_NAME} INTERFACE)
 
+#
+#	Provides an alias for the JCLib target so that "jclib" is a valid target, in the future this will be the only name.
+#
+add_library(jclib ALIAS ${PROJECT_NAME})
+
+
+
 target_include_directories(${PROJECT_NAME} INTERFACE "include")
 
+
+
+#
+#	Provide version information
+#
+# TODO : use a cmake configure file instead
 target_compile_definitions(${PROJECT_NAME} INTERFACE
 	JCLIB_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
 	JCLIB_VERSION_MINOR=${PROJECT_VERSION_MINOR}
@@ -29,35 +56,26 @@ if (JCLIB_NO_EXCEPTIONS)
 		JCLIB_NO_EXCEPTIONS=true)
 endif()
 
-#
-#	Takes an optional additional arguement for the test's source file
-#
-macro(JCLIB_ADD_TEST_CXX testName testSource cxxVersion)
 
-	set(tname JCLib_test_${testName}_${cxxVersion})
-	set(ctname JCLib_test_${testName}_${cxxVersion}_t)
 
-	add_executable(${tname} ${testSource})
-	
-	target_link_libraries(${tname} PRIVATE JCLib)
-	add_test("${ctname}" ${tname})
-	target_compile_features(${tname} PRIVATE cxx_std_${cxxVersion})
-
-endmacro(JCLIB_ADD_TEST_CXX )
 
 #
-#	C++ versions to check
+#	Add test helper cmake file
 #
-set(cxxversions 14 17 20)
-
-macro(JCLIB_ADD_TEST testName testSource)
-	foreach(cxv IN LISTS cxxversions)
-		JCLIB_ADD_TEST_CXX(${testName} ${testSource} ${cxv})
-	endforeach()
-endmacro(JCLIB_ADD_TEST)
-
+include(jclibtest.cmake)
 
 if(JCLIB_BUILD_TESTS)
 	enable_testing()
 	add_subdirectory("tests")
 endif()
+
+
+
+if (JCLIB_BUILD_GENERATOR)
+
+	# Include the code generation cmake
+	add_subdirectory("generation")
+
+endif()
+
+
