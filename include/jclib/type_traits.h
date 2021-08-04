@@ -688,8 +688,18 @@ namespace jc
 	using unsigned_equivalent_t = typename unsigned_equivalent<T>::type;
 
 
-
-
+	/**
+	 * @brief Converts an enumerator value into its underlying type equivalent
+	 * @tparam EnumT Enumerator type
+	 * @param _val Enumerator value
+	 * @return Underling equivalent
+	*/
+	template <typename EnumT>
+	constexpr inline auto to_underlying(EnumT _val) noexcept ->
+		std::underlying_type_t<EnumT>
+	{
+		return static_cast<std::underlying_type_t<EnumT>>(_val);
+	};
 };
 
 #endif
