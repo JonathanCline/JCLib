@@ -11,6 +11,8 @@
 
 #include <iostream>
 
+#pragma warning(disable:4003)
+
 #define FAIL_I(_code, _msg) \
 {	\
 	std::vector<std::string> _parts	\
