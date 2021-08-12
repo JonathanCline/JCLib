@@ -21,7 +21,8 @@ function(JCLIB_ADD_TEST_CXX_FN testName testSource cxxVersion)
 	
 	# Configure target
 	target_link_libraries(${tname} PRIVATE jclib)
-	target_compile_features(${tname} PRIVATE cxx_std_${cxxVersion})
+	#target_compile_features(${tname} PRIVATE cxx_std_${cxxVersion})
+	set_target_properties(${tname} PROPERTIES CXX_STANDARD ${cxxVersion})
 
 	# Tell CTest that we made a present for it
 	add_test("${tname}" ${tname})
