@@ -58,7 +58,7 @@ namespace jc
 			std::exception{}, what_{ _str, _len }
 		{};
 		exception(const char* _str) noexcept :
-			exception(_str, std::strlen(_str))
+			exception(_str, strlen(_str))
 		{};
 		
 		exception() noexcept :
