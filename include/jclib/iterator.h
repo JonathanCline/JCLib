@@ -32,15 +32,9 @@ namespace jc
 		struct difference_type;
 
 		template <typename T>
-		struct difference_type<T, void_t<typename T::difference_type>>
+		struct difference_type<T, void_t<decltype(std::declval<T>() - std::declval<T>())>>
 		{
-			using type = typename T::difference_type;
-		};
-
-		template <typename T>
-		struct difference_type<T*, enable_if_t<is_pointer<T>::value>>
-		{
-			using type = std::ptrdiff_t;
+			using type = decltype(std::declval<T>() - std::declval<T>());
 		};
 
 		template <typename T>
