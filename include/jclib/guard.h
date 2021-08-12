@@ -16,7 +16,8 @@
 */
 
 
-#include "jclib/type_traits.h"
+#include <jclib/type_traits.h>
+#include <jclib/functional.h>
 
 #define _JCLIB_GUARD_
 
@@ -59,7 +60,7 @@ namespace jc
 		{
 			if (this->held())
 			{
-				std::invoke(this->on_release());
+				jc::invoke(this->on_release());
 				this->state_ = guard_state::released;
 			};
 		};
