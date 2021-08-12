@@ -14,27 +14,28 @@ option(JCLIB_BUILD_SOURCE_GENERATOR "Enables the jclib source code generator to 
 option(JCLIB_ALLOW_DEPRECATED "Allows deprecated features to be used" OFF)
 option(JCLIB_NO_EXCEPTIONS "Uses the nothrow versions by default for functions that provide one" OFF)
 
-#
-#
-#
 
-project(JCLib 
+
+#
+#	jclib project declaration
+#
+project(jclib
 	VERSION 0.2.0
-	DESCRIPTION "A collection of useful things and improvements for c++"
+	DESCRIPTION "A collection of utilities and tools for c++"
 	HOMEPAGE_URL "https://github.com/JonathanCline/JCLib")
 
 include(CTest)
 
 add_library(${PROJECT_NAME} INTERFACE)
 
-#
-#	Provides an alias for the JCLib target so that "jclib" is a valid target, in the future this will be the only name.
-#
-add_library(jclib ALIAS ${PROJECT_NAME})
+#	Provide an alias for the JCLib target so that "jclib" is a valid target, in the future this will be the only name.
+add_library(JCLib ALIAS ${PROJECT_NAME})
+
+#	Add the configuration file subdirectory
+add_subdirectory("config")
 
 
-
-target_include_directories(${PROJECT_NAME} INTERFACE "include")
+target_include_directories(${PROJECT_NAME} INTERFACE "include" "config/include")
 
 
 
@@ -42,10 +43,6 @@ target_include_directories(${PROJECT_NAME} INTERFACE "include")
 #	Provide version information
 #
 # TODO : use a cmake configure file instead
-target_compile_definitions(${PROJECT_NAME} INTERFACE
-	JCLIB_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
-	JCLIB_VERSION_MINOR=${PROJECT_VERSION_MINOR}
-	JCLIB_VERSION_PATCH=${PROJECT_VERSION_PATCH})
 
 if(JCLIB_ALLOW_DEPRECATED)
 	target_compile_definitions(${PROJECT_NAME} INTERFACE

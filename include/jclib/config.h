@@ -15,6 +15,8 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <jclib/config/version.h>
+
 #define _JCLIB_CONFIG_
 
 #ifdef __cpp_constexpr
