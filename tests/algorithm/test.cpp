@@ -36,29 +36,5 @@ int main()
 		};
 	};
 
-	{
-		std::vector<int> _ints{ 1, 2, 3, 4 };
-		{
-			constexpr int _findval = 2;
-			auto _expected = jc::find(_ints, _findval);
-			auto _bsearchIters = jc::binary_search(_ints.begin(), _ints.end(), _findval);
-			auto _bsearchRange = jc::ranges::binary_search(_ints, _findval);
-			if (_bsearchIters != _bsearchRange)
-			{
-				BAD_TEST(4, "binary search returned different results for ranged and iterator pair versions");
-			};
-			if (_bsearchIters != _expected)
-			{
-				BAD_TEST(4, "binary search returned unexpected result");
-			};
-			auto _tooLowIter = jc::ranges::binary_search(_ints, 0);
-			auto _tooHighIter = jc::ranges::binary_search(_ints, 5);
-			if (_tooLowIter != _tooHighIter)
-			{
-				std::terminate();
-			};
-		};
-	};
-
 	return 0;
 };

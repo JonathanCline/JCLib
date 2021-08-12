@@ -15,16 +15,21 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "jclib/type_traits.h"
-#include "jclib/functional.h"
-#include "jclib/concepts.h"
-#include "jclib/iterator.h"
-#include "jclib/optional.h"
+#include <jclib/type_traits.h>
+#include <jclib/functional.h>
+#include <jclib/concepts.h>
+#include <jclib/iterator.h>
 
 #include <algorithm>
 #include <iterator>
 
 #define _JCLIB_RANGES_
+
+
+
+/*
+	Range type definition and type trait
+*/
 
 namespace jc
 {
@@ -62,45 +67,270 @@ namespace jc
 			};
 		};
 
-		template <typename T, typename = void>
+
+		namespace impl
+		{
+			// Helper for getting the range ftor specialization type
+			template <typename T, typename Enable = void>
+			struct get_range_ftor;
+
+			template <typename T>
+			struct get_range_ftor<T, jc::void_t<decltype(range_ftor<jc::remove_reference_t<T>>{})>>
+			{
+				using type = range_ftor<T>;
+			};
+
+			template <typename T>
+			using get_range_ftor_t = typename get_range_ftor<T>::type;
+
+			// Is true type if range's ftor type has begin and end functions defined
+			template <typename T, typename Enable = void>
+			struct check_range_ftor : jc::false_type {};
+
+			template <typename T>
+			struct check_range_ftor<T,
+				jc::void_t
+				<
+					decltype(std::declval<get_range_ftor_t<T>>().begin(std::declval<jc::remove_reference_t<T>&>())),
+					decltype(std::declval<get_range_ftor_t<T>>().end(std::declval<jc::remove_reference_t<T>&>()))
+				>
+			> : jc::true_type
+			{};
+
+		};
+
+		/**
+		 * @brief Checks if a type has a range_ftor specialization that defines a valid begin and end function
+		 * @tparam T Type to test
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename T, typename Enable = void>
 		struct is_range : false_type {};
 
+		/**
+		 * @brief Checks if a type has a range_ftor specialization that defines a valid begin and end function
+		 * @tparam T Type to test
+		*/
 		template <typename T>
 		struct is_range<T,
 			void_t<decltype(std::declval<range_ftor<jc::remove_reference_t<T>>>().begin(std::declval<jc::remove_reference_t<T>&>()))>
 		> : true_type {};
 
-#ifdef __cpp_inline_variables
+#ifdef JCLIB_FEATURE_INLINE_VARIABLES
+		/**
+		 * @brief True if a type has a range_ftor specialization that defines a valid begin and end function
+		 * @tparam T Type to test
+		*/
 		template <typename T>
 		constexpr inline bool is_range_v = is_range<T>::value;
 #endif
 
 
-		template <typename T, typename = void>
-		struct iterator;
+#ifdef JCLIB_FEATURE_CONCEPTS
+
+		/**
+		 * @brief Fufilled by types with a range_ftor specialization that defines a valid begin and end function
+		*/
 		template <typename T>
-		struct iterator<T, enable_if_t<is_range<T>::value>>
+		concept range = is_range_v<T>;
+
+#endif
+	};
+
+#ifdef JCLIB_FEATURE_CONCEPTS
+	/**
+	 * @brief Fufilled by types with a range_ftor specialization that defines a valid begin and end function
+	*/
+	template <typename T>
+	concept cx_range = ranges::range<T>;
+#endif
+
+};
+
+
+
+/*
+	Range inspection type traits
+*/
+
+namespace jc
+{
+	namespace ranges
+	{
+		/**
+		 * @brief Gets the iterator or iterator-like type of a range
+		 * @tparam RangeT Range type
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct iterator;
+
+		/**
+		 * @brief Gets the iterator or iterator-like type of a range
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		struct iterator<RangeT, enable_if_t<is_range<RangeT>::value>>
 		{
-			using type = decltype(std::declval<range_ftor<jc::remove_reference_t<T>>>().begin(std::declval<jc::remove_reference_t<T>&>()));
+			using type = decltype(std::declval<range_ftor<jc::remove_reference_t<RangeT>>>().begin(std::declval<jc::remove_reference_t<RangeT>&>()));
 		};
 
-		template <typename T>
-		using iterator_t = typename iterator<T>::type;
+		/**
+		 * @brief Gets the iterator or iterator-like type of a range
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		using iterator_t = typename iterator<RangeT>::type;
 
+
+
+		/**
+		 * @brief Gets the value type held by a range (ie. std::vector<T>::value_type)
+		 * @tparam RangeT Range type
+		 * @tparam Enable SFINAE specialization point
+		*/
 		template <typename T, typename = void>
 		struct value;
+
+		/**
+		 * @brief Gets the value type held by a range (ie. std::vector<T>::value_type)
+		 * @tparam RangeT Range type
+		*/
 		template <typename T>
 		struct value <T, enable_if_t<is_range<T>::value>>
 		{
 			using type = remove_reference_t<decltype(*std::declval<iterator_t<T>>())>;
 		};
 
+		/**
+		 * @brief Gets the value type held by a range (ie. std::vector<T>::value_type)
+		 * @tparam RangeT Range type
+		*/
 		template <typename T>
 		using value_t = typename value<T>::type;
 
 
 
+		/**
+		 * @brief Gets the reference type held by a range (ie. std::vector<T>::reference)
+		 * @tparam RangeT Range type
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct reference;
 
+		/**
+		 * @brief Gets the reference type held by a range (ie. std::vector<T>::reference)
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		struct reference <RangeT, enable_if_t<is_range<RangeT>::value>>
+		{
+			using type = std::add_lvalue_reference_t<value_t<RangeT>>;
+		};
+
+		/**
+		 * @brief Gets the reference type held by a range (ie. std::vector<T>::reference)
+		 * @tparam RangeT Range type
+		*/
+		template <typename T>
+		using reference_t = typename reference<T>::type;
+
+
+
+		/**
+		 * @brief Gets the const reference type held by a range (ie. std::vector<T>::const_reference)
+		 * @tparam RangeT Range type
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct const_reference;
+
+		/**
+		 * @brief Gets the const reference type held by a range (ie. std::vector<T>::const_reference)
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		struct const_reference <RangeT, enable_if_t<is_range<RangeT>::value>>
+		{
+			using type = std::add_lvalue_reference_t<std::add_const_t<value_t<RangeT>>>;
+		};
+
+		/**
+		 * @brief Gets the const reference type held by a range (ie. std::vector<T>::const_reference)
+		 * @tparam RangeT Range type
+		*/
+		template <typename T>
+		using const_reference_t = typename const_reference<T>::type;
+
+
+
+		/**
+		 * @brief Gets the pointer type held by a range (ie. std::vector<T>::pointer)
+		 * @tparam RangeT Range type
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct pointer;
+
+		/**
+		 * @brief Gets the pointer type held by a range (ie. std::vector<T>::pointer)
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		struct pointer <RangeT, enable_if_t<is_range<RangeT>::value>>
+		{
+			using type = std::add_pointer_t<value_t<RangeT>>;
+		};
+
+		/**
+		 * @brief Gets the pointer type held by a range (ie. std::vector<T>::pointer)
+		 * @tparam RangeT Range type
+		*/
+		template <typename T>
+		using pointer_t = typename pointer<T>::type;
+
+
+
+		/**
+		 * @brief Gets the const pointer type held by a range (ie. std::vector<T>::const_pointer)
+		 * @tparam RangeT Range type
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct const_pointer;
+
+		/**
+		 * @brief Gets the const pointer type held by a range (ie. std::vector<T>::const_pointer)
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		struct const_pointer <RangeT, enable_if_t<is_range<RangeT>::value>>
+		{
+			using type = std::add_const_t<std::add_pointer_t<value_t<RangeT>>>;
+		};
+
+		/**
+		 * @brief Gets the const pointer type held by a range (ie. std::vector<T>::const_pointer)
+		 * @tparam RangeT Range type
+		*/
+		template <typename T>
+		using const_pointer_t = typename const_pointer<T>::type;
+
+	};
+
+};
+
+
+
+/*
+	Core functions
+*/
+
+namespace jc
+{
+	namespace ranges
+	{
 		/**
 		 * @brief Returns the begin iterator of a range
 		 * @tparam T Range type
@@ -194,16 +424,6 @@ namespace jc
 			return impl::range_cast_impl<OutT, InT>{}(std::forward<InT>(_range));
 		};
 
-	};
-
-	// Any commonly used ranges functionality should be included here for ease of use
-
-	using ranges::begin;
-	using ranges::end;
-	using ranges::range_cast;
-
-	namespace ranges
-	{
 		/**
 		 * @brief Returns the distance between the begin and end of a range
 		 * @tparam RangeT Range type
@@ -218,6 +438,13 @@ namespace jc
 			return jc::distance(_begin, _end);
 		};
 	};
+
+	// Any commonly used ranges functionality should be included here for ease of use
+
+	using ranges::begin;
+	using ranges::end;
+	using ranges::range_cast;
+	
 };
 
 
@@ -353,41 +580,6 @@ namespace jc
 			};
 		
 		};
-	};
-
-#ifdef __cpp_concepts
-	namespace ranges
-	{
-		template <typename T>
-		concept range = is_range_v<T>;
-
-		template <typename T>
-		concept view = is_range_v<T> && std::is_move_constructible_v<T> && std::is_move_assignable_v<T>;
-	};
-
-	template <typename T>
-	concept cx_range = ranges::range<T>;
-
-	template <typename T>
-	concept cx_view = ranges::view<T>;
-#endif
-
-	namespace ranges
-	{
-#ifdef __cpp_concepts
-		template <typename T>
-		struct is_view : bool_constant<view<T>> {};
-#else
-		template <typename T, typename = void>
-		struct is_view : false_type {};
-		template <typename T>
-		struct is_view<T, enable_if_t<is_range<T>::value>> : true_type {};
-#endif
-
-#ifdef __cpp_inline_variables
-		template <typename T>
-		constexpr inline bool is_view_v = is_view<T>::value;
-#endif
 	};
 
 };
