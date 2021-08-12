@@ -73,7 +73,7 @@ namespace jc
 #endif
 
 #if defined(JCLIB_DEBUG_MODE) || !defined(NDEBUG)
-#define JCLIB_DEBUG true
+#define JCLIB_DEBUG
 #endif
 
 #ifndef JCLIB_ASSERT
@@ -136,7 +136,7 @@ namespace jc
 // Convenience macro for c++20 requires clauses
 #ifndef JCLIB_REQUIRES
 #ifdef __cpp_concepts
-#define JCLIB_REQUIRES(x) requires x
+#define JCLIB_REQUIRES(x) requires (x)
 #else
 #define JCLIB_REQUIRES(x)
 #endif
@@ -169,13 +169,52 @@ namespace jc
 #endif
 #endif
 
-#ifdef JCLIB_NO_EXCEPTIONS
-// True/False depending on if exceptions are allowed
+
+// Define exception status macro if enabled
+#if !defined(JCLIB_NO_EXCEPTIONS)
+// Defined if exceptions are enabled
+#define JCLIB_EXCEPTIONS true
+#else
+// Defined if exceptions are enabled
 #define JCLIB_EXCEPTIONS false
+#endif
+
+
+
+
+// Define exception status value macro
+
+#if defined(JCLIB_EXCEPTIONS) && JCLIB_EXCEPTIONS == true
+// True/False depending on if exceptions are allowed
+#define JCLIB_EXCEPTIONS_V true
 #else
 // True/False depending on if exceptions are allowed
-#define JCLIB_EXCEPTIONS true
+#define JCLIB_EXCEPTIONS_V false
 #endif
+
+
+
+
+
+#if JCLIB_EXCEPTIONS_V
+// Throws an exception if jclib's exceptions are enabled
+#define JCLIB_THROW(x) { throw x; }
+#else
+// Throws an exception if jclib's exceptions are enabled
+#define JCLIB_THROW(x) JCLIB_ABORT()
+#endif
+
+
+// Make debug switch value macro
+#if defined(JCLIB_DEBUG)
+	// Debug mode switch value
+	#define JCLIB_DEBUG_V true
+#else
+	// Debug mode switch value
+	#define JCLIB_DEBUG_V false
+#endif
+
+
 
 namespace jc
 {
