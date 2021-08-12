@@ -133,8 +133,12 @@ namespace jc
 
 		private:
 			using this_type = maybe_base<value_type, alternate_type>;
-		
+
+
 		protected:
+
+			/* Union member access without run time checking */
+
 			constexpr value_type& unsafe_value() noexcept
 			{
 				JCLIB_ASSERT(this->has_value());
@@ -157,22 +161,29 @@ namespace jc
 				return this->alt_;
 			};
 
-			constexpr void set_has_value(bool _to)
+
+			constexpr void set_has_value(bool _to) noexcept
 			{
 				this->has_value_ = _to;
 			};
 
-			constexpr inline void destroy_value() noexcept
+			constexpr inline void destroy_value()
+				noexcept(noexcept(jc::destroy_at(std::declval<value_type&>())))
 			{
 				jc::destroy_at(this->unsafe_value());
 			};
 
-			constexpr inline void destroy_alternate() noexcept
+			constexpr inline void destroy_alternate()
+				noexcept(noexcept(jc::destroy_at(std::declval<alternate_type&>())))
 			{
 				jc::destroy_at(this->unsafe_alternate());
 			};
-
-			constexpr inline void destroy()
+			constexpr inline void destroy() noexcept
+				(
+					noexcept(std::declval<maybe_base>().has_value()) &&
+					noexcept(std::declval<maybe_base>().destroy_value()) &&
+					noexcept(std::declval<maybe_base>().destroy_alternate())
+				)
 			{
 				if (this->has_value())
 				{
@@ -211,9 +222,9 @@ namespace jc
 				return this->unsafe_value();
 			};
 
-			constexpr value_type& value() noexcept(!JCLIB_EXCEPTIONS)
+			constexpr value_type& value() noexcept(!JCLIB_EXCEPTIONS_V)
 			{
-#if JCLIB_EXCEPTIONS
+#if JCLIB_EXCEPTIONS_V
 				if (!this->has_value())
 				{
 					throw bad_access_exception{ "value is not the active member" };
@@ -223,9 +234,9 @@ namespace jc
 				return this->value(nothrow);
 #endif
 			};
-			constexpr const value_type& value() const noexcept(!JCLIB_EXCEPTIONS)
+			constexpr const value_type& value() const noexcept(!JCLIB_EXCEPTIONS_V)
 			{
-#if JCLIB_EXCEPTIONS
+#if JCLIB_EXCEPTIONS_V
 				if (!this->has_value())
 				{
 					throw bad_access_exception{ "value is not the active member" };
@@ -236,6 +247,62 @@ namespace jc
 #endif
 			};
 
+		protected:
+
+			constexpr void set_value(const value_type& v) noexcept
+				(
+					noexcept(std::declval<value_type>() = std::declval<const value_type&>()) &&
+					noexcept(std::declval<maybe_base>().destroy_alternate())
+				)
+			{
+				if (!this->has_value())
+				{
+					this->destroy_alternate();
+				};
+				this->value_ = v;
+				this->set_has_value(true);
+			};
+			constexpr void set_value(value_type&& v) noexcept
+				(
+					noexcept(std::declval<maybe_base>().destroy_alternate())
+				)
+			{
+				if (!this->has_value())
+				{
+					this->destroy_alternate();
+				};
+				this->value_ = std::move(v);
+				this->set_has_value(true);
+			};
+
+			constexpr void set_alternate(const alternate_type& a) noexcept
+				(
+					noexcept(std::declval<alternate_type>() = std::declval<const alternate_type&>()) &&
+					noexcept(std::declval<maybe_base>().destroy_value())
+				)
+			{
+				if (this->has_value())
+				{
+					this->destroy_value();
+				};
+				this->alt_ = a;
+				this->set_has_value(false);
+			};
+			constexpr void set_alternate(alternate_type&& a) noexcept
+				(
+					noexcept(std::declval<maybe_base>().destroy_value())
+				)
+			{
+				if (this->has_value())
+				{
+					this->destroy_value();
+				};
+				this->alt_ = std::move(a);
+				this->set_has_value(false);
+			};
+
+		public:
+		
 			constexpr value_type& operator*() noexcept(!JCLIB_EXCEPTIONS)
 			{
 				return this->value();
@@ -406,76 +473,70 @@ namespace jc
 	struct maybe;
 
 	template <typename T, typename AltT>
-	struct maybe<T, AltT, enable_if_t<jc::is_convertible<AltT, T>::value>>:
-		public impl::maybe_base<T, AltT>
+	struct maybe<T, AltT,
+		enable_if_t<jc::is_convertible<AltT, T>::value>>
+		: public impl::maybe_base<T, AltT>
 	{
+	public:
 		using impl::maybe_base<T, AltT>::maybe_base;
 		using impl::maybe_base<T, AltT>::operator=;
 	};
 
 	template <typename T, typename AltT>
-	struct maybe<T, AltT, enable_if_t<!jc::is_convertible<AltT, T>::value>> :
-		public impl::maybe_base<T, AltT>
+	struct maybe<T, AltT,
+		enable_if_t<!jc::is_convertible<AltT, T>::value>>
+		: public impl::maybe_base<T, AltT>
 	{
 	private:
 		using parent_type = impl::maybe_base<T, AltT>;
 	public:
-		constexpr maybe(const T& _val) :
+		using value_type = typename parent_type::value_type;
+		using alternate_type = typename parent_type::alternate_type;
+
+
+
+		constexpr maybe(const value_type& _val) :
 			impl::maybe_base<T, AltT>{ _val }
 		{};
-		constexpr maybe(T&& _val) noexcept :
+		constexpr maybe(value_type&& _val) noexcept :
 			impl::maybe_base<T, AltT>{ std::move(_val) }
 		{};
 
-		constexpr maybe& operator=(const T& _val)
+		constexpr maybe& operator=(const value_type& _val)
 		{
-			if (!parent_type::has_value())
-			{
-				parent_type::destroy_alternate();
-			};
-			parent_type::unsafe_value() = _val;
+			parent_type::set_value(_val);
 			return *this;
 		};
-		constexpr maybe& operator=(T&& _val) noexcept
+		constexpr maybe& operator=(value_type&& _val) noexcept
 		{
-			if (!parent_type::has_value())
-			{
-				parent_type::destroy_alternate();
-			};
-			parent_type::unsafe_value() = std::move(_val);
+			parent_type::set_value(std::move(_val));
 			return *this;
 		};
 
-		constexpr maybe(alternate_t, const AltT& _val) :
+
+
+		constexpr maybe(alternate_t, const alternate_type& _val) :
 			impl::maybe_base<T, AltT>{ jc::alternate, _val }
 		{};
-		constexpr maybe(alternate_t, AltT&& _val) noexcept :
+		constexpr maybe(alternate_t, alternate_type&& _val) noexcept :
 			impl::maybe_base<T, AltT>{ jc::alternate, std::move(_val) }
 		{};
 
-		constexpr maybe(const AltT& _val) :
+		constexpr maybe(const alternate_type& _val) :
 			maybe{ jc::alternate, _val }
 		{};
-		constexpr maybe(AltT&& _val) noexcept :
+		constexpr maybe(alternate_type&& _val) noexcept :
 			maybe{ jc::alternate, std::move(_val) }
 		{};
 
-		constexpr maybe& operator=(const AltT& _val)
+		constexpr maybe& operator=(const alternate_type& _val)
 		{
-			if (parent_type::has_value())
-			{
-				parent_type::destroy_value();
-			};
-			parent_type::unsafe_alternate() = _val;
+			parent_type::set_alternate(_val);
 			return *this;
 		};
-		constexpr maybe& operator=(AltT&& _val) noexcept
+		constexpr maybe& operator=(alternate_type&& _val) noexcept
 		{
-			if (parent_type::has_value())
-			{
-				parent_type::destroy_value();
-			};
-			parent_type::unsafe_alternate() = std::move(_val);
+			parent_type::set_alternate(std::move(_val));
 			return *this;
 		};
 

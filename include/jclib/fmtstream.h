@@ -21,10 +21,13 @@
 #include <jclib/feature.h>
 
 
-
 #define _JCLIB_FMTSTREAM_
 
 #ifdef __cpp_lib_format
+
+#include <format>
+#include <string_view>
+#include <ostream>
 
 namespace jc
 {

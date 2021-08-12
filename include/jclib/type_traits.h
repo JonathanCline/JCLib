@@ -228,7 +228,7 @@ namespace jc
 #endif
 
 	/*
-		Constructor related
+		Constructor / Assignment related
 	*/
 
 	using std::is_constructible;
@@ -237,6 +237,7 @@ namespace jc
 	using std::is_move_constructible;
 	using std::is_move_assignable;
 	using std::is_default_constructible;
+	using std::is_assignable;
 
 #ifdef __cpp_inline_variables
 	using std::is_constructible_v;
@@ -245,6 +246,7 @@ namespace jc
 	using std::is_move_constructible_v;
 	using std::is_move_assignable_v;
 	using std::is_default_constructible_v;
+	using std::is_assignable_v;
 #endif
 
 
@@ -527,13 +529,31 @@ namespace jc
 	JCLIB_CONSTEXPR static bool is_noexcept_function_v = is_noexcept_function<T>::value;
 #endif
 
-	template <typename IterT>
+
+
+
+	/**
+	 * @brief Gets the type returned when dereferencing a given type
+	 * @tparam IterT Iterator type or type with derefencing operator
+	 * @tparam Enable SFINAE specialization point
+	*/
+	template <typename IterT, typename Enable = void>
+	struct iterator_to;
+
+	/**
+	 * @brief Gets the type returned when dereferencing a given type
+	 * @tparam IterT Iterator type or type with derefencing operator
+	*/
+	template <typename IterT> JCLIB_REQUIRES(requires (IterT a) { *a; } )
+	struct iterator_to<IterT,
 #ifdef __cpp_concepts
-	requires requires (IterT& a) { *a; }
+		void
+#else
+		jc::void_t<decltype(*std::declval<IterT>())>
 #endif
-	struct iterator_to
+		>
 	{
-		using type = std::remove_reference_t<decltype(*std::declval<IterT&>())>;
+		using type = std::remove_reference_t<decltype(*std::declval<IterT>())>;
 	};
 	template <typename IterT>
 #ifdef __cpp_concepts

@@ -236,7 +236,7 @@ int main()
 		constexpr int _evenCount = _completeCount / 2;
 		using iotav = decltype(jc::views::iota(1, _completeCount));
 
-		if ((!jc::ranges::is_view<iotav>::value) || (!jc::ranges::is_range<iotav>::value))
+		if (!jc::ranges::is_range<iotav>::value)
 		{
 			FAIL();
 		};

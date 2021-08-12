@@ -19,6 +19,7 @@
 
 #include <exception>
 #include <new>
+#include <string>
 
 #define _JCLIB_EXCEPTION_
 
@@ -34,10 +35,39 @@ namespace jc
 	*/
 	using std::nothrow;
 	
+
+	// TODO : Reduce the likely hood of an exception thrown on jc::exception construction. Maybe have a static buffer for the message?
+
 	/**
-	 * @brief Base exception type alias
+	 * @brief Base exception type
 	*/
-	using std::exception;
+	struct exception : public std::exception
+	{
+	public:
+
+		/**
+		 * @brief Returns the exception's message string
+		 * @return Exception message or nullptr
+		*/
+		const char* what() const noexcept override
+		{
+			return this->what_.c_str();
+		};
+
+		exception(const char* _str, size_t _len) noexcept :
+			std::exception{}, what_{ _str, _len }
+		{};
+		exception(const char* _str) noexcept :
+			exception(_str, std::strlen(_str))
+		{};
+		
+		exception() noexcept :
+			std::exception{}
+		{};
+
+	private:
+		std::string what_;
+	};
 
 };
 

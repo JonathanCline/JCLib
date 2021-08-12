@@ -36,13 +36,13 @@
 
 #define JCLIB_FEATURE_VALUE_INLINE_VARIABLES 201606L
 #if defined(__cpp_inline_variables) && JCLIB_FEATURE_VALUE_INLINE_VARIABLES != __cpp_inline_variables
-#error Feature testing value mismatch
+#error "Feature testing value mismatch"
 #endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_INLINE_VARIABLES || __cpp_inline_variables >= JCLIB_FEATURE_VALUE_INLINE_VARIABLES
 #define JCLIB_FEATURE_INLINE_VARIABLES
 #else
 #ifdef JCLIB_FEATURE_INLINE_VARIABLES
-#error Feature testing macro was defined when it shouldn't be
+#error "Feature testing macro was defined when it shouldn't be"
 #endif
 #endif
 
@@ -60,13 +60,13 @@
 
 #define JCLIB_FEATURE_VALUE_CONCEPTS 201907L
 #if defined(__cpp_concepts) && JCLIB_FEATURE_VALUE_CONCEPTS != __cpp_concepts
-#error Feature testing value mismatch
+#error "Feature testing value mismatch"
 #endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONCEPTS || __cpp_concepts >= JCLIB_FEATURE_VALUE_CONCEPTS
 #define JCLIB_FEATURE_CONCEPTS
 #else
 #ifdef JCLIB_FEATURE_CONCEPTS
-#error Feature testing macro was defined when it shouldn't be
+#error "Feature testing macro was defined when it shouldn't be"
 #endif
 #endif
 
@@ -84,13 +84,13 @@
 
 #define JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC 201907L
 #if defined(__cpp_lib_constexpr_dynamic_alloc) && JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC != __cpp_lib_constexpr_dynamic_alloc
-#error Feature testing value mismatch
+#error "Feature testing value mismatch"
 #endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC || __cpp_lib_constexpr_dynamic_alloc >= JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC
 #define JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
 #else
 #ifdef JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
-#error Feature testing macro was defined when it shouldn't be
+#error "Feature testing macro was defined when it shouldn't be"
 #endif
 #endif
 
@@ -108,13 +108,13 @@
 
 #define JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON 201907L
 #if defined(__cpp_lib_three_way_comparison) && JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON != __cpp_lib_three_way_comparison
-#error Feature testing value mismatch
+#error "Feature testing value mismatch"
 #endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON || __cpp_lib_three_way_comparison >= JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON
 #define JCLIB_FEATURE_THREE_WAY_COMPARISON
 #else
 #ifdef JCLIB_FEATURE_THREE_WAY_COMPARISON
-#error Feature testing macro was defined when it shouldn't be
+#error "Feature testing macro was defined when it shouldn't be"
 #endif
 #endif
 
@@ -133,13 +133,13 @@
 
 #define JCLIB_FEATURE_VALUE_CONSTEVAL 201811L
 #if defined(__cpp_consteval) && JCLIB_FEATURE_VALUE_CONSTEVAL != __cpp_consteval
-#error Feature testing value mismatch
+#error "Feature testing value mismatch"
 #endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEVAL || __cpp_consteval >= JCLIB_FEATURE_VALUE_CONSTEVAL
 #define JCLIB_FEATURE_CONSTEVAL
 #else
 #ifdef JCLIB_FEATURE_CONSTEVAL
-#error Feature testing macro was defined when it shouldn't be
+#error "Feature testing macro was defined when it shouldn't be"
 #endif
 #endif
 
@@ -158,13 +158,13 @@
 
 #define JCLIB_FEATURE_VALUE_CONSTEVAL 201811L
 #if defined(__cpp_consteval) && JCLIB_FEATURE_VALUE_CONSTEVAL != __cpp_consteval
-#error Feature testing value mismatch
+#error "Feature testing value mismatch"
 #endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEVAL || __cpp_consteval >= JCLIB_FEATURE_VALUE_CONSTEVAL
 #define JCLIB_FEATURE_CONSTEVAL
 #else
 #ifdef JCLIB_FEATURE_CONSTEVAL
-#error Feature testing macro was defined when it shouldn't be
+#error "Feature testing macro was defined when it shouldn't be"
 #endif
 #endif
 
