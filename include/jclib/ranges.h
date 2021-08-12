@@ -1306,7 +1306,7 @@ namespace jc
 				};
 				constexpr transform_iterator operator++(int)
 				{
-					condition_iterator _out{ *this };
+					const auto _out{ *this };
 					++(*this);
 					return _out;
 				};
