@@ -145,8 +145,7 @@ namespace jc
 		{};
 		constexpr optional& operator=(const value_type& _value) noexcept
 		{
-			parent_type::set_has_value(true);
-			parent_type::unsafe_value() = _value;
+			parent_type::set_value(_value);
 			return *this;
 		};
 
@@ -155,8 +154,7 @@ namespace jc
 		{};
 		constexpr optional& operator=(value_type&& _value) noexcept
 		{
-			parent_type::set_has_value(false);
-			parent_type::unsafe_value() = std::move(_value);
+			parent_type::set_value(std::move(_value));
 			return *this;
 		};
 	
