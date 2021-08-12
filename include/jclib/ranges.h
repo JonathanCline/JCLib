@@ -441,11 +441,13 @@ namespace jc
 					return !(_lhs == _rhs);
 				};
 
-				constexpr auto& operator*()
+				constexpr auto operator*() ->
+					decltype(*std::declval<underlying_type>())
 				{
 					return *this->at_;
 				};
-				constexpr auto& operator*() const
+				constexpr auto operator*() const ->
+					decltype(*std::declval<const underlying_type>())
 				{
 					return *this->at_;
 				};
@@ -865,11 +867,11 @@ namespace jc
 				JCLIB_CONSTEXPR drop_view_impl(RangeT& _range, size_t _count) :
 					begin_
 					{
-						jc::next(ranges::begin(_range),
-						static_cast<jc::difference_type_t<RangeT>>(_count))
+						jc::next(ranges::begin(_range), _count)
 					},
 					end_{ ranges::end(_range) }
 				{};
+
 			private:
 				iterator begin_;
 				iterator end_;
@@ -899,7 +901,7 @@ namespace jc
 				constexpr friend inline auto operator|(RangeT&& _range, drop_impl_t _drop) noexcept ->
 					ranges::drop_view<remove_reference_t<RangeT>>
 				{
-					return ranges::drop_view<remove_reference_t<RangeT>>{ std::forward<RangeT>(_range), _drop.count_ };
+					return ranges::drop_view<remove_reference_t<RangeT>>{ _range, _drop.count_ };
 				};
 				size_t count_;
 			};
