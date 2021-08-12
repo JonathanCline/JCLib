@@ -15,7 +15,13 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "jclib/ranges.h"
+/*
+	Provides range based std-algorithms using jclib ranges and provides a few other small algorithms
+*/
+
+#include <jclib/ranges.h>
+#include <jclib/functional.h>
+#include <jclib/feature.h>
 
 #define _JCLIB_ALGORITHM_
 
@@ -23,70 +29,35 @@
 
 namespace jc
 {
+	/**
+	 * @brief Returns an iterator the value specified if it exists
+	 * @tparam RangeT Range object type to look in
+	 * @tparam T Value type
+	 * @param _range Range to look in
+	 * @param _val Value to search for
+	 * @return Iterator to the found element or jc::end(_range) if it wasn't found
+	*/
 	template <typename RangeT, typename T>
 	JCLIB_CONSTEXPR static auto find(RangeT&& _range, const T& _val) ->
-		ranges::iterator_t<remove_reference_t<RangeT>>
+			ranges::iterator_t<remove_reference_t<RangeT>>
 	{
 		return std::find(jc::begin(_range), jc::end(_range), _val);
 	};
+
+	/**
+	 * @brief Returns an iterator the value specified if a predicate returns true
+	 * @tparam RangeT Range object type to look in
+	 * @tparam Op Predicate function object type
+	 * @param _range Range to look in
+	 * @param _pred Comparison function, an element is "found" if the predicate returns true when passed it
+	 * @return Iterator to the found element or jc::end(_range) if it wasn't found
+	*/
 	template <typename RangeT, typename Op>
 	JCLIB_CONSTEXPR static auto find_if(RangeT&& _range, Op&& _pred) ->
 		ranges::iterator_t<remove_reference_t<RangeT>>
 	{
 		return std::find_if(jc::begin(_range), jc::end(_range), std::forward<Op>(_pred));
 	};
-
-	template <typename IterT, typename T, typename PredT>
-	JCLIB_CONSTEXPR inline auto binary_search(IterT _begin, const IterT _trueEnd, const T& _val, PredT&& _pred) -> enable_if_t<
-			is_invocable<PredT, iterator_to<IterT>, T>::value && is_forward_iterator<IterT>::value,
-		IterT>
-	{
-		auto _end = _trueEnd;
-		auto _middle = jc::midpoint(_begin, _end);
-		for (_middle; jc::distance(_begin, _end) > 1;)
-		{
-			_middle = jc::midpoint(_begin, _end);
-			if (!jc::invoke(_pred, *_middle, _val))
-			{
-				_end = _middle;
-			}
-			else
-			{
-				_begin = _middle;
-			};
-		};
-		if (_middle != _trueEnd && *_middle != _val)
-		{
-			_middle = _trueEnd;
-		};
-		return _middle;
-	};
-
-	struct less_than_t
-	{
-		template <typename T, typename U>
-		JCLIB_CONSTEXPR bool operator()(T&& a, U&& b) const noexcept
-		{
-			return a < b;
-		};
-	};
-
-	template <typename IterT, typename T>
-	JCLIB_CONSTEXPR inline auto binary_search(IterT _begin, IterT _end, const T& _val)
-	{
-		return jc::binary_search(_begin, _end, _val, less_than_t{});
-	};
-
-	namespace ranges
-	{
-		template <typename RangeT, typename T = ranges::value_t<remove_reference_t<RangeT>>>
-		JCLIB_CONSTEXPR inline auto binary_search(RangeT&& _range, const T& _value)
-		{
-			return jc::binary_search(jc::begin(_range), jc::end(_range), _value);
-		};
-	};
-
-
 
 
 
@@ -95,6 +66,24 @@ namespace jc
 	{
 		std::fill(jc::begin(_range), jc::end(_range), _value);
 		return _range;
+	};
+
+
+	template <typename RangeT, typename DestIterT>
+	JCLIB_REQUIRES((jc::cx_range<RangeT> && jc::is_assignable_v<jc::iterator_to_t<DestIterT>, const jc::ranges::value_t<RangeT>&>))
+	constexpr inline auto copy(const RangeT& _source, DestIterT _destBegin) ->
+#ifdef JCLIB_FEATURE_CONCEPTS
+		DestIterT
+#else
+		jc::enable_if_t<
+			jc::is_assignable<
+				/* to   */ jc::iterator_to_t<DestIterT>, // *DestIterT
+				/* from */ std::add_lvalue_reference_t<std::add_const_t<jc::ranges::value_t<RangeT>>> // const RangeT::value_type&
+			>::value,
+		DestIterT>
+#endif
+	{
+		return std::copy(jc::begin(_source), jc::end(_source), _destBegin);
 	};
 
 
