@@ -30,9 +30,19 @@ namespace jc
 {
 	namespace ranges
 	{
-		template <typename T, typename = void>
+		/**
+		 * @brief Customization point for begin and end function for various range types
+		 * @tparam T Range type
+		 * @tparam Enable CRTP specialization point
+		*/
+		template <typename T, typename Enable = void>
 		struct range_ftor;
 
+		/**
+		 * @brief Defines begin and end functions for C-style arrays
+		 * @tparam T C-style array member type
+		 * @tparam N C-style array length
+		*/
 		template <typename T, size_t N>
 		struct range_ftor<T[N], void>
 		{
@@ -46,21 +56,37 @@ namespace jc
 			};
 		};
 
+		/**
+		 * @brief Defines begin and end functions for STL-like containers with begin and end functions
+		 * @tparam T STL-like container type name
+		*/
 		template <typename T>
 		struct range_ftor < T, void_t<
 			decltype(std::declval<remove_reference_t<T>>().begin()),
 			decltype(std::declval<remove_reference_t<T>>().end())
 			>>
 		{
+			/**
+			 * @brief Returns an iterator to the beginning of the range
+			 * @param _val Range value
+			 * @return Iterator to the beginning
+			*/
 			constexpr auto begin(remove_reference_t<T>& _val) const noexcept
 			{
 				return _val.begin();
 			};
+
+			/**
+			 * @brief Returns an iterator to one past the end of the range
+			 * @param _val Range value
+			 * @return Iterator to one past the end
+			*/
 			constexpr auto end(remove_reference_t<T>& _val) const noexcept
 			{
 				return _val.end();
 			};
 		};
+
 
 		template <typename T, typename = void>
 		struct is_range : false_type {};
@@ -78,6 +104,7 @@ namespace jc
 
 		template <typename T, typename = void>
 		struct iterator;
+		
 		template <typename T>
 		struct iterator<T, enable_if_t<is_range<T>::value>>
 		{

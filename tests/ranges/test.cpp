@@ -173,8 +173,6 @@ int test_range_type_traits()
 
 
 
-
-
 constexpr bool is_even(int i)
 {
 	return (i % 2) == 0;
