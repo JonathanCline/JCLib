@@ -22,6 +22,7 @@
 #define _JCLIB_ITERATOR_
 
 #include <numeric>
+#include <algorithm>
 
 namespace jc
 {
@@ -32,15 +33,9 @@ namespace jc
 		struct difference_type;
 
 		template <typename T>
-		struct difference_type<T, void_t<typename T::difference_type>>
+		struct difference_type<T, void_t<decltype(std::declval<T>() - std::declval<T>())>>
 		{
-			using type = typename T::difference_type;
-		};
-
-		template <typename T>
-		struct difference_type<T*, enable_if_t<is_pointer<T>::value>>
-		{
-			using type = std::ptrdiff_t;
+			using type = decltype(std::declval<T>() - std::declval<T>());
 		};
 
 		template <typename T>
@@ -152,7 +147,7 @@ namespace jc
 		struct distance_ftor
 		{
 			using result_type = decltype(std::distance(std::declval<T>(), std::declval<T>()));
-			constexpr inline auto operator()(T _begin, T _end) const noexcept -> result_type
+			constexpr inline auto operator()(T _begin, T _end) const noexcept
 			{
 				return std::distance(_begin, _end);
 			};
