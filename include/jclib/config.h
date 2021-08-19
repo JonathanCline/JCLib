@@ -86,10 +86,16 @@ namespace jc
 #endif
 #endif
 
+// [[nodiscard()]] attribute definition
 #ifndef JCLIB_NODISCARD
-#if __has_cpp_attribute(nodiscard)
+#if __has_cpp_attribute(nodiscard) >= 201907L
+// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
 #define JCLIB_NODISCARD(reason) [[nodiscard(reason)]]
+#elif __has_cpp_attribute(nodiscard)
+// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
+#define JCLIB_NODISCARD(reason) [[nodiscard]]
 #else
+// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
 #define JCLIB_NODISCARD()
 #endif
 #endif
