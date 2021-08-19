@@ -35,17 +35,394 @@ inline int newtest()
 
 
 
-
-int add(int a, int b) { return a + b; };
-
-
-int test_piping()
+// jc::plus test
+int test_op_plus()
 {
 	NEWTEST();
 
-	constexpr auto add_2 = jc::plus & 2;
-	constexpr auto n = 2 | add_2;
+	constexpr auto operator_v = jc::plus;
+	using value_type = int;
 
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+
+
+	constexpr value_type operand_a_v = 2;
+	constexpr value_type operand_b_v = 2;
+	constexpr value_type expected_v = operand_a_v + operand_b_v;
+
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+	
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "plus operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped plus operator failed");
+	};
+
+	PASS();
+};
+
+// jc::minus test
+int test_op_minus()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::minus;
+
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+
+
+	constexpr value_type operand_a_v = 12;
+	constexpr value_type operand_b_v = 2;
+	constexpr value_type expected_v = operand_a_v - operand_b_v;
+
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "minus operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped minus operator failed");
+	};
+
+	PASS();
+};
+
+// jc::times test
+int test_op_times()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::times;
+
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+
+
+	constexpr value_type operand_a_v = 12;
+	constexpr value_type operand_b_v = 2;
+	constexpr value_type expected_v = operand_a_v * operand_b_v;
+
+
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "times operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped times operator failed");
+	};
+
+	PASS();
+};
+
+// jc::divide test
+int test_op_divide()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::divide;
+
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+
+
+	constexpr value_type operand_a_v = 12;
+	constexpr value_type operand_b_v = 2;
+	constexpr value_type expected_v = operand_a_v / operand_b_v;
+
+
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "divide operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped divide operator failed");
+	};
+
+	PASS();
+};
+
+
+
+// jc::conjunct test
+int test_op_conjuct()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::conjunct;
+	using value_type = bool;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+
+	{
+		constexpr value_type operand_a_v = false;
+		constexpr value_type operand_b_v = false;
+		constexpr value_type expected_v = operand_a_v && operand_b_v;
+
+		const value_type a = operand_a_v;
+		const value_type b = operand_b_v;
+
+		{
+			const value_type q = operator_v(a, b);
+			ASSERT(q == expected_v, "conjunct operator failed");
+		};
+
+		{
+			const value_type q = operator_v(b, a);
+			ASSERT(q == expected_v, "conjunct operator failed");
+		};
+
+		{
+			const value_type q = b | (a & operator_v);
+			ASSERT(q == expected_v, "bound and piped conjunct operator failed");
+		};
+
+		{
+			const value_type q = a | (b & operator_v);
+			ASSERT(q == expected_v, "bound and piped conjunct operator failed");
+		};
+	};
+
+	{
+		constexpr value_type operand_a_v = false;
+		constexpr value_type operand_b_v = true;
+		constexpr value_type expected_v = operand_a_v && operand_b_v;
+
+		const value_type a = operand_a_v;
+		const value_type b = operand_b_v;
+
+		{
+			const value_type q = operator_v(a, b);
+			ASSERT(q == expected_v, "conjunct operator failed");
+		};
+
+		{
+			const value_type q = operator_v(b, a);
+			ASSERT(q == expected_v, "conjunct operator failed");
+		};
+
+		{
+			const value_type q = b | (a & operator_v);
+			ASSERT(q == expected_v, "bound and piped conjunct operator failed");
+		};
+
+		{
+			const value_type q = a | (b & operator_v);
+			ASSERT(q == expected_v, "bound and piped conjunct operator failed");
+		};
+	};
+
+	{
+		constexpr value_type operand_a_v = true;
+		constexpr value_type operand_b_v = true;
+		constexpr value_type expected_v = operand_a_v && operand_b_v;
+
+		const value_type a = operand_a_v;
+		const value_type b = operand_b_v;
+
+		{
+			const value_type q = operator_v(a, b);
+			ASSERT(q == expected_v, "conjunct operator failed");
+		};
+
+		{
+			const value_type q = operator_v(b, a);
+			ASSERT(q == expected_v, "conjunct operator failed");
+		};
+
+		{
+			const value_type q = b | (a & operator_v);
+			ASSERT(q == expected_v, "bound and piped conjunct operator failed");
+		};
+
+		{
+			const value_type q = a | (b & operator_v);
+			ASSERT(q == expected_v, "bound and piped conjunct operator failed");
+		};
+	};
+
+	PASS();
+};
+
+// jc::disjunct test
+int test_op_disjunct()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::disjunct;
+	using value_type = bool;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+
+	{
+		constexpr value_type operand_a_v = false;
+		constexpr value_type operand_b_v = false;
+		constexpr value_type expected_v = operand_a_v || operand_b_v;
+
+		const value_type a = operand_a_v;
+		const value_type b = operand_b_v;
+
+		{
+			const value_type q = operator_v(a, b);
+			ASSERT(q == expected_v, "disjunct operator failed");
+		};
+
+		{
+			const value_type q = operator_v(b, a);
+			ASSERT(q == expected_v, "disjunct operator failed");
+		};
+
+		{
+			const value_type q = b | (a & operator_v);
+			ASSERT(q == expected_v, "bound and piped disjunct operator failed");
+		};
+		
+		{
+			const value_type q = a | (b & operator_v);
+			ASSERT(q == expected_v, "bound and piped disjunct operator failed");
+		};
+	};
+
+	{
+		constexpr value_type operand_a_v = false;
+		constexpr value_type operand_b_v = true;
+		constexpr value_type expected_v = operand_a_v || operand_b_v;
+
+		const value_type a = operand_a_v;
+		const value_type b = operand_b_v;
+
+		{
+			const value_type q = operator_v(a, b);
+			ASSERT(q == expected_v, "disjunct operator failed");
+		};
+
+		{
+			const value_type q = operator_v(b, a);
+			ASSERT(q == expected_v, "disjunct operator failed");
+		};
+
+		{
+			const value_type q = b | (a & operator_v);
+			ASSERT(q == expected_v, "bound and piped disjunct operator failed");
+		};
+
+		{
+			const value_type q = a | (b & operator_v);
+			ASSERT(q == expected_v, "bound and piped disjunct operator failed");
+		};
+	};
+
+	{
+		constexpr value_type operand_a_v = true;
+		constexpr value_type operand_b_v = true;
+		constexpr value_type expected_v = operand_a_v || operand_b_v;
+
+		const value_type a = operand_a_v;
+		const value_type b = operand_b_v;
+
+		{
+			const value_type q = operator_v(a, b);
+			ASSERT(q == expected_v, "disjunct operator failed");
+		};
+
+		{
+			const value_type q = operator_v(b, a);
+			ASSERT(q == expected_v, "disjunct operator failed");
+		};
+
+		{
+			const value_type q = b | (a & operator_v);
+			ASSERT(q == expected_v, "bound and piped disjunct operator failed");
+		};
+
+		{
+			const value_type q = a | (b & operator_v);
+			ASSERT(q == expected_v, "bound and piped disjunct operator failed");
+		};
+	};
+
+	PASS();
+};
+
+
+
+// jc::dereference test
+int test_op_dereference()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::dereference;
+
+	// Test with non-const value pointer
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type*>::value, "missing operator");
+
+		const value_type initial_v = 0;
+		const value_type new_v = 2;
+
+		value_type i = initial_v;
+		value_type* iptr = &i;
+
+		ASSERT(i == initial_v, "invalid dereference test condition");
+
+		jc::dereference(iptr) = new_v;
+		ASSERT(i == new_v, "dereference operator failed");
+
+		(iptr | jc::dereference) = initial_v;
+		ASSERT(i == initial_v, "piped dereference operator failed");
+	};
+
+	// Test with const value pointer
+	{
+		using value_type = const int;
+
+		static_assert(jc::has_operator<decltype(operator_v), const value_type*>::value, "missing operator");
+
+		const value_type initial_v = 0;
+		const value_type new_v = 2;
+
+		value_type i = initial_v;
+		value_type* iptr = &i;
+
+		ASSERT(i == initial_v, "invalid dereference test condition");
+
+		auto& iref = jc::dereference(iptr);
+		ASSERT(&i == &iref, "dereference operator failed on const value");
+	};
 
 	PASS();
 };
@@ -53,6 +430,41 @@ int test_piping()
 
 
 
+
+// Runs the tests for the various operators defined by jclib/functional.h
+int test_operators()
+{
+	NEWTEST();
+	
+	// Test arithmatic operators
+
+	SUBTEST(test_op_plus);
+	SUBTEST(test_op_minus);
+	SUBTEST(test_op_times);
+	SUBTEST(test_op_divide);
+
+
+
+	// Test binary arithmetic operators
+
+
+
+
+
+	// Test logical operatorss
+	
+	SUBTEST(test_op_conjuct);
+	SUBTEST(test_op_disjunct);
+
+
+
+	// Test other operators
+
+	SUBTEST(test_op_dereference);
+
+
+	PASS();
+};
 
 
 
@@ -80,8 +492,13 @@ struct Foo
 	int n = 0;
 };
 
+constexpr auto add(int a, int b) { return a + b; };
+
 int main()
 {
+	SUBTEST(test_operators);
+
+
 	if (!jc::has_operator<jc::plus_t, Foo, int>::value)
 	{
 		NEWTEST();
@@ -107,7 +524,5 @@ int main()
 		};
 	};
 
-	SUBTEST(test_piping);
-
-	return 0;
+	PASS();
 };
