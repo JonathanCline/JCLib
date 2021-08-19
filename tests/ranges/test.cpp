@@ -110,14 +110,14 @@ int test_transform()
 };
 
 
-template <typename ValueT, typename RangeT, typename IterT>
-int test_range_type_traits(RangeT&& _range, IterT _begin, IterT _end)
+
+
+
+
+template <typename RangeT, typename IterT>
+int test_range_iterator_functions(RangeT&& _range, IterT _begin, IterT _end)
 {
 	NEWTEST();
-
-	static_assert(jc::ranges::is_range<RangeT>::value, "");
-	static_assert(jc::is_same<jc::ranges::value_t<RangeT>, ValueT>::value, "");
-	static_assert(jc::is_same<jc::ranges::iterator_t<RangeT>, IterT>::value, "");
 
 	ASSERT(jc::begin(_range) == _begin, "ranges::begin mismatch");
 	ASSERT(jc::end(_range) == _end, "ranges::end mismatch");
@@ -125,6 +125,58 @@ int test_range_type_traits(RangeT&& _range, IterT _begin, IterT _end)
 
 	PASS();
 };
+
+
+template <typename IteratorT, typename RangeT>
+int test_range_iterator_type_traits(RangeT&& _range)
+{
+	NEWTEST();
+
+	static_assert(jc::ranges::is_range<RangeT>::value, "not a range");
+
+	using iterator = IteratorT;
+	using difference_type = decltype(std::declval<iterator>() - std::declval<iterator>());
+
+	static_assert(jc::is_same<iterator, typename jc::ranges::iterator<RangeT>::type>::value, "ranges::iterator mismatch");
+	static_assert(jc::is_same<iterator, jc::ranges::iterator_t<RangeT>>::value, "ranges::iterator_t mismatch");
+
+	static_assert(jc::is_same<difference_type, typename jc::ranges::difference_type<RangeT>::type>::value, "ranges::difference_type mismatch");
+	static_assert(jc::is_same<difference_type, jc::ranges::difference_type_t<RangeT>>::value, "ranges::difference_type_t mismatch");
+
+	PASS();
+};
+
+template <typename ValueType, typename RangeT>
+int test_range_value_type_traits(RangeT&& _range)
+{
+	NEWTEST();
+
+	static_assert(jc::ranges::is_range<RangeT>::value, "not a range");
+	
+	using value_type = ValueType;
+	using pointer = value_type*;
+	using reference = value_type&;
+	using const_pointer = const jc::remove_const_t<value_type>*;
+	using const_reference = const value_type&;
+
+	static_assert(jc::is_same<value_type, typename jc::ranges::value<RangeT>::type>::value, "ranges::value mismatch");
+	static_assert(jc::is_same<value_type, jc::ranges::value_t<RangeT>>::value, "ranges::value_t mismatch");
+	
+	static_assert(jc::is_same<pointer, typename jc::ranges::pointer<RangeT>::type>::value, "ranges::pointer mismatch");
+	static_assert(jc::is_same<pointer, jc::ranges::pointer_t<RangeT>>::value, "ranges::pointer_t mismatch");
+	
+	static_assert(jc::is_same<reference, typename jc::ranges::reference<RangeT>::type>::value, "ranges::reference mismatch");
+	static_assert(jc::is_same<reference, jc::ranges::reference_t<RangeT>>::value, "ranges::reference_t mismatch");
+
+	static_assert(jc::is_same<const_pointer, typename jc::ranges::const_pointer<RangeT>::type>::value, "ranges::const_pointer mismatch");
+	static_assert(jc::is_same<const_pointer, jc::ranges::const_pointer_t<RangeT>>::value, "ranges::const_pointer_t mismatch");
+	
+	static_assert(jc::is_same<const_reference, typename jc::ranges::const_reference<RangeT>::type>::value, "ranges::const_reference mismatch");
+	static_assert(jc::is_same<const_reference, jc::ranges::const_reference_t<RangeT>>::value, "ranges::const_reference_t mismatch");
+
+	PASS();
+};
+
 
 int test_range_type_traits()
 {
@@ -137,7 +189,9 @@ int test_range_type_traits()
 	
 		value_type _arr[_len]{ 1, 2, 3, 4 };
 		
-		SUBTEST(test_range_type_traits<value_type>, _arr, &_arr[0], &_arr[0] + _len);
+		SUBTEST(test_range_value_type_traits<value_type>, _arr);
+		SUBTEST(test_range_iterator_type_traits<value_type*>, _arr);
+		SUBTEST(test_range_iterator_functions, _arr, &_arr[0], (&_arr[0] + _len));
 	};
 
 	{	// Test with non-const C++ range
@@ -145,7 +199,11 @@ int test_range_type_traits()
 		using value_type = int;
 		std::vector<value_type> _arr{ 1, 2, 3, 4 };
 
-		SUBTEST(test_range_type_traits<value_type>, _arr, _arr.begin(), _arr.end());
+		using iterator = typename decltype(_arr)::iterator;
+
+		SUBTEST(test_range_value_type_traits<value_type>, _arr);
+		SUBTEST(test_range_iterator_type_traits<iterator>, _arr);
+		SUBTEST(test_range_iterator_functions, _arr, _arr.begin(), _arr.end());
 	};
 
 	{	// Test with const C range
@@ -155,7 +213,9 @@ int test_range_type_traits()
 
 		const value_type _arr[_len]{ 1, 2, 3, 4 };
 
-		SUBTEST(test_range_type_traits<const value_type>, _arr, &_arr[0], &_arr[0] + _len);
+		SUBTEST(test_range_value_type_traits<const value_type>, _arr);
+		SUBTEST(test_range_iterator_type_traits<const value_type*>, _arr);
+		SUBTEST(test_range_iterator_functions, _arr, &_arr[0], (&_arr[0] + _len));
 	};
 
 	{	// Test with const C++ range
@@ -163,7 +223,11 @@ int test_range_type_traits()
 		using value_type = int;
 		const std::vector<value_type> _arr{ 1, 2, 3, 4 };
 
-		SUBTEST(test_range_type_traits<const value_type>, _arr, _arr.begin(), _arr.end());
+		using iterator = typename decltype(_arr)::const_iterator;
+
+		SUBTEST(test_range_value_type_traits<const value_type>, _arr);
+		SUBTEST(test_range_iterator_type_traits<iterator>, _arr);
+		SUBTEST(test_range_iterator_functions, _arr, _arr.begin(), _arr.end());
 	};
 
 	PASS();
@@ -185,26 +249,6 @@ constexpr auto double_val(int i)
 int main()
 {
 	SUBTEST(test_range_type_traits);
-
-	{
-		auto _iota = jc::views::iota(0, 10);
-		
-		for (auto v : _iota.filter(&is_even).transform(&double_val))
-		{
-			std::cout << v << '\n';
-		};
-	};
-
-	PASS();
-
-
-
-
-
-
-
-
-
 
 	{
 		NEWTEST();

@@ -175,7 +175,26 @@ namespace jc
 
 
 /*
-	Range inspection type traits
+	Range inspection type traits.
+
+
+		Range iterator inspection:
+
+		 - iterator[_t] -> Gets the iterator type for a range
+		 - const_iterator[_t] -> Gets the const_iterator type for a range (for C-Arrays this is a const T*)
+		
+		Range value inspection:
+
+		 - value[_t] -> Gets the value type for a range (usually T if Range<T> or T if T[N])
+		 - pointer[_t] -> Gets the non-const value pointer type for a range (value_t*)
+		 - reference[_t] -> Gets the non-const value reference type for a range (value_t&)
+		 - const_pointer[_t] -> Gets the const value pointer type for a range (const value_t*)
+		 - const_reference[_t] -> Gets the const value reference type for a range (const value_t&)
+
+		Other:
+		
+		 - difference_type[_t] -> Gets the type returned by subtracting two iterator_t<RangeT>(s) given a range RangeT
+
 */
 
 namespace jc
@@ -206,6 +225,33 @@ namespace jc
 		*/
 		template <typename RangeT>
 		using iterator_t = typename iterator<RangeT>::type;
+
+
+
+		/**
+		 * @brief Gets the const_iterator or const_iterator-like type of a range
+		 * @tparam RangeT Range type
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct const_iterator;
+
+		/**
+		 * @brief Gets the const_iterator or const_iterator-like type of a range
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		struct const_iterator<RangeT, enable_if_t<is_range<RangeT>::value>>
+		{
+			using type = iterator_t<std::add_const_t<jc::remove_cvref_t<RangeT>>>;
+		};
+
+		/**
+		 * @brief Gets the const_iterator or const_iterator-like type of a range
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		using const_iterator_t = typename const_iterator<RangeT>::type;
 
 
 
@@ -332,7 +378,7 @@ namespace jc
 		template <typename RangeT>
 		struct const_pointer <RangeT, enable_if_t<is_range<RangeT>::value>>
 		{
-			using type = std::add_const_t<std::add_pointer_t<value_t<RangeT>>>;
+			using type = std::add_pointer_t<std::add_const_t<jc::remove_const_t<value_t<RangeT>>>>;
 		};
 
 		/**
@@ -341,6 +387,34 @@ namespace jc
 		*/
 		template <typename T>
 		using const_pointer_t = typename const_pointer<T>::type;
+
+
+
+		/**
+		 * @brief Gets the difference type of a range
+		 * @tparam RangeT Range type
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct difference_type;
+
+		/**
+		 * @brief Gets the difference type of a range
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		struct difference_type<RangeT, enable_if_t<is_range<RangeT>::value>>
+		{
+			using type = jc::difference_type_t<jc::ranges::iterator_t<RangeT>>;
+		};
+
+		/**
+		 * @brief Gets the difference type of a range
+		 * @tparam RangeT Range type
+		*/
+		template <typename RangeT>
+		using difference_type_t = typename difference_type<RangeT>::type;
+
 
 	};
 
