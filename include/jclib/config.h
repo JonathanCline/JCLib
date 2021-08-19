@@ -181,10 +181,10 @@ namespace jc
 // Define exception status macro if enabled
 #if !defined(JCLIB_NO_EXCEPTIONS)
 // Defined if exceptions are enabled
-#define JCLIB_EXCEPTIONS true
+#define JCLIB_EXCEPTIONS
 #else
 // Defined if exceptions are enabled
-#define JCLIB_EXCEPTIONS false
+#define JCLIB_EXCEPTIONS
 #endif
 
 
@@ -192,7 +192,7 @@ namespace jc
 
 // Define exception status value macro
 
-#if defined(JCLIB_EXCEPTIONS) && JCLIB_EXCEPTIONS == true
+#if defined(JCLIB_EXCEPTIONS)
 // True/False depending on if exceptions are allowed
 #define JCLIB_EXCEPTIONS_V true
 #else
@@ -229,7 +229,7 @@ namespace jc
 	/**
 	 * @brief True if exceptions are enabled, false otherwise
 	*/
-	constexpr extern bool exceptions_v = JCLIB_EXCEPTIONS;
+	constexpr extern bool exceptions_v = JCLIB_EXCEPTIONS_V;
 };
 
 #endif

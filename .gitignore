@@ -1,6 +1,6 @@
 .vs/
 out/
 .github/
-
+CMakeSettings.json
 
 config/include

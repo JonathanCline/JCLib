@@ -303,20 +303,20 @@ namespace jc
 
 		public:
 		
-			constexpr value_type& operator*() noexcept(!JCLIB_EXCEPTIONS)
+			constexpr value_type& operator*() noexcept(!JCLIB_EXCEPTIONS_V)
 			{
 				return this->value();
 			};
-			constexpr const value_type& operator*() const noexcept(!JCLIB_EXCEPTIONS)
+			constexpr const value_type& operator*() const noexcept(!JCLIB_EXCEPTIONS_V)
 			{
 				return this->value();
 			};
 
-			constexpr value_type* operator->() noexcept(!JCLIB_EXCEPTIONS)
+			constexpr value_type* operator->() noexcept(!JCLIB_EXCEPTIONS_V)
 			{
 				return &this->value();
 			};
-			constexpr const value_type* operator->() const noexcept(!JCLIB_EXCEPTIONS)
+			constexpr const value_type* operator->() const noexcept(!JCLIB_EXCEPTIONS_V)
 			{
 				return &this->value();
 			};
@@ -338,9 +338,9 @@ namespace jc
 				return this->unsafe_alternate();
 			};
 
-			constexpr alternate_type& alternate() noexcept(!JCLIB_EXCEPTIONS)
+			constexpr alternate_type& alternate() noexcept(!JCLIB_EXCEPTIONS_V)
 			{
-#if JCLIB_EXCEPTIONS
+#if JCLIB_EXCEPTIONS_V
 				if (this->has_value())
 				{
 					throw bad_access_exception{ "alternate is not the active member" };
@@ -350,9 +350,9 @@ namespace jc
 				return this->alternate(nothrow);
 #endif
 			};
-			constexpr const alternate_type& alternate() const noexcept(!JCLIB_EXCEPTIONS)
+			constexpr const alternate_type& alternate() const noexcept(!JCLIB_EXCEPTIONS_V)
 			{
-#if JCLIB_EXCEPTIONS
+#if JCLIB_EXCEPTIONS_V
 				if (this->has_value())
 				{
 					throw bad_access_exception{ "alternate is not the active member" };
