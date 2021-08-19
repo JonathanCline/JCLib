@@ -35,7 +35,7 @@ namespace jc
 	{
 		return _op(std::forward<ArgTs>(_args)...);
 	};
-	
+
 	/**
 	 * @brief Invokes a function or invocable object and returns its result
 	 * @param _op Function or invocable object to invoke
@@ -68,7 +68,7 @@ namespace jc
 	 * @param _args... Arguements to pass as the parameters
 	*/
 	template <typename ReturnT, typename ClassT, typename... ArgTs>
-	JCLIB_CONSTEXPR inline auto invoke(ReturnT(ClassT::*_op)(ArgTs...), ClassT* _class, ArgTs&&... _args)
+	JCLIB_CONSTEXPR inline auto invoke(ReturnT(ClassT::* _op)(ArgTs...), ClassT* _class, ArgTs&&... _args)
 		-> ReturnT
 	{
 		return (_class->*_op)(std::forward<ArgTs>(_args)...);
@@ -132,8 +132,8 @@ namespace jc
 	{
 		return impl::apply_impl(std::move(_op), _args, std::make_index_sequence<sizeof...(ArgTs)>());
 	};
-	
-	
+
+
 	template <typename Op, template <typename... ArgTs> typename T, typename... ArgTs>
 	constexpr inline auto apply(Op _op, T<ArgTs...>&& _args) ->
 		decltype(jc::invoke(std::declval<Op>(), std::declval<ArgTs>()...))
@@ -181,6 +181,28 @@ namespace jc
 #endif
 
 	/**
+	 * @brief CRTP type for adding piping semantics alongside other common unary function features
+	 * @tparam OperatorT Operator type being CRTPd (child type)
+	*/
+	template <typename OperatorT>
+	struct unary_operator : public unary_operator_tag
+	{
+	public:
+		template <typename U>
+		friend constexpr inline auto operator|(const U& lhs, const OperatorT& rhs) ->
+			jc::enable_if_t
+			<
+			jc::is_invocable<OperatorT, const U&>::value,
+			jc::invoke_result_t<OperatorT, const U&>
+			>
+		{
+			return rhs(lhs);
+		};
+	};
+
+
+
+	/**
 	 * @brief Tag type for implementing binary operators
 	*/
 	struct binary_operator_tag : operator_tag {};
@@ -211,19 +233,14 @@ namespace jc
 		struct bound_op;
 
 		template <typename OpT, typename T>
-		struct bound_op<bind_first_t, OpT, T> : unary_operator_tag
+		struct bound_op<bind_first_t, OpT, T> :
+			public unary_operator<bound_op<bind_first_t, OpT, T>>
 		{
 			template <typename U>
 			constexpr auto operator()(const U& rhs) const ->
 				jc::invoke_result_t<OpT, T, U>
 			{
 				return jc::invoke(this->op, this->value, rhs);
-			};
-
-			template <typename U>
-			friend constexpr inline auto operator|(const U& lhs, const bound_op& rhs)
-			{
-				return rhs(lhs);
 			};
 
 			constexpr bound_op(OpT _op, T _value) :
@@ -235,19 +252,14 @@ namespace jc
 		};
 
 		template <typename OpT, typename T>
-		struct bound_op<bind_second_t, OpT, T> : unary_operator_tag
+		struct bound_op<bind_second_t, OpT, T> :
+			public unary_operator<bound_op<bind_second_t, OpT, T>>
 		{
 			template <typename U>
 			constexpr auto operator()(const U& lhs) const ->
 				jc::invoke_result_t<OpT, U, T>
 			{
 				return jc::invoke(this->op, lhs, this->value);
-			};
-
-			template <typename U>
-			friend constexpr inline auto operator|(const U& lhs, const bound_op& rhs)
-			{
-				return rhs(lhs);
 			};
 
 			constexpr bound_op(OpT _op, T _value) :
@@ -272,7 +284,7 @@ namespace jc
 			return impl::bound_op<impl::bind_first_t, OperatorT, T>
 			{
 				_op,
-				_value
+					_value
 			};
 		};
 
@@ -282,7 +294,7 @@ namespace jc
 			return impl::bound_op<impl::bind_second_t, OperatorT, T>
 			{
 				_op,
-				_value
+					_value
 			};
 		};
 	};
@@ -292,7 +304,7 @@ namespace jc
 
 	struct placeholder_t {};
 	constexpr static placeholder_t placeholder{};
-	
+
 
 
 	template <typename OpT, typename T>
@@ -427,7 +439,7 @@ namespace jc
 			return lhs * rhs;
 		};
 	};
-	
+
 	/**
 	 * @brief Multiplcation "*" arithmatic function object
 	*/
@@ -454,7 +466,7 @@ namespace jc
 	/**
 	 * @brief Inversion "!" arithmatic function object type
 	*/
-	struct invert_t : unary_operator_tag
+	struct invert_t : unary_operator<invert_t>
 	{
 		template <typename T>
 		constexpr auto operator()(T&& _value) const noexcept
@@ -468,22 +480,70 @@ namespace jc
 	*/
 	constexpr static invert_t invert{};
 
+
+
 	/**
-	 * @brief Binary AND "&&" arithmatic function object type
+	 * @brief Binary AND "&&" logical function object type
 	*/
 	struct conjunct_t : binary_operator<conjunct_t>
 	{
 		template <typename T, typename U>
-		constexpr auto operator()(T&& lhs, U&& rhs) const noexcept
+		constexpr auto operator()(T&& lhs, U&& rhs) const
+			noexcept(noexcept(std::declval<T&&>() && std::declval<U&&>()))
+			->
+			decltype(std::declval<T&&>() && std::declval<U&&>())
 		{
 			return lhs && rhs;
 		};
 	};
 
 	/**
-	 * @brief Binary AND "&&" arithmatic function object
+	 * @brief Binary AND "&&" logical function object
 	*/
 	constexpr static conjunct_t conjunct{};
+
+
+
+	/**
+	 * @brief Binary OR "||" logical function object type
+	*/
+	struct disjunct_t : binary_operator<disjunct_t>
+	{
+		template <typename T, typename U>
+		constexpr auto operator()(T&& lhs, U&& rhs) const
+			noexcept(noexcept(std::declval<T&&>() || std::declval<U&&>()))
+			->
+			decltype(std::declval<T&&>() || std::declval<U&&>())
+		{
+			return lhs || rhs;
+		};
+	};
+
+	/**
+	 * @brief Binary OR "||" logical function object
+	*/
+	constexpr static disjunct_t disjunct{};
+
+
+
+	/**
+	 * @brief Unary dereference "*" function object type (ie. dereference(int*) -> int&)
+	*/
+	struct dereference_t : public unary_operator<dereference_t>
+	{
+	public:
+		template <typename T>
+		constexpr auto operator()(T&& _value) const ->
+			decltype(*std::declval<T&&>())
+		{
+			return *_value;
+		};
+	};
+
+	/**
+	 * @brief Unary dereference "*" function object (ie. dereference(int*) -> int&)
+	*/
+	constexpr static dereference_t dereference{};
 
 
 
