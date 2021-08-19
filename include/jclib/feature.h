@@ -156,22 +156,22 @@
 	Test for __cpp_if_constexpr
 */
 
-#define JCLIB_FEATURE_VALUE_CONSTEVAL 201811L
-#if defined(__cpp_consteval) && JCLIB_FEATURE_VALUE_CONSTEVAL != __cpp_consteval
+#define JCLIB_FEATURE_VALUE_IF_CONSTEXPR 201606L
+#if defined(__cpp_consteval) && JCLIB_FEATURE_VALUE_IF_CONSTEXPR != __cpp_if_constexpr
 #error "Feature testing value mismatch"
 #endif
-#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEVAL || __cpp_consteval >= JCLIB_FEATURE_VALUE_CONSTEVAL
-#define JCLIB_FEATURE_CONSTEVAL
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_IF_CONSTEXPR || __cpp_if_constexpr >= JCLIB_FEATURE_VALUE_IF_CONSTEXPR
+#define JCLIB_FEATURE_IF_CONSTEXPR
 #else
-#ifdef JCLIB_FEATURE_CONSTEVAL
+#ifdef JCLIB_FEATURE_IF_CONSTEXPR
 #error "Feature testing macro was defined when it shouldn't be"
 #endif
 #endif
 
-#ifdef JCLIB_FEATURE_CONSTEVAL
-#define JCLIB_FEATURE_CONSTEVAL_V true
+#ifdef JCLIB_FEATURE_IF_CONSTEXPR
+#define JCLIB_FEATURE_IF_CONSTEXPR_V true
 #else
-#define JCLIB_FEATURE_CONSTEVAL_V false
+#define JCLIB_FEATURE_IF_CONSTEXPR_V false
 #endif
 
 
