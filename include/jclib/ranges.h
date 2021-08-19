@@ -1220,9 +1220,9 @@ namespace jc
 
 
 /*
-	Iter view
+	Iter view, this is currently removed as it will behave differently in 0.3.0
 */
-
+#if JCLIB_VERSION_MAJOR >= 0 && JCLIB_VERSION_MINOR >= 3
 #pragma region ITER_VIEW
 
 namespace jc
@@ -1275,7 +1275,7 @@ namespace jc
 };
 
 #pragma endregion ITER_VIEW
-
+#endif
 
 
 /*
