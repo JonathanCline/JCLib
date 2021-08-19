@@ -2,8 +2,6 @@
 #ifndef JCLIB_CONFIG_H
 #define JCLIB_CONFIG_H
 
-#define _JCLIB_CONFIG_
-
 /*
 	Copyright 2021 Jonathan Cline
 	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
@@ -17,17 +15,9 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <jclib/config/version.h>
 
-
-
-
-
-
-
-
-
-
-
+#define _JCLIB_CONFIG_
 
 #ifdef __cpp_constexpr
 #define JCLIB_CONSTEXPR constexpr
@@ -41,7 +31,6 @@
 #else
 #define JCLIB_CONSTANT const
 #endif
-
 
 namespace jc
 {
@@ -76,32 +65,37 @@ namespace jc
 		/**
 		 * @brief jclib version
 		*/
-		JCLIB_CONSTANT static version LIBRARY_VERSION{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
+		constexpr static version LIBRARY_VERSION{ JCLIB_VERSION_MAJOR, JCLIB_VERSION_MINOR, JCLIB_VERSION_PATCH };
 	};
 };
 
-
-
-
-
-
 #ifndef JCLIB_ABORT
-#include <utility>
+#include <exception>
 #define JCLIB_ABORT(...) std::terminate()
 #endif
 
-#ifndef JCLIB_ASSERT
 #if defined(JCLIB_DEBUG_MODE) || !defined(NDEBUG)
+#define JCLIB_DEBUG
+#endif
+
+#ifndef JCLIB_ASSERT
+#ifdef JCLIB_DEBUG
 #define JCLIB_ASSERT(cond) if ( ! ( cond ) ) { JCLIB_ABORT(); }
 #else
 #define JCLIB_ASSERT(cond) {}
 #endif
 #endif
 
+// [[nodiscard()]] attribute definition
 #ifndef JCLIB_NODISCARD
-#if __has_cpp_attribute(nodiscard)
+#if __has_cpp_attribute(nodiscard) >= 201907L
+// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
 #define JCLIB_NODISCARD(reason) [[nodiscard(reason)]]
+#elif __has_cpp_attribute(nodiscard)
+// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
+#define JCLIB_NODISCARD(reason) [[nodiscard]]
 #else
+// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
 #define JCLIB_NODISCARD()
 #endif
 #endif
@@ -150,17 +144,92 @@ namespace jc
 // Convenience macro for c++20 requires clauses
 #ifndef JCLIB_REQUIRES
 #ifdef __cpp_concepts
-#define JCLIB_REQUIRES(x) requires x
+#define JCLIB_REQUIRES(x) requires (x)
 #else
 #define JCLIB_REQUIRES(x)
 #endif
 #endif
 
+// Likely attribute for C++20 (+?)
+#ifndef JCLIB_LIKELY
+#if __has_cpp_attribute(likely)
+#define JCLIB_LIKELY [[likely]]
+#else
+#define JCLIB_LIKELY
+#endif
+#endif
+
+// Unlikely attribute for C++20 (+?)
+#ifndef JCLIB_UNLIKELY
+#if __has_cpp_attribute(unlikely)
+#define JCLIB_UNLIKELY [[unlikely]]
+#else
+#define JCLIB_UNLIKELY
+#endif
+#endif
+
+// consteval qualifier, defaults to constexpr if consteval isnt available
+#ifndef JCLIB_CONSTEVAL
+#if __has_cpp_attribute(likely)
+#define JCLIB_CONSTEVAL consteval
+#else
+#define JCLIB_CONSTEVAL JCLIB_CONSTEXPR
+#endif
+#endif
+
+
+// Define exception status macro if enabled
+#if !defined(JCLIB_NO_EXCEPTIONS)
+// Defined if exceptions are enabled
+#define JCLIB_EXCEPTIONS
+#else
+// Defined if exceptions are enabled
+#define JCLIB_EXCEPTIONS
+#endif
+
+
+
+
+// Define exception status value macro
+
+#if defined(JCLIB_EXCEPTIONS)
+// True/False depending on if exceptions are allowed
+#define JCLIB_EXCEPTIONS_V true
+#else
+// True/False depending on if exceptions are allowed
+#define JCLIB_EXCEPTIONS_V false
+#endif
+
+
+
+
+
+#if JCLIB_EXCEPTIONS_V
+// Throws an exception if jclib's exceptions are enabled
+#define JCLIB_THROW(x) { throw x; }
+#else
+// Throws an exception if jclib's exceptions are enabled
+#define JCLIB_THROW(x) JCLIB_ABORT()
+#endif
+
+
+// Make debug switch value macro
+#if defined(JCLIB_DEBUG)
+	// Debug mode switch value
+	#define JCLIB_DEBUG_V true
+#else
+	// Debug mode switch value
+	#define JCLIB_DEBUG_V false
+#endif
+
+
+
 namespace jc
 {
-
-
-
-}
+	/**
+	 * @brief True if exceptions are enabled, false otherwise
+	*/
+	constexpr extern bool exceptions_v = JCLIB_EXCEPTIONS_V;
+};
 
 #endif

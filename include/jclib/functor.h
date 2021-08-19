@@ -2,14 +2,8 @@
 #ifndef JCLIB_FUNCTOR_H
 #define JCLIB_FUNCTOR_H
 
-#define _JCLIB_FUNCTOR_
-
 /*
-	Consider this stable.
-*/
-
-/*
-	Copyright 2020 Jonathan Cline
+	Copyright 2020,2021 Jonathan Cline
 	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
 	(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge,
 	publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do
@@ -20,11 +14,6 @@
 	COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
-/*
-	Confirmed to compile on MSVC for c++ versions 14, 17, 20   (as of 2/28/2021) 
-*/
-
 
 /*
 	jc::functor<> works almost identically to the std::function<> type.
@@ -72,11 +61,11 @@
 #include "jclib/type.h"
 #include "jclib/type_traits.h"
 
+#define _JCLIB_FUNCTOR_
 
 #include <utility>
 #include <new>
 #include <tuple>
-
 
 namespace jc
 {
@@ -90,8 +79,6 @@ namespace jc
 		template <bool isNoexcept, typename ReturnT, typename... ArgTs>
 		struct function_pointer_base
 		{
-		private:
-			using this_type = function_pointer_base<isNoexcept, ReturnT, ArgTs...>;
 		public:
 			// Function return type
 			using return_type = ReturnT;
@@ -99,7 +86,10 @@ namespace jc
 			// Function argument typelist (tuple)
 			using argument_typelist = std::tuple<ArgTs...>;
 
-			virtual this_type* clone() const = 0;
+			
+			virtual JCLIB_NODISCARD("owning pointer") function_pointer_base* clone() const = 0;
+			
+			
 			virtual return_type invoke(ArgTs... _a) const = 0;
 
 			virtual ~function_pointer_base() = default;
@@ -125,7 +115,7 @@ namespace jc
 				return_type(*)(ArgTs...) noexcept,
 				return_type(*)(ArgTs...)>;
 
-			parent_type* clone() const final
+			JCLIB_NODISCARD("owning pointer") parent_type* clone() const final
 			{
 				return new free_function_pointer{ *this };
 			};
@@ -142,7 +132,7 @@ namespace jc
 			JCLIB_CONSTEXPR free_function_pointer() noexcept = default;
 
 		private:
-			function_pointer_type ptr_;
+			function_pointer_type ptr_ = nullptr;
 
 		};
 
@@ -152,20 +142,34 @@ namespace jc
 		 * @tparam ClassT The member function's class type
 		 * @tparam ...ArgTs Function arguement types
 		*/
-		template <bool isNoexcept, typename ReturnT, class ClassT, typename... ArgTs>
+		template <bool isNoexcept, bool isConst, typename ReturnT, class ClassT, typename... ArgTs>
 		struct member_function_pointer : public function_pointer_base<isNoexcept, ReturnT, ArgTs...>
 		{
 		private:
 			using parent_type = function_pointer_base<isNoexcept, ReturnT, ArgTs...>;
+
+			using class_pointer = std::conditional_t<isConst, const ClassT*, ClassT*>;
 
 		public:
 			using class_type = ClassT;
 			using return_type = typename parent_type::return_type;
 
 			// Internal function pointer type
-			using function_pointer_type = std::conditional_t<isNoexcept,
-				return_type(class_type::*)(ArgTs...) noexcept,
-				return_type(class_type::*)(ArgTs...)>;
+			using function_pointer_type = std::conditional_t<isConst,
+#ifdef __cpp_noexcept_function_type
+				std::conditional_t<isNoexcept,
+					return_type(class_type::*)(ArgTs...) const noexcept,
+					return_type(class_type::*)(ArgTs...) const
+					>,
+				std::conditional_t<isNoexcept,
+					return_type(class_type::*)(ArgTs...) noexcept,
+					return_type(class_type::*)(ArgTs...)
+				>
+#else
+				return_type(class_type::*)(ArgTs...) const,
+				return_type(class_type::*)(ArgTs...)
+#endif
+			>;
 
 			parent_type* clone() const final
 			{
@@ -176,18 +180,18 @@ namespace jc
 				auto& _class = this->class_;
 				auto& _function = this->ptr_;
 				JCLIB_ASSERT(_class != nullptr && _function != nullptr);
-				return (_class->*_function)(args...);
+				return ((*_class).*_function)(args...);
 			};
 
-			JCLIB_CONSTEXPR member_function_pointer(const function_pointer_type& _function, class_type* _class) noexcept :
+			JCLIB_CONSTEXPR member_function_pointer(const function_pointer_type& _function, class_pointer _class) noexcept :
 				ptr_{ _function }, class_{ _class }
 			{};
+
 			JCLIB_CONSTEXPR member_function_pointer() noexcept = default;
 
 		private:
-			function_pointer_type ptr_;
-			class_type* class_;
-
+			function_pointer_type ptr_ = nullptr;
+			class_pointer class_ = nullptr;
 		};
 
 		/**
@@ -204,9 +208,16 @@ namespace jc
 			using free_function_type = typename free_function_object_type::function_pointer_type;
 
 			template <typename ClassT>
-			using member_function_object_type = member_function_pointer<isNoexcept, ReturnT, ClassT, ArgTs...>;
+			using member_function_object_type = member_function_pointer<isNoexcept, false, ReturnT, ClassT, ArgTs...>;
+
 			template <typename ClassT>
 			using member_function_type = typename member_function_object_type<ClassT>::function_pointer_type;
+			
+			template <typename ClassT>
+			using const_member_function_object_type = member_function_pointer<isNoexcept, true, ReturnT, ClassT, ArgTs...>;
+
+			template <typename ClassT>
+			using const_member_function_type = typename const_member_function_object_type<ClassT>::function_pointer_type;
 
 		public:
 
@@ -220,18 +231,19 @@ namespace jc
 			/**
 			 * @brief True if the function type is noexcept
 			*/
-			JCLIB_CONSTANT static inline bool is_noexcept_v = isNoexcept;
-
+#ifdef __cpp_inline_variables
+			JCLIB_CONSTEXPR static bool is_noexcept_v = isNoexcept;
+#endif
 			/**
 			 * @brief Returns true if the function type is noexcept
 			*/
 			JCLIB_CONSTEXPR static bool is_noexcept() noexcept
 			{
-				return is_noexcept_v;
+				return isNoexcept;
 			};
 
 		private:
-			JCLIB_CONSTEXPR auto& get() noexcept
+			JCLIB_CONSTEXPR pointer& get() noexcept
 			{
 				return this->ptr_;
 			};
@@ -316,9 +328,7 @@ namespace jc
 			*/
 			return_type operator()(ArgTs... _args) const noexcept(functor_impl::is_noexcept())
 			{
-				JCLIB_ASSERT(this->good());
-				const pointer& _function = this->get();
-				return _function->invoke(_args...);
+				return this->invoke(std::forward<ArgTs>(_args)...);
 			};
 
 			/**
@@ -339,7 +349,7 @@ namespace jc
 			functor_impl& operator=(std::nullptr_t) noexcept
 			{
 				this->reset();
-				this->ptr_ = nullptr;
+				JCLIB_ASSERT(this->ptr_ == nullptr);
 				return *this;
 			};
 
@@ -362,13 +372,14 @@ namespace jc
 				return *this;
 			};
 
-			template <typename ScopeT>
+
+			template <typename ScopeT, typename = jc::enable_if_t<std::is_const<ScopeT>::value == false>>
 			JCLIB_CONSTEXPR functor_impl(member_function_type<ScopeT> _function, ScopeT* _class) :
 				functor_impl{ new member_function_object_type<ScopeT>{ _function, _class } }
 			{};
 
 			// calls reset()
-			template <typename ScopeT>
+			template <typename ScopeT, typename = jc::enable_if_t<std::is_const<ScopeT>::value == false>>
 			functor_impl& operator=(std::pair<member_function_type<ScopeT>, ScopeT*> _memberFunction)
 			{
 				this->reset();
@@ -378,6 +389,25 @@ namespace jc
 				};
 				return *this;
 			};
+
+
+			template <typename ScopeT>
+			JCLIB_CONSTEXPR functor_impl(const_member_function_type<ScopeT> _function, const ScopeT* _class) :
+				functor_impl{ new const_member_function_object_type<ScopeT>{ _function, _class } }
+			{};
+
+			// calls reset()
+			template <typename ScopeT>
+			functor_impl& operator=(std::pair<const_member_function_type<ScopeT>, const ScopeT*> _memberFunction)
+			{
+				this->reset();
+				this->ptr_ = new const_member_function_object_type<ScopeT>
+				{
+					_memberFunction.first, _memberFunction.second
+				};
+				return *this;
+			};
+
 
 			JCLIB_CONSTEXPR explicit functor_impl(const functor_impl& _other) :
 				ptr_{ (_other.good())? _other.get()->clone() : nullptr }
@@ -395,14 +425,14 @@ namespace jc
 			functor_impl& operator=(functor_impl&& _other) noexcept
 			{
 				// Check that these are not owning the same function object (this should never happen, ever)
-				JCLIB_ASSERT(this->get() != &_other.get());
+				JCLIB_ASSERT(this->get() != _other.get());
 				this->reset();
 				this->ptr_ = _other.extract();
 				return *this;
 			};
 
 			// Calls reset()
-			~functor_impl()
+			~functor_impl() noexcept
 			{
 				this->reset();
 			};
@@ -418,12 +448,18 @@ namespace jc
 		template <typename ReturnT, typename ScopeT, typename... Args>
 		functor_impl(ReturnT(ScopeT::*)(Args...), ScopeT*)->functor_impl<false, ReturnT, Args...>;
 
+		template <typename ReturnT, typename ScopeT, typename... Args>
+		functor_impl(ReturnT(ScopeT::*)(Args...) const, ScopeT*)->functor_impl<false, ReturnT, Args...>;
+
 #ifdef __cpp_noexcept_function_type
 		template <typename ReturnT, typename... Args>
 		functor_impl(ReturnT(*)(Args...) noexcept)->functor_impl<true, ReturnT, Args...>;
 
 		template <typename ReturnT, typename ScopeT, typename... Args>
 		functor_impl(ReturnT(ScopeT::*)(Args...) noexcept, ScopeT*)->functor_impl<true, ReturnT, Args...>;
+
+		template <typename ReturnT, typename ScopeT, typename... Args>
+		functor_impl(ReturnT(ScopeT::*)(Args...) const noexcept, ScopeT*)->functor_impl<true, ReturnT, Args...>;
 #endif
 #endif
 	};

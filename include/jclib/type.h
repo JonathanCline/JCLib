@@ -2,8 +2,6 @@
 #ifndef JCLIB_TYPE_H
 #define JCLIB_TYPE_H
 
-#define _JCLIB_TYPE_
-
 /*
 	Copyright 2021 Jonathan Cline
 	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
@@ -23,6 +21,8 @@
 
 #include "jclib/config.h"
 #include "jclib/type_traits.h"
+
+#define _JCLIB_TYPE_
 
 #include <tuple>
 
@@ -60,6 +60,49 @@ namespace jc
 	template <bool UseAlternate, typename T, typename AlternateT>
 	using type_switch_t = typename type_switch<UseAlternate, T, AlternateT>::type;
 	
+	
+	
+	/**
+	 * @brief Empty type containing a using alias for the type being "rafted"
+	 * This can be used to simplify some meta-programming code.
+	 * @tparam T Type to be rafted
+	*/
+	template <typename T>
+	struct raft
+	{
+		/**
+		 * @brief Type held by the raft
+		*/
+		using type = T;
+	};
+
+	/**
+	 * @brief Gets the type held within a type raft
+	 * @tparam T Raft type
+	*/
+	template <typename T>
+	struct raft_type;
+
+	/**
+	 * @brief Gets the type held within a type raft
+	 * @tparam T Type held by the raft
+	*/
+	template <typename T>
+	struct raft_type<raft<T>>
+	{
+		/**
+		 * @brief Type held by the raft
+		*/
+		using type = typename raft<T>::type;
+	};
+
+	/**
+	 * @brief Inline version of raft_type, gets the type held within a type raft
+	 * @tparam T Type raft type
+	*/
+	template <typename T>
+	using raft_type_t = typename raft_type<T>::type;
+
 };
 
 #endif

@@ -2,8 +2,6 @@
 #ifndef JCLIB_CONCEPTS_H
 #define JCLIB_CONCEPTS_H
 
-#define _JCLIB_CONCEPTS_
-
 /*
 	Copyright 2021 Jonathan Cline
 	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
@@ -18,20 +16,32 @@
 */
 
 /*
-	This is a semi-standin concepts library that was created before MSVC had a standard concepts library. 
-	Also contains various concepts that are frequently useful
+		This is a semi-standin concepts library that was created before MSVC (or any other c++ implementation)
+	had a standard concepts library. Also contains various concepts that are frequently useful
 */
 
 #include "jclib/config.h"
+#include "jclib/feature.h"
 
-#if defined(__cpp_concepts) && defined(__cpp_lib_concepts)
-
+#ifdef JCLIB_FEATURE_CONCEPTS
 #include "jclib/type_traits.h"
+
+#define _JCLIB_CONCEPTS_
 
 #include <concepts>
 
 namespace jc
 {
+	/*
+		Logical concept
+	*/
+
+	template <bool Val>
+	concept cx_not = !Val;
+
+
+
+
 	/*
 		Type comparison
 	*/
@@ -44,6 +54,10 @@ namespace jc
 
 	template <typename T, typename... Ts>
 	concept cx_any_of = is_any_of_v<T, Ts...>;
+
+	template <typename T, typename U>
+	concept cx_element_of = is_element_of_v<T, U>;
+
 
 	/*
 		Character concept
@@ -163,6 +177,10 @@ namespace jc
 
 	template <typename T>
 	concept cx_function_pointer = is_function_pointer_v<T>;
+
+	template <typename FunctionT, typename... ArgTs>
+	concept cx_invocable = is_invocable_v<FunctionT, ArgTs...>;
+
 
 
 	/*
