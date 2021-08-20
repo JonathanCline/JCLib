@@ -471,14 +471,6 @@ int test_operators()
 
 
 
-
-
-
-
-
-
-
-
 struct Foo
 {
 	constexpr auto operator+(int a) const noexcept
@@ -497,7 +489,6 @@ constexpr auto add(int a, int b) { return a + b; };
 int main()
 {
 	SUBTEST(test_operators);
-
 
 	if (!jc::has_operator<jc::plus_t, Foo, int>::value)
 	{

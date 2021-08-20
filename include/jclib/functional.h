@@ -620,6 +620,54 @@ namespace jc
 	constexpr inline bool has_operator_v = has_operator<Op, T, U>::value;
 #endif
 
+	
+	namespace impl
+	{
+		struct null_piped_parent {};
+
+		template <typename LT, typename RT>
+		struct piped_function : public std::conditional_t
+			<
+			jc::is_unary_operator<LT>::value,
+			jc::unary_operator<piped_function<LT, RT>>,
+			jc::impl::null_piped_parent
+			>
+		{
+		public:
+
+			template <typename... ArgTs>
+			constexpr auto operator()(ArgTs&&... _args) const ->
+				jc::invoke_result_t<RT, jc::invoke_result_t<LT, ArgTs&&...>>
+			{
+				return jc::invoke(this->rhs_, jc::invoke(this->lhs_, std::forward<ArgTs>(_args)...));
+			};
+
+			template <typename _LT, typename _RT
+#if !JCLIB_FEATURE_CONCEPTS_V
+				, typename = jc::enable_if_t<jc::is_forwardable_to<_LT, LT>::value&& jc::is_forwardable_to<_RT, RT>::value>
+#endif
+			>
+				JCLIB_REQUIRES((jc::cx_forwardable_to<_LT, LT>&& jc::cx_forwardable_to<_RT, RT>))
+				constexpr piped_function(_LT&& _lhs, _RT&& _rhs)
+				noexcept(jc::is_noexcept_forwardable_to<_LT, LT>::value&& jc::is_noexcept_forwardable_to<_RT, RT>::value)
+				: lhs_{ std::forward<_LT>(_lhs) }, rhs_{ std::forward<_RT>(_rhs) }
+			{};
+
+		private:
+			LT lhs_;
+			RT rhs_;
+		};
+
+	};
+
+
+	template <typename LT, typename RT>
+	constexpr inline auto operator|(const LT& _lhs, const RT& _rhs) ->
+		jc::enable_if_t<jc::is_unary_operator<RT>::value, impl::piped_function<LT, RT>>
+	{
+		return impl::piped_function<LT, RT>(_lhs, _rhs);
+	};
+
 };
 
 #endif
