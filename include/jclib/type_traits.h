@@ -294,14 +294,70 @@ namespace jc
 	using std::is_trivial_v;
 #endif
 
-	template <typename From, typename To>
-	struct is_forwardable_to : public bool_constant<is_constructible<From, std::remove_reference_t<To>>::value> {};
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_CONCEPTS_V
+	namespace impl
+	{
+		template <typename From, typename To>
+		concept cx_is_forwardable_to_impl = requires (From&& _from)
+		{
+			To{ std::forward<From>(_from) };
+		};
+	};
+#endif
+
+
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	struct is_forwardable_to : public bool_constant <
+#if JCLIB_FEATURE_CONCEPTS_V
+			impl::cx_is_forwardable_to_impl<From, To>
+#else
+			is_constructible<decltype(std::forward<From>(std::declval<From&&>())), To>::value
+#endif
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
 	template <typename From, typename To>
 	JCLIB_CONSTEXPR inline bool is_forwardable_to_v = is_forwardable_to<From, To>::value;
 #endif
 	
+
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value and would be noexcept
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	struct is_noexcept_forwardable_to : public
+		bool_constant
+		<
+			is_forwardable_to<From, To>::value &&
+			noexcept(noexcept(To{ std::forward<From>(std::declval<From&&>()) }))
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value and would be noexcept
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	JCLIB_CONSTEXPR inline bool is_noexcept_forwardable_to_v = is_noexcept_forwardable_to<From, To>::value;
+#endif
+
+
 
 	/*
 		Misc. Type Traits
