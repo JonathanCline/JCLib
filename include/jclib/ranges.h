@@ -1409,8 +1409,8 @@ namespace jc
 				constexpr iterator begin() const noexcept { return this->begin_; };
 				constexpr iterator end() const noexcept { return this->end_; };
 
-				constexpr transform_view_impl(RangeT& _range, remove_cvref_t<OpT>&& _op) :
-					op_{ std::forward<OpT>(_op) },
+				constexpr transform_view_impl(RangeT& _range, jc::remove_cvref_t<OpT> _op) :
+					op_{ std::move(_op) },
 					begin_{ iterator{ jc::ranges::begin(_range), jc::ranges::end(_range), this->op_ } },
 					end_{ iterator{ jc::ranges::end(_range), jc::ranges::end(_range), this->op_} }
 				{};
