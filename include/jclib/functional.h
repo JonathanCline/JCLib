@@ -625,6 +625,11 @@ namespace jc
 	{
 		struct null_piped_parent {};
 
+#if JCLIB_FEATURE_CONCEPTS_V
+		template <typename LT, typename LTIn, typename RT, typename RTIn>
+		concept cx_both_forwardable_to = cx_is_forwardable_to_impl<LTIn, LT> && cx_is_forwardable_to_impl<RTIn, RT>;
+#endif
+			
 		template <typename LT, typename RT>
 		struct piped_function : public std::conditional_t
 			<
@@ -647,7 +652,7 @@ namespace jc
 				, typename = jc::enable_if_t<jc::is_forwardable_to<_LT, LT>::value&& jc::is_forwardable_to<_RT, RT>::value>
 #endif
 			>
-				JCLIB_REQUIRES((jc::cx_forwardable_to<_LT, LT>&& jc::cx_forwardable_to<_RT, RT>))
+				JCLIB_REQUIRES((cx_both_forwardable_to<LT, _LT, RT, _RT>))
 				constexpr piped_function(_LT&& _lhs, _RT&& _rhs)
 				noexcept(jc::is_noexcept_forwardable_to<_LT, LT>::value&& jc::is_noexcept_forwardable_to<_RT, RT>::value)
 				: lhs_{ std::forward<_LT>(_lhs) }, rhs_{ std::forward<_RT>(_rhs) }
