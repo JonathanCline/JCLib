@@ -20,6 +20,8 @@
 */
 
 #include "jclib/config.h"
+#include "jclib/feature.h"
+
 
 #define _JCLIB_TYPE_TRAITS_
 
