@@ -203,16 +203,20 @@ namespace jc
 	struct unary_operator : public operator_tag
 	{
 	public:
-		template <typename U>
-		friend constexpr inline auto operator|(const U& lhs, const OperatorT& rhs) ->
-			jc::enable_if_t
-			<
-				jc::is_invocable<OperatorT, const U&>::value,
-				jc::invoke_result_t<OperatorT, const U&>
-			>
-		{
-			return rhs(lhs);
-		};
+		
+	};
+
+
+
+	template <typename LT, typename OpT>
+	constexpr inline auto operator|(LT&& lhs, const OpT& rhs) ->
+		jc::enable_if_t
+		<
+			jc::is_invocable<OpT, LT>::value,
+			jc::invoke_result_t<OpT, LT>
+		>
+	{
+		return rhs(lhs);
 	};
 
 
@@ -308,29 +312,37 @@ namespace jc
 	template <typename OperatorT>
 	struct binary_operator : operator_tag
 	{
-		template <typename T>
-		friend inline constexpr auto operator&(const T& _value, const OperatorT& _op)
-		{
-			return impl::bound_op<impl::bind_first_t, OperatorT, T>
-			{
-				_op,
-					_value
-			};
-		};
-
-		template <typename T>
-		friend inline constexpr auto operator&(const OperatorT& _op, const T& _value)
-		{
-			return impl::bound_op<impl::bind_second_t, OperatorT, T>
-			{
-				_op,
-					_value
-			};
-		};
-
+		
 	};
 
 
+	template <typename LT, typename RT>
+	inline constexpr auto operator&(const LT& _value, const RT& _op) ->
+		jc::enable_if_t
+		<
+			jc::is_binary_operator<RT>::value,
+			impl::bound_op<impl::bind_first_t, RT, LT>
+		>
+	{
+		return impl::bound_op<impl::bind_first_t, RT, LT>
+		{
+			_op, _value
+		};
+	};
+
+	template <typename LT, typename RT>
+	inline constexpr auto operator&(const LT& _op, const RT& _value) ->
+		jc::enable_if_t
+		<
+			jc::is_binary_operator<LT>::value,
+			impl::bound_op<impl::bind_second_t, LT, RT>
+		>
+	{
+		return impl::bound_op<impl::bind_second_t, LT, RT>
+		{
+			_op, _value
+		};
+	};
 
 
 	struct placeholder_t {};
@@ -674,9 +686,9 @@ namespace jc
 
 			template <typename... ArgTs>
 			constexpr auto operator()(ArgTs&&... _args) const ->
-				jc::invoke_result_t<RT, jc::invoke_result_t<LT, ArgTs&&...>>
+				decltype(std::declval<LT>()(std::declval<ArgTs>()...) | std::declval<RT>())
 			{
-				return jc::invoke(this->rhs_, jc::invoke(this->lhs_, std::forward<ArgTs>(_args)...));
+				return this->lhs_(std::forward<ArgTs>(_args)...) | this->rhs_;
 			};
 
 			template <typename _LT, typename _RT
@@ -700,7 +712,11 @@ namespace jc
 
 	template <typename LT, typename RT>
 	constexpr inline auto operator|(const LT& _lhs, const RT& _rhs) ->
-		jc::enable_if_t<jc::is_unary_operator<RT>::value, impl::piped_function<LT, RT>>
+		jc::enable_if_t
+		<
+			jc::is_operator<RT>::value && jc::is_operator<LT>::value,
+			impl::piped_function<LT, RT>
+		>
 	{
 		return impl::piped_function<LT, RT>(_lhs, _rhs);
 	};

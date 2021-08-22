@@ -498,6 +498,270 @@ int test_operators()
 
 
 
+namespace jc
+{
+
+	template <typename T>
+	struct packed_arg
+	{
+	public:
+
+		constexpr T&& unpack() noexcept
+		{
+			return std::move(this->val);
+		};
+		constexpr const T& unpack() const noexcept
+		{
+			return this->val;
+		};
+
+		constexpr operator T&&() noexcept { return std::move(this->unpack()); };
+		constexpr operator const T&() const noexcept { return this->unpack(); };
+
+
+
+		constexpr packed_arg(T _value) :
+			val{ std::move(_value) }
+		{};
+
+	private:
+		T val;
+	};
+
+	template <typename T>
+	struct packed_arg<T&>
+	{
+	public:
+		constexpr T& unpack() noexcept { return this->val; };
+		constexpr const T& unpack() const noexcept { return this->val; };
+		
+		constexpr operator T& () noexcept { return this->unpack(); };
+		constexpr operator const T& () const noexcept { return this->unpack(); };
+
+		constexpr packed_arg(T& v) : val{ v } {};
+
+	private:
+		std::reference_wrapper<T> val;
+	};
+
+
+
+	template <typename... Ts>
+	struct argpack
+	{
+		using tuple = std::tuple<packed_arg<Ts>...>;
+
+		constexpr argpack(Ts&&... _vals) :
+			args{ std::forward<Ts>(_vals)... }
+		{};
+
+		tuple args{};
+	};
+
+
+
+
+
+
+	struct pack_t
+	{
+		template <typename... Ts>
+		constexpr auto operator()(Ts&&... _vals) const noexcept
+		{
+			return argpack<Ts...>{ std::forward<Ts>(_vals)... };
+		};
+	};
+	constexpr static pack_t pack{};
+
+
+
+
+
+	template <typename OpT, typename... Ts, size_t... Idxs>
+	constexpr inline auto apply(OpT&& _op, argpack<Ts...> _args, std::index_sequence<Idxs...>) ->
+		decltype(jc::invoke(std::declval<OpT&&>(), std::declval<Ts>()...))
+	{
+		return jc::invoke(_op, std::get<Idxs>(_args.args)...);
+	};
+
+	template <typename OpT, typename... Ts>
+	constexpr inline auto apply(OpT&& _op, argpack<Ts...> _args) ->
+		decltype(jc::invoke(std::declval<OpT&&>(), std::declval<Ts>()...))
+	{
+		return apply(_op, std::move(_args), std::make_index_sequence<sizeof...(Ts)>{});
+	};
+
+
+	template <typename... Ts, typename OpT>
+	constexpr inline auto operator|(jc::argpack<Ts...> _args, const OpT& _op) ->
+		jc::enable_if_t
+		<
+		jc::is_operator<OpT>::value&& jc::is_invocable_with_count<OpT, sizeof...(Ts)>::value,
+		decltype(jc::apply(std::declval<const OpT&>(), std::declval<jc::argpack<Ts...>>()))
+		>
+	{
+		return jc::apply(_op, std::move(_args));
+	};
+
+};
+
+
+namespace jc
+{
+	/**
+	 * @brief Provides a type based wrapper for get_ftor specializations that use a non-type template parameter as the index
+	 * @tparam T Index value type
+	 * @tparam Value Index value
+	*/
+	template <typename T, T Value>
+	struct get_value_idx : public std::integral_constant<T, Value> {};
+
+	/**
+	 * @brief Customization point for "overloading" std::get
+	 * @tparam T Type to get from
+	 * @tparam IdxT Index type (ie. std::get<IdxT>(T&))
+	 * @tparam Enable SFINAE specialization point
+	*/
+	template <typename T, typename IdxT, typename Enable = void>
+	struct get_ftor;
+
+	// std::get where index is a template type parameter
+	template <typename T, typename IdxT>
+	struct get_ftor<T, IdxT, void_t<decltype( std::get<IdxT>(std::declval<T&>()) )>>
+	{
+		constexpr auto operator()(T& _from) const -> decltype(std::get<IdxT>(std::declval<T&>()))
+		{
+			return std::get<IdxT>(_from);
+		};
+		constexpr auto operator()(const T& _from) const -> decltype(std::get<IdxT>(std::declval<const T&>()))
+		{
+			return std::get<IdxT>(_from);
+		};
+	};
+	
+	// std::get where index is a non-type template parameter
+	template <typename T, typename IdxT, IdxT Value>
+	struct get_ftor<T, get_value_idx<IdxT, Value>, void_t<decltype(std::get<Value>(std::declval<T&>()))>>
+	{
+		constexpr auto operator()(T& _from) const -> decltype(std::get<Value>(std::declval<T&>()))
+		{
+			return std::get<Value>(_from);
+		};
+		constexpr auto operator()(const T& _from) const -> decltype(std::get<Value>(std::declval<const T&>()))
+		{
+			return std::get<Value>(_from);
+		};
+	};
+
+
+
+
+	template <typename IdxT, typename FromT>
+	constexpr inline auto get(FromT& _from) ->
+		decltype(std::declval<get_ftor<std::remove_const_t<FromT>, IdxT>>()(_from))
+	{
+		return get_ftor<std::remove_const_t<FromT>, IdxT>{}(_from);
+	};
+
+	template <size_t N, typename FromT>
+	constexpr inline auto get(FromT& _from) ->
+		decltype(std::declval<get_ftor<std::remove_const_t<FromT>, get_value_idx<size_t, N>>>()(_from))
+	{
+		return get_ftor<std::remove_const_t<FromT>, get_value_idx<size_t, N>>{}(_from);
+	};
+
+};
+
+
+namespace jc
+{
+
+	template <size_t N, typename... Ts>
+	struct get_ftor<argpack<Ts...>, jc::get_value_idx<size_t, N>, void>
+	{
+		constexpr auto operator()(argpack<Ts...>& _args) const ->
+			decltype(jc::get<N>(std::declval<argpack<Ts...>&>().args).unpack())
+		{
+			return jc::get<N>(_args.args).unpack();
+		};
+
+		constexpr auto operator()(const argpack<Ts...>& _args) const ->
+			decltype(jc::get<N>(std::declval<const argpack<Ts...>&>().args).unpack())
+		{
+			return jc::get<N>(_args.args).unpack();
+		};
+	};
+
+
+};
+
+
+
+
+namespace jc
+{
+
+	namespace impl
+	{
+
+		template <typename T>
+		struct repack_impl;
+
+		template <template <typename... Ts> typename T, typename... Ts>
+		struct repack_impl<T<Ts...>>
+		{
+			template <size_t... Idxs>
+			constexpr auto operator()(T<Ts...>& _pack, std::index_sequence<Idxs...>) const
+			{
+				return jc::pack(std::forward<Ts>(jc::get<Idxs>(_pack))...);
+			};
+			constexpr auto operator()(T<Ts...>& _pack) const
+			{
+				return (*this)(_pack, std::make_index_sequence<sizeof...(Ts)>{});
+			};
+		};
+
+		template <template <typename... Ts> typename T, typename... Ts>
+		struct repack_impl<const T<Ts...>>
+		{
+			template <size_t... Idxs>
+			constexpr auto operator()(T<Ts...> _pack, std::index_sequence<Idxs...>) const
+			{
+				return jc::pack(std::forward<Ts>(jc::get<Idxs>(_pack))...);
+			};
+			constexpr auto operator()(const T<Ts...>& _pack) const
+			{
+				return (*this)(T<Ts...>(_pack), std::make_index_sequence<sizeof...(Ts)>{});
+			};
+		};
+
+		template <>
+		struct repack_impl<wildcard>
+		{
+			constexpr auto& operator()(wildcard& w) const noexcept { return w; };
+		};
+
+	};
+
+	struct repack_t : public jc::unary_operator<repack_t>
+	{
+		template <typename T>
+		constexpr auto operator()(T& _val) const
+		{
+			return impl::repack_impl<T>{}(_val);
+		};
+	};
+	constexpr repack_t repack{};
+};
+
+
+
+
+
+
+
+
+
 
 
 struct Foo
