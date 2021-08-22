@@ -164,13 +164,28 @@ namespace jc
 #endif
 
 	/**
-	 * @brief Tag type for implementing unary operators
+	 * @brief Tag type for implementing unary operators, deprecated
 	*/
-	struct unary_operator_tag : operator_tag {};
+	struct JCLIB_DEPRECATED("no longer needed for denoting unary operator types, just use operator_tag instead")
+		unary_operator_tag : operator_tag {};
 
+	/**
+	 * @brief Tests if an operator type is invocable with 1 arguement
+	 * @tparam T Type to test
+	*/
 	template <typename T>
-	struct is_unary_operator : bool_constant<is_base_of<unary_operator_tag, T>::value> {};
+	struct is_unary_operator : bool_constant
+		<
+			is_base_of<operator_tag, remove_cvref_t<T>>::value &&
+			is_invocable_with_count<T, 1>::value
+		>
+	{};
+
 #ifdef JCLIB_FEATURE_INLINE_VARIABLES
+	/**
+	 * @brief Tests if an operator type is invocable with 1 arguement
+	 * @tparam T Type to test
+	*/
 	template <typename T>
 	constexpr inline bool is_unary_operator_v = is_unary_operator<T>::value;
 #endif
@@ -185,15 +200,15 @@ namespace jc
 	 * @tparam OperatorT Operator type being CRTPd (child type)
 	*/
 	template <typename OperatorT>
-	struct unary_operator : public unary_operator_tag
+	struct unary_operator : public operator_tag
 	{
 	public:
 		template <typename U>
 		friend constexpr inline auto operator|(const U& lhs, const OperatorT& rhs) ->
 			jc::enable_if_t
 			<
-			jc::is_invocable<OperatorT, const U&>::value,
-			jc::invoke_result_t<OperatorT, const U&>
+				jc::is_invocable<OperatorT, const U&>::value,
+				jc::invoke_result_t<OperatorT, const U&>
 			>
 		{
 			return rhs(lhs);
@@ -205,11 +220,26 @@ namespace jc
 	/**
 	 * @brief Tag type for implementing binary operators
 	*/
-	struct binary_operator_tag : operator_tag {};
+	struct JCLIB_DEPRECATED("no longer needed for denoting binary operator types, just use operator_tag instead")
+		binary_operator_tag : operator_tag {};
 
+	/**
+	 * @brief Tests if an operator type is invocable with 2 arguements
+	 * @tparam T Type to test
+	*/
 	template <typename T>
-	struct is_binary_operator : bool_constant<is_base_of<binary_operator_tag, remove_cvref_t<T>>::value> {};
+	struct is_binary_operator : bool_constant
+		<
+			is_base_of<operator_tag, remove_cvref_t<T>>::value &&
+			is_invocable_with_count<T, 2>::value
+		>
+	{};
+
 #ifdef JCLIB_FEATURE_INLINE_VARIABLES
+	/**
+	 * @brief Tests if an operator type is invocable with 2 arguements
+	 * @tparam T Type to test
+	*/
 	template <typename T>
 	constexpr inline bool is_binary_operator_v = is_binary_operator<T>::value;
 #endif
@@ -276,7 +306,7 @@ namespace jc
 	 * @tparam OperatorT Operator type being CRTPd
 	*/
 	template <typename OperatorT>
-	struct binary_operator : binary_operator_tag
+	struct binary_operator : operator_tag
 	{
 		template <typename T>
 		friend inline constexpr auto operator&(const T& _value, const OperatorT& _op)
@@ -297,6 +327,7 @@ namespace jc
 					_value
 			};
 		};
+
 	};
 
 
@@ -469,7 +500,8 @@ namespace jc
 	struct invert_t : unary_operator<invert_t>
 	{
 		template <typename T>
-		constexpr auto operator()(T&& _value) const noexcept
+		constexpr auto operator()(T&& _value) const noexcept ->
+			decltype(!std::declval<T&&>())
 		{
 			return !_value;
 		};
@@ -533,7 +565,7 @@ namespace jc
 	{
 	public:
 		template <typename T>
-		constexpr auto operator()(T&& _value) const ->
+		constexpr auto operator()(T&& _value) const noexcept ->
 			decltype(*std::declval<T&&>())
 		{
 			return *_value;

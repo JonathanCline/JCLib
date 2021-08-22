@@ -427,6 +427,34 @@ int test_op_dereference()
 	PASS();
 };
 
+// jc::invert test
+int test_op_invert()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::invert;
+
+	// Test operator
+	{
+		using value_type = bool;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type initial_v = false;
+		const value_type new_v = true;
+
+		value_type i = initial_v;
+
+		ASSERT(i == initial_v, "invalid invert test condition");
+
+		i = operator_v(i);
+		ASSERT(i == new_v, "invert  operator failed");
+
+		i = (i | operator_v);
+		ASSERT(i == initial_v, "piped invert operator failed");
+	};
+
+	PASS();
+};
 
 
 
@@ -443,6 +471,7 @@ int test_operators()
 	SUBTEST(test_op_times);
 	SUBTEST(test_op_divide);
 
+	SUBTEST(test_op_invert);
 
 
 	// Test binary arithmetic operators

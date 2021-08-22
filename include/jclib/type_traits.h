@@ -547,13 +547,62 @@ namespace jc
 		*/
 		struct wildcard
 		{
-			constexpr operator int& () const noexcept;
+			constexpr auto operator==(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator!=(wildcard rhs) const noexcept { return true; };
+
+			constexpr auto operator>(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator<(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator>=(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator<=(wildcard rhs) const noexcept { return true; };
+
+			constexpr auto operator+(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator-(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator*(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator/(wildcard rhs) const noexcept { return *this; };
+
+			constexpr auto& operator+=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator-=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator*=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator/=(wildcard rhs) noexcept { return *this; };
+
+			constexpr auto& operator++() noexcept { return *this; };
+			constexpr auto operator++(int) noexcept { return *this; };
+
+			constexpr auto& operator--() noexcept { return *this; };
+			constexpr auto operator--(int) noexcept { return *this; };
+
+			constexpr auto operator~() const noexcept { return *this; };
+			constexpr auto operator!() const noexcept { return *this; };
+
+			constexpr auto operator&(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator|(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator^(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator&=(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator|=(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator^=(wildcard rhs) const noexcept { return *this; };
+
+			constexpr auto operator>>(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator<<(wildcard rhs) const noexcept { return *this; };
+			constexpr auto& operator>>=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator<<=(wildcard rhs) noexcept { return *this; };
+
+			constexpr auto operator*() noexcept { return *this; };
+			constexpr auto operator*() const noexcept { return *this; };
+			constexpr auto operator->() noexcept { return *this; };
+			constexpr auto operator->() const noexcept { return *this; };
+
+
+
+
 
 			template <typename T>
 			constexpr operator T& () const noexcept;
 
 			template <typename T>
 			constexpr operator T && () const noexcept;
+
+
+			constexpr wildcard() = delete;
 		};
 
 
@@ -576,8 +625,13 @@ namespace jc
 			using type = std::tuple<typename wildcard_pos_void<Ns>::type...>;
 		};
 
+
 		template <size_t N>
-		using make_wildcard_tuple_t = typename make_wildcard_tuple_impl<decltype(std::make_index_sequence<N>{}) > ::type;
+		using make_wildcard_tuple_t = typename make_wildcard_tuple_impl<std::make_index_sequence<N>>::type;
+
+
+
+		
 
 
 		template <typename OpT, typename T, typename Enable = void>
@@ -599,7 +653,7 @@ namespace jc
 	 * @tparam N Number of arguements
 	*/
 	template <typename OpT, size_t N>
-	struct invocable_with_arg_count :
+	struct is_invocable_with_count :
 		public impl::invocable_with_arg_count_impl<OpT, impl::make_wildcard_tuple_t<N>>
 	{};
 
@@ -611,7 +665,7 @@ namespace jc
 	 * @tparam N Number of arguements
 	*/
 	template <typename OpT, size_t N>
-	constexpr inline auto invocable_with_arg_count_v = invocable_with_arg_count<OpT, N>;
+	constexpr inline auto is_invocable_with_count_v = is_invocable_with_count<OpT, N>;
 
 #endif
 
