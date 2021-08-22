@@ -16,6 +16,13 @@ constexpr bool test_nfoo()
 	return jc::conjunction<is_int<Ts>...>::value;
 };
 
+
+
+
+
+
+
+
 int main()
 {
 	constexpr auto b = test_foo<char, bool, int, char>();
