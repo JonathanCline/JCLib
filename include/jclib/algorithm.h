@@ -70,7 +70,7 @@ namespace jc
 
 
 	template <typename RangeT, typename DestIterT>
-	JCLIB_REQUIRES((jc::cx_range<RangeT> && jc::is_assignable_v<jc::iterator_to_t<DestIterT>, const jc::ranges::value_t<RangeT>&>))
+	JCLIB_REQUIRES((jc::cx_range<RangeT> && jc::is_assignable_v<jc::iterator_to_t<DestIterT>, jc::ranges::const_reference_t<RangeT>>))
 	constexpr inline auto copy(const RangeT& _source, DestIterT _destBegin) ->
 #ifdef JCLIB_FEATURE_CONCEPTS
 		DestIterT
