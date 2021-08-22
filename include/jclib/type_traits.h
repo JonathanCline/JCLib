@@ -377,6 +377,11 @@ namespace jc
 
 
 
+
+	/*
+		Function related
+	*/
+
 	namespace impl
 	{
 		struct noexcept_function_tag {};
@@ -535,13 +540,84 @@ namespace jc
 
 
 
+	namespace impl
+	{
+		/**
+		 * @brief Type used to fake any value
+		*/
+		struct wildcard
+		{
+			constexpr operator int& () const noexcept;
+
+			template <typename T>
+			constexpr operator T& () const noexcept;
+
+			template <typename T>
+			constexpr operator T && () const noexcept;
+		};
+
+
+		// Used to turn pack expansion into the wildcard type
+		template <size_t N>
+		struct wildcard_pos_void
+		{
+			using type = wildcard;
+		};
+
+
+		// Turns an index sequence into a wildcard tuple
+		template <typename T>
+		struct make_wildcard_tuple_impl;
+
+		template <size_t... Ns>
+		struct make_wildcard_tuple_impl<std::index_sequence<Ns...>>
+		{
+			// pack expansion abuse
+			using type = std::tuple<typename wildcard_pos_void<Ns>::type...>;
+		};
+
+		template <size_t N>
+		using make_wildcard_tuple_t = typename make_wildcard_tuple_impl<decltype(std::make_index_sequence<N>{}) > ::type;
+
+
+		template <typename OpT, typename T, typename Enable = void>
+		struct invocable_with_arg_count_impl : jc::false_type {};
+
+		template <typename OpT, template <typename... Ts> typename TupT, typename... Ts>
+		struct invocable_with_arg_count_impl<OpT, TupT<Ts...>, void_t
+			<
+			decltype(std::declval<OpT>()(std::declval<Ts>()...))
+			>> : jc::true_type
+		{};
+	};
 
 
 
-
-	/*
-		Function related
+	/**
+	 * @brief Tests if a type is invocable given 'N' number of arguements
+	 * @tparam OpT Type to test
+	 * @tparam N Number of arguements
 	*/
+	template <typename OpT, size_t N>
+	struct invocable_with_arg_count :
+		public impl::invocable_with_arg_count_impl<OpT, impl::make_wildcard_tuple_t<N>>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+
+	/**
+	 * @brief Tests if a type is invocable given 'N' number of arguements
+	 * @tparam OpT Type to test
+	 * @tparam N Number of arguements
+	*/
+	template <typename OpT, size_t N>
+	constexpr inline auto invocable_with_arg_count_v = invocable_with_arg_count<OpT, N>;
+
+#endif
+
+
+
+
 
 	namespace impl
 	{
