@@ -38,8 +38,22 @@ namespace jc
 	 * @return Iterator to the found element or jc::end(_range) if it wasn't found
 	*/
 	template <typename RangeT, typename T>
-	JCLIB_CONSTEXPR static auto find(RangeT&& _range, const T& _val) ->
-			ranges::iterator_t<remove_reference_t<RangeT>>
+	JCLIB_REQUIRES
+	((
+		jc::cx_range<RangeT> &&
+		std::equality_comparable_with<jc::ranges::const_reference_t<RangeT>, const T&>
+	))
+	JCLIB_CONSTEXPR inline auto find(RangeT&& _range, const T& _val) ->
+#if !JCLIB_FEATURE_CONCEPTS_V
+		jc::enable_if_t
+		<
+			jc::ranges::is_range<RangeT>::value &&
+			jc::has_operator<jc::equals_t, jc::ranges::const_reference_t<RangeT>, const T&>::value,
+#endif
+		ranges::iterator_t<remove_reference_t<RangeT>>
+#if !JCLIB_FEATURE_CONCEPTS_V
+		>
+#endif
 	{
 		return std::find(jc::begin(_range), jc::end(_range), _val);
 	};
@@ -47,22 +61,53 @@ namespace jc
 	/**
 	 * @brief Returns an iterator the value specified if a predicate returns true
 	 * @tparam RangeT Range object type to look in
-	 * @tparam Op Predicate function object type
+	 * @tparam OpT Predicate function object type
 	 * @param _range Range to look in
 	 * @param _pred Comparison function, an element is "found" if the predicate returns true when passed it
 	 * @return Iterator to the found element or jc::end(_range) if it wasn't found
 	*/
-	template <typename RangeT, typename Op>
-	JCLIB_CONSTEXPR static auto find_if(RangeT&& _range, Op&& _pred) ->
-		ranges::iterator_t<remove_reference_t<RangeT>>
+	template <typename RangeT, typename OpT>
+	JCLIB_REQUIRES
+	((
+		jc::cx_range<RangeT> &&
+		std::is_invocable_r_v<bool, OpT, jc::ranges::const_reference_t<RangeT>>
+	))
+	JCLIB_CONSTEXPR inline auto find_if(RangeT&& _range, OpT&& _pred) ->
+#if !JCLIB_FEATURE_CONCEPTS_V
+		jc::enable_if_t
+		<
+			jc::ranges::is_range<RangeT>::value &&
+			jc::is_same<bool, jc::invoke_result_t<OpT, jc::ranges::const_reference_t<RangeT>>>::value,
+#endif
+			ranges::iterator_t<remove_reference_t<RangeT>>
+#if !JCLIB_FEATURE_CONCEPTS_V
+		>
+#endif
 	{
-		return std::find_if(jc::begin(_range), jc::end(_range), std::forward<Op>(_pred));
+		return std::find_if(jc::begin(_range), jc::end(_range), std::forward<OpT>(_pred));
 	};
 
 
 
 	template <typename RangeT, typename ValT = jc::ranges::value_t<RangeT>>
-	constexpr inline RangeT& fill(RangeT& _range, const ValT& _value)
+	JCLIB_REQUIRES
+	((
+		jc::cx_range<RangeT> &&
+		!std::is_const_v<RangeT> &&
+		std::assignable_from<jc::ranges::reference_t<RangeT>, const ValT&>
+	))
+	constexpr inline auto fill(RangeT& _range, const ValT& _value) ->
+#if !JCLIB_FEATURE_CONCEPTS_V
+		jc::enable_if_t
+		<
+			!std::is_const<RangeT>::value &&
+			jc::ranges::is_range<RangeT>::value &&
+			jc::is_assignable<jc::ranges::reference_t<RangeT>, const ValT&>::value,
+#endif
+			RangeT&
+#if !JCLIB_FEATURE_CONCEPTS_V
+		>
+#endif
 	{
 		std::fill(jc::begin(_range), jc::end(_range), _value);
 		return _range;
@@ -70,20 +115,72 @@ namespace jc
 
 
 	template <typename RangeT, typename DestIterT>
-	JCLIB_REQUIRES((jc::cx_range<RangeT> && jc::is_assignable_v<jc::iterator_to_t<DestIterT>, jc::ranges::const_reference_t<RangeT>>))
+	JCLIB_REQUIRES
+	((
+		jc::cx_range<RangeT> &&
+		jc::is_assignable_v<jc::iterator_to_t<DestIterT>, jc::ranges::const_reference_t<RangeT>>
+	))
 	constexpr inline auto copy(const RangeT& _source, DestIterT _destBegin) ->
-#ifdef JCLIB_FEATURE_CONCEPTS
-		DestIterT
-#else
+#if !JCLIB_FEATURE_CONCEPTS_V
 		jc::enable_if_t<
 			jc::is_assignable<
 				/* to   */ jc::iterator_to_t<DestIterT>, // *DestIterT
 				/* from */ std::add_lvalue_reference_t<std::add_const_t<jc::ranges::value_t<RangeT>>> // const RangeT::value_type&
-			>::value,
-		DestIterT>
+			>::value &&
+			jc::ranges::is_range<RangeT>::value,
+#endif
+		DestIterT
+#if !JCLIB_FEATURE_CONCEPTS_V
+		>
 #endif
 	{
 		return std::copy(jc::begin(_source), jc::end(_source), _destBegin);
+	};
+
+
+
+	template <typename RangeT, typename ValueT>
+	JCLIB_REQUIRES
+	((
+		jc::cx_range<RangeT> &&
+		std::equality_comparable_with<jc::ranges::const_reference_t<RangeT>, const ValueT&>
+	))
+	JCLIB_CONSTEXPR inline auto contains(const RangeT& _source, const ValueT& _value) ->
+#if !JCLIB_FEATURE_CONCEPTS_V	
+		jc::enable_if_t
+		<
+			jc::ranges::is_range<RangeT>::value &&
+			jc::has_operator<jc::equals_t, jc::ranges::const_reference_t<RangeT>, const ValueT&>::value,
+#endif
+			bool
+#if !JCLIB_FEATURE_CONCEPTS_V
+		>
+#endif
+	{
+		return jc::find(_source, _value) != jc::end(_source);
+	};
+
+
+
+	template <typename RangeT, typename PredT>
+	JCLIB_REQUIRES
+	((
+		jc::cx_range<RangeT> &&
+		std::is_invocable_r_v<bool, PredT, jc::ranges::const_reference_t<RangeT>>
+	))
+	JCLIB_CONSTEXPR inline auto contains_if(const RangeT& _source, PredT&& _pred) ->
+#if !JCLIB_FEATURE_CONCEPTS_V
+		jc::enable_if_t
+		<
+			jc::ranges::is_range<RangeT>::value &&
+			jc::is_same<jc::invoke_result_t<PredT, jc::ranges::const_reference_t<RangeT>>, bool>::value,
+#endif
+			bool
+#if !JCLIB_FEATURE_CONCEPTS_V
+		>
+#endif
+	{
+		return jc::find_if(_source, std::forward<PredT>(_pred)) != jc::end(_source);
 	};
 
 
