@@ -665,7 +665,7 @@ namespace jc
 	 * @tparam N Number of arguements
 	*/
 	template <typename OpT, size_t N>
-	constexpr inline auto is_invocable_with_count_v = is_invocable_with_count<OpT, N>;
+	constexpr inline auto is_invocable_with_count_v = is_invocable_with_count<OpT, N>::value;
 
 #endif
 
