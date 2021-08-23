@@ -163,11 +163,15 @@ namespace jc
 	concept cx_operator = is_operator_v<T>;
 #endif
 
-	/**
-	 * @brief Tag type for implementing unary operators, deprecated
-	*/
-	struct JCLIB_DEPRECATED("no longer needed for denoting unary operator types, just use operator_tag instead")
+	// Deprecated as of v0.3.0
+	JCLIB_DEPRECATE_BLOCK
+	((
+		/**
+		 * @brief Tag type for implementing unary operators, deprecated
+		*/
+		struct JCLIB_DEPRECATED("no longer needed for denoting unary operator types, just use operator_tag instead")
 		unary_operator_tag : operator_tag {};
+	));
 
 	/**
 	 * @brief Tests if an operator type is invocable with 1 arguement
@@ -195,17 +199,20 @@ namespace jc
 	concept cx_unary_operator = is_unary_operator_v<T>;
 #endif
 
-	/**
-	 * @brief CRTP type for adding piping semantics alongside other common unary function features
-	 * @tparam OperatorT Operator type being CRTPd (child type)
-	*/
-	template <typename OperatorT>
-	struct unary_operator : public operator_tag
-	{
-	public:
-		
-	};
+	// Deprecated as of v0.3.0
+	JCLIB_DEPRECATE_BLOCK
+	((
+		/**
+		 * @brief CRTP type for adding piping semantics alongside other common unary function features
+		 * @tparam OperatorT Operator type being CRTPd (child type)
+		*/
+		template <typename OperatorT>
+		struct JCLIB_DEPRECATED("no longer needed, use non-crtp operator tag instead") unary_operator : public operator_tag
+		{
+		public:
 
+		};
+	));
 
 
 	template <typename LT, typename OpT>
@@ -219,13 +226,15 @@ namespace jc
 		return rhs(lhs);
 	};
 
-
-
-	/**
-	 * @brief Tag type for implementing binary operators
-	*/
-	struct JCLIB_DEPRECATED("no longer needed for denoting binary operator types, just use operator_tag instead")
+	// Deprecated as of v0.3.0
+	JCLIB_DEPRECATE_BLOCK
+	((
+		/**
+		 * @brief Tag type for implementing binary operators
+		*/
+		struct JCLIB_DEPRECATED("no longer needed for denoting binary operator types, just use operator_tag instead")
 		binary_operator_tag : operator_tag {};
+	));
 
 	/**
 	 * @brief Tests if an operator type is invocable with 2 arguements
@@ -268,7 +277,7 @@ namespace jc
 
 		template <typename OpT, typename T>
 		struct bound_op<bind_first_t, OpT, T> :
-			public unary_operator<bound_op<bind_first_t, OpT, T>>
+			public operator_tag
 		{
 			template <typename U>
 			constexpr auto operator()(const U& rhs) const ->
@@ -287,7 +296,7 @@ namespace jc
 
 		template <typename OpT, typename T>
 		struct bound_op<bind_second_t, OpT, T> :
-			public unary_operator<bound_op<bind_second_t, OpT, T>>
+			public operator_tag
 		{
 			template <typename U>
 			constexpr auto operator()(const U& lhs) const ->
@@ -305,16 +314,19 @@ namespace jc
 		};
 	};
 
-	/**
-	 * @brief CRTP type for allowing arguement binding
-	 * @tparam OperatorT Operator type being CRTPd
-	*/
-	template <typename OperatorT>
-	struct binary_operator : operator_tag
-	{
-		
-	};
+	// Deprecated as of v0.3.0
+	JCLIB_DEPRECATE_BLOCK
+	((
+		/**
+		 * @brief CRTP type for allowing arguement binding
+		 * @tparam OperatorT Operator type being CRTPd
+		*/
+		template <typename OperatorT>
+		struct JCLIB_DEPRECATED("no longer needed, use non-crtp operator_tag instead") binary_operator : operator_tag
+		{
 
+		};
+	));
 
 	template <typename LT, typename RT>
 	inline constexpr auto operator&(const LT& _value, const RT& _op) ->
@@ -369,7 +381,7 @@ namespace jc
 	/**
 	 * @brief Less than "<" comparison function object type
 	*/
-	struct less_t : binary_operator<less_t>
+	struct less_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -387,7 +399,7 @@ namespace jc
 	/**
 	 * @brief Greater than ">" comparison function object type
 	*/
-	struct greater_t : binary_operator<greater_t>
+	struct greater_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -405,7 +417,7 @@ namespace jc
 	/**
 	 * @brief Equality "==" comparison function object
 	*/
-	struct equals_t : binary_operator<equals_t>
+	struct equals_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -419,7 +431,7 @@ namespace jc
 	/**
 	 * @brief Inequality "!=" comparison function object type
 	*/
-	struct unequals_t : binary_operator<unequals_t>
+	struct unequals_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -437,7 +449,7 @@ namespace jc
 	/**
 	 * @brief Addition "+" arithmatic function object type
 	*/
-	struct plus_t : binary_operator<plus_t>
+	struct plus_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -455,7 +467,7 @@ namespace jc
 	/**
 	 * @brief Subtraction "-" arithmatic function object type
 	*/
-	struct minus_t : binary_operator<minus_t>
+	struct minus_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -473,7 +485,7 @@ namespace jc
 	/**
 	 * @brief Multiplcation "*" arithmatic function object type
 	*/
-	struct times_t : binary_operator<times_t>
+	struct times_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -491,7 +503,7 @@ namespace jc
 	/**
 	 * @brief Division "/" arithmatic function object type
 	*/
-	struct divide_t : binary_operator<divide_t>
+	struct divide_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
@@ -509,7 +521,7 @@ namespace jc
 	/**
 	 * @brief Inversion "!" arithmatic function object type
 	*/
-	struct invert_t : unary_operator<invert_t>
+	struct invert_t : operator_tag
 	{
 		template <typename T>
 		constexpr auto operator()(T&& _value) const noexcept ->
@@ -529,7 +541,7 @@ namespace jc
 	/**
 	 * @brief Binary AND "&&" logical function object type
 	*/
-	struct conjunct_t : binary_operator<conjunct_t>
+	struct conjunct_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr auto operator()(T&& lhs, U&& rhs) const
@@ -551,7 +563,7 @@ namespace jc
 	/**
 	 * @brief Binary OR "||" logical function object type
 	*/
-	struct disjunct_t : binary_operator<disjunct_t>
+	struct disjunct_t : operator_tag
 	{
 		template <typename T, typename U>
 		constexpr auto operator()(T&& lhs, U&& rhs) const
@@ -573,7 +585,7 @@ namespace jc
 	/**
 	 * @brief Unary dereference "*" function object type (ie. dereference(int*) -> int&)
 	*/
-	struct dereference_t : public unary_operator<dereference_t>
+	struct dereference_t : public operator_tag
 	{
 	public:
 		template <typename T>
@@ -667,22 +679,26 @@ namespace jc
 	
 	namespace impl
 	{
-		struct null_piped_parent {};
-
 #if JCLIB_FEATURE_CONCEPTS_V
 		template <typename LT, typename LTIn, typename RT, typename RTIn>
 		concept cx_both_forwardable_to = cx_is_forwardable_to_impl<LTIn, LT> && cx_is_forwardable_to_impl<RTIn, RT>;
 #endif
-			
+		
+		// Used to compose two function objects into a single function object
 		template <typename LT, typename RT>
-		struct piped_function : public std::conditional_t
-			<
-			jc::is_unary_operator<LT>::value,
-			jc::unary_operator<piped_function<LT, RT>>,
-			jc::impl::null_piped_parent
-			>
+		struct piped_function : public jc::operator_tag
 		{
 		public:
+
+			template <typename... WildCards>
+			constexpr auto operator()(const WildCards&...) const ->
+				jc::enable_if_t
+				<
+					jc::conjunction<jc::is_same<jc::impl::wildcard, WildCards>...>::value &&
+					jc::is_invocable_with_count<const LT, sizeof...(WildCards)>::value,
+					void
+				>
+			{};
 
 			template <typename... ArgTs>
 			constexpr auto operator()(ArgTs&&... _args) const ->

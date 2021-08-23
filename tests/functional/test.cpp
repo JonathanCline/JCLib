@@ -592,13 +592,19 @@ namespace jc
 	};
 
 
-	template <typename... Ts, typename OpT>
-	constexpr inline auto operator|(jc::argpack<Ts...> _args, const OpT& _op) ->
-		jc::enable_if_t
-		<
-		jc::is_operator<OpT>::value&& jc::is_invocable_with_count<OpT, sizeof...(Ts)>::value,
-		decltype(jc::apply(std::declval<const OpT&>(), std::declval<jc::argpack<Ts...>>()))
-		>
+	/**
+	 * @brief Implements arguement pack piping allowing a function object to be invoked with multiple arguements
+	 * @tparam ...Ts Packed arguement types
+	 * @tparam OpT Function object type
+	 * @tparam Enable SFINAE point for ensuring this is a valid pipe expression
+	 * @param _args Arguement pack object
+	 * @param _op Function object to invoke
+	 * @return Result of applying the arguement pack to the function object
+	*/
+	template <typename... Ts, typename OpT,
+		typename Enable = jc::enable_if_t<jc::is_operator<OpT>::value&& jc::is_invocable_with_count<OpT, sizeof...(Ts)>::value>
+	>
+	constexpr inline auto operator|(jc::argpack<Ts...> _args, const OpT& _op)
 	{
 		return jc::apply(_op, std::move(_args));
 	};
@@ -743,12 +749,12 @@ namespace jc
 
 	};
 
-	struct repack_t : public jc::unary_operator<repack_t>
+	struct repack_t : public jc::operator_tag
 	{
 		template <typename T>
-		constexpr auto operator()(T& _val) const
+		constexpr auto operator()(T&& _val) const
 		{
-			return impl::repack_impl<T>{}(_val);
+			return impl::repack_impl<jc::remove_reference_t<T>>{}(_val);
 		};
 	};
 	constexpr repack_t repack{};
@@ -756,10 +762,77 @@ namespace jc
 
 
 
+// Tests the arguement pack piping behavior
+int test_arguement_pack_piping()
+{
+	NEWTEST();
+	
+	// Composed function used for the static assertions
+	constexpr auto test_fn = jc::plus | jc::equals & 4;
+	
+	// Extra testing to ensure function composition maintains the required traits
+	static_assert(jc::is_operator<decltype(test_fn)>::value, "composed test function failed is_opertor trait check");
+	static_assert(jc::is_invocable_with_count<decltype(test_fn), 2>::value, "composed test function failed is_invocable_with_count check");
+
+	// Test piping of immediate pack
+	static_assert(jc::pack(2, 2) | test_fn,
+		"failed expansion of piped arguement pack");
+
+	// Ensure that re-repacking doesn't break the piping
+	static_assert(jc::pack(2, 2) | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+	// Test piping of repacked immediate pack
+	static_assert(std::pair<int, int>{2, 2} | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+	// Ensure that re-repacking doesn't break the piping
+	static_assert(std::pair<int, int>{ 2, 2} | jc::repack | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+
+	
+	// Testing for piping of existing pack
+
+	constexpr std::pair<int, int> args_v{ 2, 2 };
+	constexpr auto packed_args_v = jc::pack(2, 2);
+
+
+	// Test piping of existing pack
+	static_assert(packed_args_v | test_fn,
+		"failed expansion of piped arguement pack");
+
+	// Ensure that re-repacking doesn't break the piping
+	static_assert(packed_args_v | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+	// Test piping of repacked non-pack value
+	static_assert(args_v | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+	// Ensure that re-repacking doesn't break the piping
+	static_assert(args_v | jc::repack | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+
+	PASS();
+};
+
+
+// Main subtest for all jclib functional piping
+int test_piping()
+{
+	NEWTEST();
 
 
 
 
+	// Test arguement pack piping
+	SUBTEST(test_arguement_pack_piping);
+
+
+	PASS();
+};
 
 
 
@@ -782,6 +855,7 @@ constexpr auto add(int a, int b) { return a + b; };
 int main()
 {
 	SUBTEST(test_operators);
+	SUBTEST(test_piping);
 
 	if (!jc::has_operator<jc::plus_t, Foo, int>::value)
 	{
