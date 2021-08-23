@@ -602,6 +602,25 @@ namespace jc
 	constexpr static dereference_t dereference{};
 
 
+	
+	/**
+	 * @brief Binary modulus "%" function object type (ie. modulo(3, 2) -> 1)
+	*/
+	struct modulo_t : public operator_tag
+	{
+	public:
+		template <typename T, typename U>
+		constexpr auto operator()(T&& lhs, U&& rhs) const noexcept ->
+			decltype(std::declval<T&&>() % std::declval<U&&>())
+		{
+			return lhs % rhs;
+		};
+	};
+
+	/**
+	 * @brief Binary modulus "%" function object (ie. modulo(3, 2) -> 1)
+	*/
+	constexpr static modulo_t modulo{};
 
 
 

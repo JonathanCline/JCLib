@@ -456,6 +456,65 @@ int test_op_invert()
 	PASS();
 };
 
+// jc::modulo test
+int test_op_modulo()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::modulo;
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type lhs_v = 10;
+		const value_type rhs_v = 4;
+		const value_type result_v = 2;
+
+		value_type i = operator_v(lhs_v, rhs_v);
+		ASSERT(i == result_v, "modulo operator failed");
+
+		i = (lhs_v | operator_v & rhs_v);
+		ASSERT(i == result_v, "piped modulo operator failed");
+	};
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type lhs_v = 11;
+		const value_type rhs_v = 4;
+		const value_type result_v = 3;
+
+		value_type i = operator_v(lhs_v, rhs_v);
+		ASSERT(i == result_v, "modulo operator failed");
+
+		i = (lhs_v | operator_v & rhs_v);
+		ASSERT(i == result_v, "piped modulo operator failed");
+	};
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type lhs_v = 12;
+		const value_type rhs_v = 4;
+		const value_type result_v = 0;
+
+		value_type i = operator_v(lhs_v, rhs_v);
+		ASSERT(i == result_v, "modulo operator failed");
+
+		i = (lhs_v | operator_v & rhs_v);
+		ASSERT(i == result_v, "piped modulo operator failed");
+	};
+
+	PASS();
+};
 
 
 
@@ -471,7 +530,7 @@ int test_operators()
 	SUBTEST(test_op_times);
 	SUBTEST(test_op_divide);
 
-	SUBTEST(test_op_invert);
+	SUBTEST(test_op_modulo);
 
 
 	// Test binary arithmetic operators
@@ -479,9 +538,10 @@ int test_operators()
 
 
 
-
 	// Test logical operatorss
-	
+
+	SUBTEST(test_op_invert);
+
 	SUBTEST(test_op_conjuct);
 	SUBTEST(test_op_disjunct);
 
