@@ -734,7 +734,10 @@ namespace jc
 				jc::enable_if_t
 				<
 					jc::conjunction<jc::is_same<jc::impl::wildcard, WildCards>...>::value &&
-					jc::is_invocable_with_count<const LT, sizeof...(WildCards)>::value,
+					jc::is_invocable_with_count<const LT, sizeof...(WildCards)>::value &&
+					(
+						!jc::is_invocable_with_count<const LT, 0>::value
+					),
 					void
 				>
 			{};
@@ -775,6 +778,61 @@ namespace jc
 	{
 		return impl::piped_function<LT, RT>(_lhs, _rhs);
 	};
+
+
+
+	namespace impl
+	{
+		// Allows for regular functions and lamdas to be used like typical operator objects
+		template <typename OpT>
+		struct callwrap : public operator_tag
+		{
+		public:
+			
+			template <typename... Ts>
+			constexpr auto operator()(Ts&&... _args) const
+				-> decltype
+				(
+					jc::invoke(std::declval<const OpT&>(), std::forward<Ts>(std::declval<Ts&&>())...)
+				)
+			{
+				return jc::invoke(this->op_, std::forward<Ts>(_args)...);
+			};
+
+			template <typename = jc::enable_if_t<jc::is_copy_constructible<OpT>::value>>
+			constexpr callwrap(const OpT& _op) :
+				op_{ _op }
+			{};
+
+			template <typename = jc::enable_if_t<jc::is_move_constructible<OpT>::value>>
+			constexpr callwrap(OpT&& _op) :
+				op_{ std::move(_op) }
+			{};
+
+		private:
+			OpT op_;
+		};
+	};
+
+	/**
+	 * @brief Allows lamdas and functions to be used in function object composition, returns new function object
+	*/
+	struct call_t: public operator_tag
+	{
+	public:
+		constexpr auto operator()(const jc::impl::wildcard& _wc) const noexcept {};
+
+		template <typename OpT> 
+		constexpr auto operator()(OpT&& _op) const noexcept
+		{
+			return impl::callwrap<jc::remove_cvref_t<OpT>>(std::forward<OpT>(_op));
+		};
+	};
+
+	/**
+	 * @brief Allows lamdas and functions to be used in function object composition, returns new function object
+	*/
+	constexpr static call_t call{};
 
 };
 

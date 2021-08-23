@@ -582,6 +582,8 @@ int test_operators()
 	SUBTEST(test_op_dereference);
 
 
+	
+
 	PASS();
 };
 
