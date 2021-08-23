@@ -624,6 +624,26 @@ namespace jc
 
 
 
+	/**
+	 * @brief Arithmatic negation "-n" function object type (ie. -(5) -> (-5), -(-5) -> (5))
+	*/
+	struct negate_t : public operator_tag
+	{
+	public:
+		template <typename T>
+		constexpr auto operator()(T&& lhs) const noexcept ->
+			decltype(-std::declval<T&&>())
+		{
+			return -lhs;
+		};
+	};
+
+	/**
+	 * @brief Arithmatic negation "-n" function object (ie. -(5) -> (-5), -(-5) -> (5))
+	*/
+	constexpr static negate_t negate{};
+
+
 	namespace impl
 	{
 		template <typename Op, typename T, typename = void>

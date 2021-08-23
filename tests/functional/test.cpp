@@ -456,6 +456,35 @@ int test_op_invert()
 	PASS();
 };
 
+// jc::negate test
+int test_op_negate()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::negate;
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type initial_v = 5;
+		const value_type new_v = -5;
+
+		value_type i = initial_v;
+
+		ASSERT(i == initial_v, "invalid negate test condition");
+
+		i = operator_v(i);
+		ASSERT(i == new_v, "negate operator failed");
+
+		i = (i | operator_v);
+		ASSERT(i == initial_v, "piped negate operator failed");
+	};
+
+	PASS();
+};
+
 // jc::modulo test
 int test_op_modulo()
 {
@@ -531,6 +560,7 @@ int test_operators()
 	SUBTEST(test_op_divide);
 
 	SUBTEST(test_op_modulo);
+	SUBTEST(test_op_negate);
 
 
 	// Test binary arithmetic operators

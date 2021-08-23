@@ -573,6 +573,7 @@ namespace jc
 
 			constexpr auto operator~() const noexcept { return *this; };
 			constexpr auto operator!() const noexcept { return *this; };
+			constexpr auto operator-() const noexcept { return *this; };
 
 			constexpr auto operator&(wildcard rhs) const noexcept { return *this; };
 			constexpr auto operator|(wildcard rhs) const noexcept { return *this; };
