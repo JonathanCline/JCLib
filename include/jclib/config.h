@@ -96,7 +96,7 @@ namespace jc
 #define JCLIB_NODISCARD(reason) [[nodiscard]]
 #else
 // Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
-#define JCLIB_NODISCARD()
+#define JCLIB_NODISCARD(reason)
 #endif
 #endif
 
