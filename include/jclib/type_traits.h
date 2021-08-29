@@ -646,6 +646,10 @@ namespace jc
 		{};
 	};
 
+	/**
+	 * @brief Wildcard type used for function trait probing (ie. jc::is_invocable_with_count)
+	*/
+	using wildcard = jc::impl::wildcard;
 
 
 	/**

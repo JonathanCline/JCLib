@@ -390,20 +390,29 @@ int test_op_dereference()
 		using value_type = int;
 
 		static_assert(jc::has_operator<decltype(operator_v), value_type*>::value, "missing operator");
+		static_assert(jc::is_invocable_with_count<decltype(operator_v), 1>::value, "failed function probing");
+		
+		value_type n = 125;
+		value_type* nptr = &n;
 
-		const value_type initial_v = 0;
-		const value_type new_v = 2;
+		// Test invocation
+		{
+			auto q = operator_v(nptr);
+			ASSERT(q == n, "dereference operator failed");
+		};
+		
+		// Test piped invocation
+		{
+			auto q = nptr | operator_v;
+			ASSERT(q == n, "piped dereference operator failed");
+		};
 
-		value_type i = initial_v;
-		value_type* iptr = &i;
+		// Test packed piped invocation
+		{
+			auto q = jc::pack(nptr) | operator_v;
+			ASSERT(q == n, "packed and piped dereference operator failed");
+		};
 
-		ASSERT(i == initial_v, "invalid dereference test condition");
-
-		jc::dereference(iptr) = new_v;
-		ASSERT(i == new_v, "dereference operator failed");
-
-		(iptr | jc::dereference) = initial_v;
-		ASSERT(i == initial_v, "piped dereference operator failed");
 	};
 
 	// Test with const value pointer
@@ -412,16 +421,26 @@ int test_op_dereference()
 
 		static_assert(jc::has_operator<decltype(operator_v), const value_type*>::value, "missing operator");
 
-		const value_type initial_v = 0;
-		const value_type new_v = 2;
+		value_type n = 125;
+		value_type* nptr = &n;
 
-		value_type i = initial_v;
-		value_type* iptr = &i;
+		// Test invocation
+		{
+			auto q = operator_v(nptr);
+			ASSERT(q == n, "dereference operator with const value type failed");
+		};
 
-		ASSERT(i == initial_v, "invalid dereference test condition");
+		// Test piped invocation
+		{
+			auto q = nptr | operator_v;
+			ASSERT(q == n, "piped dereference operator with const value type failed");
+		};
 
-		auto& iref = jc::dereference(iptr);
-		ASSERT(&i == &iref, "dereference operator failed on const value");
+		// Test packed piped invocation
+		{
+			auto q = jc::pack(nptr) | operator_v;
+			ASSERT(q == n, "packed and piped dereference operator with const value type failed");
+		};
 	};
 
 	PASS();
@@ -684,8 +703,137 @@ int test_op_bxor()
 	};
 
 	{
-		const value_type q = jc::pack(a, b) | operator_v;
-		ASSERT(q == expected_v, "packed and piped bxor operator failed");
+	const value_type q = jc::pack(a, b) | operator_v;
+	ASSERT(q == expected_v, "packed and piped bxor operator failed");
+	};
+
+	PASS();
+};
+
+
+
+// jc::address_of test
+int test_op_address_of()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::address_of;
+
+	// Test with non-const value
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type&>::value, "missing operator");
+		static_assert(jc::is_invocable_with_count<decltype(operator_v), 1>::value, "failed function probing");
+
+		value_type n = 125;
+		value_type* nptr = &n;
+
+		// Test invocation
+		{
+			auto q = operator_v(n);
+			ASSERT(q == nptr, "address_of operator failed");
+		};
+
+		// Test piped invocation
+		{
+			auto q = n | operator_v;
+			ASSERT(q == nptr, "piped address_of operator failed");
+		};
+
+#if JCLIB_VERSION_MAJOR >= 0 && JCLIB_VERSION_MINOR >= 2 && JCLIB_VERSION_PATCH >= 3
+		// Test packed piped invocation
+		{
+			auto q = jc::pack(n) | operator_v;
+			ASSERT(q == nptr, "packed and piped address_of operator failed");
+		};
+#endif
+
+	};
+
+	// Test with const value pointer
+	{
+		using value_type = const int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type&>::value, "missing operator");
+
+		value_type n = 125;
+		value_type* nptr = &n;
+
+		// Test invocation
+		{
+			auto q = operator_v(n);
+			ASSERT(q == nptr, "address_of operator with const value type failed");
+		};
+
+		// Test piped invocation
+		{
+			auto q = n | operator_v;
+			ASSERT(q == nptr, "piped address_of operator with const value type failed");
+		};
+
+#if JCLIB_VERSION_MAJOR >= 0 && JCLIB_VERSION_MINOR >= 2 && JCLIB_VERSION_PATCH >= 3
+		// Test packed piped invocation
+		{
+			auto q = jc::pack(n) | operator_v;
+			ASSERT(q == nptr, "packed and piped address_of operator with const value type failed");
+		};
+#endif
+	};
+
+	PASS();
+};
+
+// jc::member test
+int test_op_member()
+{
+	NEWTEST();
+
+	// Testing operator value alias
+	constexpr auto operator_v = jc::member;
+
+	// Test arguement binding
+	{
+		using value_type = std::pair<int, int>;
+		
+		constexpr auto first_fn = operator_v & (&value_type::first);
+		constexpr auto second_fn = operator_v & (&value_type::second);
+
+		value_type v{ 1, 12 };
+		auto& first = v.first;
+		auto& second = v.second;
+
+		// Test invocation access
+		{
+			auto& q = first_fn(v);
+			ASSERT(q == first, "bad member access operator (first)");
+		};
+		{
+			auto& q = second_fn(v);
+			ASSERT(q == second, "bad member access operator (second)");
+		};
+
+		// Test piped access
+		{
+			auto& q = v | first_fn;
+			ASSERT(q == first, "bad piped member access operator (first)");
+		};
+		{
+			auto& q = v | second_fn;
+			ASSERT(q == second, "bad piped member access operator (second)");
+		};
+
+#if JCLIB_VERSION_MAJOR >= 0 && JCLIB_VERSION_MINOR >= 2 && JCLIB_VERSION_PATCH >= 3
+		// Test packed piped access
+		{
+			auto q = jc::pack(v) | first_fn;
+			ASSERT(q == first, "bad piped member access operator (first)");
+		};
+		{
+			auto& q = jc::pack(v) | second_fn;
+			ASSERT(q == second, "bad piped member access operator (second)");
+		};
+#endif
 	};
 
 	PASS();
@@ -730,8 +878,8 @@ int test_operators()
 	// Test other operators
 
 	SUBTEST(test_op_dereference);
-
-
+	SUBTEST(test_op_address_of);
+	SUBTEST(test_op_member);
 	
 
 	PASS();
@@ -831,6 +979,8 @@ struct Foo
 };
 
 constexpr auto add(int a, int b) { return a + b; };
+
+
 
 int main()
 {
