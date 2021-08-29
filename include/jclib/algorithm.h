@@ -67,6 +67,96 @@
 
 namespace jc
 {
+	// Contains the type constraints used with algorithm functions regardless of implementation selected
+	namespace impl_algorithms_constraints
+	{
+#pragma region ACCUMULATE_CONSTRAINTS
+#if JCLIB_FEATURE_CONCEPTS_V
+		template <typename IterT, typename OpT, typename T>
+		concept cx_accumulate_constraints =
+			jc::cx_iterator<IterT> &&
+			jc::cx_invocable<OpT, T&&, jc::iterator_to_t<IterT>> &&
+			jc::cx_same_as<T, jc::invoke_result_t<OpT, T&&, jc::iterator_to_t<IterT>>>;
+	
+		template <typename IterT, typename OpT, typename T>
+		struct accumulate_constraints : 
+			jc::bool_constant<cx_accumulate_constraints<IterT, OpT, T>>
+		{};
+#else
+		template <typename IterT, typename OpT, typename T>
+		struct accumulate_constraints : jc::bool_constant
+			<
+				jc::is_iterator<IterT>::value&&
+				jc::is_invocable<OpT, T&&, jc::iterator_to_t<IterT>>::value&&
+				jc::is_same<jc::invoke_result_t<OpT, T&&, jc::iterator_to_t<IterT>>, T>::value
+			>
+		{};
+#endif
+#pragma endregion ACCUMULATE_CONSTRAINTS
+	};
+
+	// Iterator based accumulate
+	template <typename IterT, typename OpT = jc::plus_t, typename T = jc::remove_cvref_t<jc::iterator_to_t<IterT>>>
+	JCLIB_REQUIRES((impl_algorithms_constraints::cx_accumulate_constraints<IterT, OpT, T>))
+	JCLIB_ALGORITHM_H_CONSTEXPR inline auto accumulate(IterT _begin, const IterT _end, const OpT& _op = jc::plus, T _init = T{})
+		noexcept(noexcept(
+			jc::invoke(std::declval<const OpT>(), std::declval<T&&>(), std::declval<jc::iterator_to_t<IterT>>())
+		))
+		-> JCLIB_RET_SFINAE_CXSWITCH(T, impl_algorithms_constraints::accumulate_constraints<IterT, OpT, T>::value)
+	{
+#if defined(JCLIB_ALGORITHM_H_USE_STD_ALGORITHMS)
+		return ::std::accumulate(_begin, _end, std::move(_init), _op);
+#else
+		// Exit early if 0 length range
+		if (_begin == _end)
+		{
+			return _init;
+		};
+
+		// Preform accumulate
+		for (auto _at = _begin; _at != _end; _at = jc::next(_at, 1))
+		{
+			_init = jc::invoke(_op, std::move(_init), *_at);
+		};
+
+		// Return result
+		return _init;
+#endif
+	};
+
+	// Range based accumulate
+	template <typename RangeT, typename OpT = jc::plus_t, typename T = jc::remove_const_t<jc::ranges::value_t<RangeT>>>
+	JCLIB_REQUIRES((jc::cx_range<RangeT>))
+	JCLIB_ALGORITHM_H_CONSTEXPR inline auto accumulate(RangeT&& _range, const OpT& _op = jc::plus, T _init = T{})
+		noexcept(noexcept(
+			jc::accumulate
+			(
+				std::declval<jc::ranges::iterator_t<RangeT>>(),
+				std::declval<jc::ranges::iterator_t<RangeT>>(),
+				std::declval<const OpT&>(),
+				std::declval<T&&>()
+			)
+		))
+		-> JCLIB_RET_SFINAE_CXSWITCH
+		(
+			decltype(jc::accumulate
+			(
+				std::declval<jc::ranges::iterator_t<RangeT>>(),
+				std::declval<jc::ranges::iterator_t<RangeT>>(),
+				std::declval<const OpT&>(),
+				std::declval<T&&>()
+			)),
+			jc::ranges::is_range<RangeT>::value
+		)
+	{
+		return jc::accumulate(jc::begin(_range), jc::end(_range), _op, std::move(_init));
+	};
+
+
+
+
+
+
 
 
 	/**
