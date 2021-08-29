@@ -1168,6 +1168,25 @@ namespace jc
 	*/
 	constexpr static bor_t bor{};
 
+	/**
+	 * @brief Binary XOR operator - "^" function object type
+	*/
+	struct bxor_t : public operator_tag
+	{
+		template <typename LT, typename RT>
+		constexpr auto operator()(LT&& lhs, RT&& rhs) const
+			noexcept(noexcept(std::declval<LT&&>() ^ std::declval<RT&&>()))
+			-> decltype(std::declval<LT&&>() ^ std::declval<RT&&>())
+		{
+			return lhs ^ rhs;
+		};
+	};
+
+	/**
+	 * @brief Binary XOR operator - "^" function object
+	*/
+	constexpr static bxor_t bxor{};
+
 };
 
 #pragma endregion BINARY_OPERATORS

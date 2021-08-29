@@ -654,6 +654,43 @@ int test_op_bor()
 	PASS();
 };
 
+// jc::bxor test
+int test_op_bxor()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::bxor;
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+	static_assert(jc::is_invocable_with_count<decltype(operator_v), 2>::value, "failed function probing");
+
+	constexpr value_type operand_a_v = 0b00011011;
+	constexpr value_type operand_b_v = 0b00000111;
+	constexpr value_type expected_v = operand_a_v ^ operand_b_v;
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "bxor operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped bxor operator failed");
+	};
+
+	{
+		const value_type q = jc::pack(a, b) | operator_v;
+		ASSERT(q == expected_v, "packed and piped bxor operator failed");
+	};
+
+	PASS();
+};
+
 
 
 // Runs the tests for the various operators defined by jclib/functional.h
@@ -677,6 +714,7 @@ int test_operators()
 	SUBTEST(test_op_bnot);
 	SUBTEST(test_op_band);
 	SUBTEST(test_op_bor);
+	SUBTEST(test_op_bxor);
 
 
 
