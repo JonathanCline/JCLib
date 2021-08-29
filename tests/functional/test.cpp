@@ -784,7 +784,7 @@ int test_op_address_of()
 	PASS();
 };
 
-
+// jc::member test
 int test_op_member()
 {
 	NEWTEST();
@@ -980,13 +980,10 @@ struct Foo
 
 constexpr auto add(int a, int b) { return a + b; };
 
-#include <jclib/ranges.h>
-#include <jclib/algorithm.h>
+
 
 int main()
 {
-	
-
 	SUBTEST(test_operators);
 	SUBTEST(test_piping);
 
