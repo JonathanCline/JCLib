@@ -1130,6 +1130,25 @@ namespace jc
 	*/
 	constexpr static bnot_t bnot{};
 
+	/**
+	 * @brief Binary AND operator - "&" function object type
+	*/
+	struct band_t : public operator_tag
+	{
+		template <typename LT, typename RT>
+		constexpr auto operator()(LT&& lhs, RT&& rhs) const
+			noexcept(noexcept(std::declval<LT&&>() & std::declval<RT&&>()))
+			-> decltype(std::declval<LT&&>() & std::declval<RT&&>())
+		{
+			return lhs & rhs;
+		};
+	};
+
+	/**
+	 * @brief Binary AND operator - "&" function object
+	*/
+	constexpr static band_t band{};
+
 };
 
 #pragma endregion BINARY_OPERATORS

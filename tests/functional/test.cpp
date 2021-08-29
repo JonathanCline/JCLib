@@ -558,6 +558,7 @@ int test_op_bnot()
 		using value_type = int;
 
 		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+		static_assert(jc::is_invocable_with_count<decltype(operator_v), 1>::value, "failed function probing");
 
 		const value_type initial_v = 0b00001111;
 		const value_type new_v = ~initial_v;
@@ -571,6 +572,46 @@ int test_op_bnot()
 
 		i = (i | operator_v);
 		ASSERT(i == initial_v, "piped bnot operator failed");
+
+		i = jc::pack(i) | operator_v;
+		ASSERT(i == new_v, "packed and piped bnot operator failed");
+	};
+
+	PASS();
+};
+
+// jc::band test
+int test_op_band()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::band;
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+	static_assert(jc::is_invocable_with_count<decltype(operator_v), 2>::value, "failed function probing");
+
+	constexpr value_type operand_a_v = 0b00011011;
+	constexpr value_type operand_b_v = 0b00000111;
+	constexpr value_type expected_v = operand_a_v & operand_b_v;
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "band operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped band operator failed");
+	};
+
+	{
+		const value_type q = jc::pack(a, b) | operator_v;
+		ASSERT(q == expected_v, "packed and piped band operator failed");
 	};
 
 	PASS();
@@ -597,6 +638,7 @@ int test_operators()
 	// Test binary arithmetic operators
 
 	SUBTEST(test_op_bnot);
+	SUBTEST(test_op_band);
 
 
 
