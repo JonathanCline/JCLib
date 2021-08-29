@@ -390,20 +390,29 @@ int test_op_dereference()
 		using value_type = int;
 
 		static_assert(jc::has_operator<decltype(operator_v), value_type*>::value, "missing operator");
+		static_assert(jc::is_invocable_with_count<decltype(operator_v), 1>::value, "failed function probing");
+		
+		value_type n = 125;
+		value_type* nptr = &n;
 
-		const value_type initial_v = 0;
-		const value_type new_v = 2;
+		// Test invocation
+		{
+			auto q = operator_v(nptr);
+			ASSERT(q == n, "dereference operator failed");
+		};
+		
+		// Test piped invocation
+		{
+			auto q = nptr | operator_v;
+			ASSERT(q == n, "piped dereference operator failed");
+		};
 
-		value_type i = initial_v;
-		value_type* iptr = &i;
+		// Test packed piped invocation
+		{
+			auto q = jc::pack(nptr) | operator_v;
+			ASSERT(q == n, "packed and piped dereference operator failed");
+		};
 
-		ASSERT(i == initial_v, "invalid dereference test condition");
-
-		jc::dereference(iptr) = new_v;
-		ASSERT(i == new_v, "dereference operator failed");
-
-		(iptr | jc::dereference) = initial_v;
-		ASSERT(i == initial_v, "piped dereference operator failed");
 	};
 
 	// Test with const value pointer
@@ -412,16 +421,26 @@ int test_op_dereference()
 
 		static_assert(jc::has_operator<decltype(operator_v), const value_type*>::value, "missing operator");
 
-		const value_type initial_v = 0;
-		const value_type new_v = 2;
+		value_type n = 125;
+		value_type* nptr = &n;
 
-		value_type i = initial_v;
-		value_type* iptr = &i;
+		// Test invocation
+		{
+			auto q = operator_v(nptr);
+			ASSERT(q == n, "dereference operator with const value type failed");
+		};
 
-		ASSERT(i == initial_v, "invalid dereference test condition");
+		// Test piped invocation
+		{
+			auto q = nptr | operator_v;
+			ASSERT(q == n, "piped dereference operator with const value type failed");
+		};
 
-		auto& iref = jc::dereference(iptr);
-		ASSERT(&i == &iref, "dereference operator failed on const value");
+		// Test packed piped invocation
+		{
+			auto q = jc::pack(nptr) | operator_v;
+			ASSERT(q == n, "packed and piped dereference operator with const value type failed");
+		};
 	};
 
 	PASS();
