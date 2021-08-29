@@ -1106,4 +1106,89 @@ namespace jc
 	constexpr repack_t repack{};
 };
 
+
+#pragma region BINARY_OPERATORS
+
+namespace jc
+{
+	/**
+	 * @brief Binary NOT operator - "~" function object type
+	*/
+	struct bnot_t : public operator_tag
+	{
+		template <typename T>
+		constexpr auto operator()(T&& val) const
+			noexcept(noexcept(~std::declval<T&&>()))
+			-> decltype(~std::declval<T&&>())
+		{
+			return ~val;
+		};
+	};
+
+	/**
+	 * @brief Binary NOT operator - "~" function object
+	*/
+	constexpr static bnot_t bnot{};
+
+	/**
+	 * @brief Binary AND operator - "&" function object type
+	*/
+	struct band_t : public operator_tag
+	{
+		template <typename LT, typename RT>
+		constexpr auto operator()(LT&& lhs, RT&& rhs) const
+			noexcept(noexcept(std::declval<LT&&>() & std::declval<RT&&>()))
+			-> decltype(std::declval<LT&&>() & std::declval<RT&&>())
+		{
+			return lhs & rhs;
+		};
+	};
+
+	/**
+	 * @brief Binary AND operator - "&" function object
+	*/
+	constexpr static band_t band{};
+
+	/**
+	 * @brief Binary OR operator - "|" function object type
+	*/
+	struct bor_t : public operator_tag
+	{
+		template <typename LT, typename RT>
+		constexpr auto operator()(LT&& lhs, RT&& rhs) const
+			noexcept(noexcept(std::declval<LT&&>() | std::declval<RT&&>()))
+			-> decltype(std::declval<LT&&>() | std::declval<RT&&>())
+		{
+			return lhs | rhs;
+		};
+	};
+
+	/**
+	 * @brief Binary OR operator - "|" function object
+	*/
+	constexpr static bor_t bor{};
+
+	/**
+	 * @brief Binary XOR operator - "^" function object type
+	*/
+	struct bxor_t : public operator_tag
+	{
+		template <typename LT, typename RT>
+		constexpr auto operator()(LT&& lhs, RT&& rhs) const
+			noexcept(noexcept(std::declval<LT&&>() ^ std::declval<RT&&>()))
+			-> decltype(std::declval<LT&&>() ^ std::declval<RT&&>())
+		{
+			return lhs ^ rhs;
+		};
+	};
+
+	/**
+	 * @brief Binary XOR operator - "^" function object
+	*/
+	constexpr static bxor_t bxor{};
+
+};
+
+#pragma endregion BINARY_OPERATORS
+
 #endif

@@ -547,6 +547,152 @@ int test_op_modulo()
 
 
 
+// jc::bnot test
+int test_op_bnot()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::bnot;
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+		static_assert(jc::is_invocable_with_count<decltype(operator_v), 1>::value, "failed function probing");
+
+		const value_type initial_v = 0b00001111;
+		const value_type new_v = ~initial_v;
+
+		value_type i = initial_v;
+
+		ASSERT(i == initial_v, "invalid bnot test condition");
+
+		i = operator_v(i);
+		ASSERT(i == new_v, "bnot operator failed");
+
+		i = (i | operator_v);
+		ASSERT(i == initial_v, "piped bnot operator failed");
+
+		i = jc::pack(i) | operator_v;
+		ASSERT(i == new_v, "packed and piped bnot operator failed");
+	};
+
+	PASS();
+};
+
+// jc::band test
+int test_op_band()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::band;
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+	static_assert(jc::is_invocable_with_count<decltype(operator_v), 2>::value, "failed function probing");
+
+	constexpr value_type operand_a_v = 0b00011011;
+	constexpr value_type operand_b_v = 0b00000111;
+	constexpr value_type expected_v = operand_a_v & operand_b_v;
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "band operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped band operator failed");
+	};
+
+	{
+		const value_type q = jc::pack(a, b) | operator_v;
+		ASSERT(q == expected_v, "packed and piped band operator failed");
+	};
+
+	PASS();
+};
+
+// jc::bor test
+int test_op_bor()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::bor;
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+	static_assert(jc::is_invocable_with_count<decltype(operator_v), 2>::value, "failed function probing");
+
+	constexpr value_type operand_a_v = 0b00011011;
+	constexpr value_type operand_b_v = 0b00000111;
+	constexpr value_type expected_v = operand_a_v | operand_b_v;
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "bor operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped bor operator failed");
+	};
+
+	{
+		const value_type q = jc::pack(a, b) | operator_v;
+		ASSERT(q == expected_v, "packed and piped bor operator failed");
+	};
+
+	PASS();
+};
+
+// jc::bxor test
+int test_op_bxor()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::bxor;
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+	static_assert(jc::is_invocable_with_count<decltype(operator_v), 2>::value, "failed function probing");
+
+	constexpr value_type operand_a_v = 0b00011011;
+	constexpr value_type operand_b_v = 0b00000111;
+	constexpr value_type expected_v = operand_a_v ^ operand_b_v;
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "bxor operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped bxor operator failed");
+	};
+
+	{
+		const value_type q = jc::pack(a, b) | operator_v;
+		ASSERT(q == expected_v, "packed and piped bxor operator failed");
+	};
+
+	PASS();
+};
+
+
+
 // Runs the tests for the various operators defined by jclib/functional.h
 int test_operators()
 {
@@ -565,6 +711,10 @@ int test_operators()
 
 	// Test binary arithmetic operators
 
+	SUBTEST(test_op_bnot);
+	SUBTEST(test_op_band);
+	SUBTEST(test_op_bor);
+	SUBTEST(test_op_bxor);
 
 
 
