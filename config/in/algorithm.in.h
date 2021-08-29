@@ -18,14 +18,14 @@
 /**
  *	@brief Enables custom std algorithm implementations for backporting constexpr support when using C++14/17
 */
-#cmakedefine JCLIB_CONSTEXPR_ALGORIHMS
+#cmakedefine JCLIB_CONSTEXPR_ALGORITHMS
 
-#ifdef JCLIB_CONSTEXPR_ALGORIHMS
+#ifdef JCLIB_CONSTEXPR_ALGORITHMS
 	// Enables custom std algorithm implementations for backporting constexpr support when using C++14/17
-	#define JCLIB_CONSTEXPR_ALGORIHMS_V true
+	#define JCLIB_CONSTEXPR_ALGORITHMS_V true
 #else
 	// Enables custom std algorithm implementations for backporting constexpr support when using C++14/17
-	#define JCLIB_CONSTEXPR_ALGORIHMS_V false
+	#define JCLIB_CONSTEXPR_ALGORITHMS_V false
 #endif
 
 #endif
