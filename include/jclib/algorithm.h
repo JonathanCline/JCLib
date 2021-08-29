@@ -30,14 +30,43 @@
 #include <jclib/config/algorithm.h>
 
 #include <algorithm>
+#include <numeric>
 
 #define _JCLIB_ALGORITHM_
 
+
+/*
+	 Determine if the standard library has constexpr algorithms and add a macro for ease of implementation custom backports
+*/
+#if JCLIB_FEATURE_CPP_CONSTEXPR_ALGORITHMS_V
+
+	// Use standard library algorithms
+	#define JCLIB_ALGORITHM_H_USE_STD_ALGORITHMS
+	
+	// jclib/algorithm.h specific constexpr macro
+	#define JCLIB_ALGORITHM_H_CONSTEXPR constexpr
+
+#elif JCLIB_CONSTEXPR_ALGORITHMS_V
+
+	// Use custom algorithm backports
+	#define JCLIB_ALGORITHM_H_USE_CUSTOM_ALGORITHMS
+	
+	// jclib/algorithm.h specific constexpr macro
+	#define JCLIB_ALGORITHM_H_CONSTEXPR constexpr
+
+#else
+
+	// Use standard library algorithms
+	#define JCLIB_ALGORITHM_H_USE_STD_ALGORITHMS
+	
+	// jclib/algorithm.h specific constexpr macro
+	#define JCLIB_ALGORITHM_H_CONSTEXPR
+
+#endif
+
+
 namespace jc
 {
-
-	
-
 
 
 	/**
