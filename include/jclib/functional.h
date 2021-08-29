@@ -1106,4 +1106,32 @@ namespace jc
 	constexpr repack_t repack{};
 };
 
+
+#pragma region BINARY_OPERATORS
+
+namespace jc
+{
+	/**
+	 * @brief Binary NOT operator - "~" function object type
+	*/
+	struct bnot_t : public operator_tag
+	{
+		template <typename T>
+		constexpr auto operator()(T&& val) const
+			noexcept(noexcept(~std::declval<T&&>()))
+			-> decltype(~std::declval<T&&>())
+		{
+			return ~val;
+		};
+	};
+
+	/**
+	 * @brief Binary NOT operator - "~" function object
+	*/
+	constexpr static bnot_t bnot{};
+
+};
+
+#pragma endregion BINARY_OPERATORS
+
 #endif

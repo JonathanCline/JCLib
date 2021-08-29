@@ -547,6 +547,37 @@ int test_op_modulo()
 
 
 
+// jc::bnot test
+int test_op_bnot()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::bnot;
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type initial_v = 0b00001111;
+		const value_type new_v = ~initial_v;
+
+		value_type i = initial_v;
+
+		ASSERT(i == initial_v, "invalid bnot test condition");
+
+		i = operator_v(i);
+		ASSERT(i == new_v, "bnot operator failed");
+
+		i = (i | operator_v);
+		ASSERT(i == initial_v, "piped bnot operator failed");
+	};
+
+	PASS();
+};
+
+
+
 // Runs the tests for the various operators defined by jclib/functional.h
 int test_operators()
 {
@@ -565,6 +596,7 @@ int test_operators()
 
 	// Test binary arithmetic operators
 
+	SUBTEST(test_op_bnot);
 
 
 
