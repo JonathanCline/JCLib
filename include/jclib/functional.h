@@ -279,11 +279,14 @@ namespace jc
 		struct bound_op<bind_first_t, OpT, T> :
 			public operator_tag
 		{
-			template <typename U>
-			constexpr auto operator()(const U& rhs) const ->
-				jc::invoke_result_t<OpT, T, U>
+			template <typename... Ts>
+			constexpr auto operator()(Ts&&... rhs) const ->
+				decltype(jc::invoke(std::declval<const OpT>(),
+					std::declval<const T&>(),
+					std::forward<Ts>(std::declval<Ts&&>())...
+				))
 			{
-				return jc::invoke(this->op, this->value, rhs);
+				return jc::invoke(this->op, this->value, std::forward<Ts>(rhs)...);
 			};
 
 			constexpr bound_op(OpT _op, T _value) :
@@ -298,11 +301,14 @@ namespace jc
 		struct bound_op<bind_second_t, OpT, T> :
 			public operator_tag
 		{
-			template <typename U>
-			constexpr auto operator()(const U& lhs) const ->
-				jc::invoke_result_t<OpT, U, T>
+			template <typename... Ts>
+			constexpr auto operator()(Ts&&... rhs) const ->
+				decltype(jc::invoke(std::declval<const OpT>(),
+					std::forward<Ts>(std::declval<Ts&&>())...,
+					std::declval<const T&>()
+				))
 			{
-				return jc::invoke(this->op, lhs, this->value);
+				return jc::invoke(this->op, std::forward<Ts>(rhs)..., this->value);
 			};
 
 			constexpr bound_op(OpT _op, T _value) :
@@ -1224,6 +1230,39 @@ namespace jc
 	 * @brief Unary address_of operator - "&" function object (ie. address_of(int) -> int*)
 	*/
 	constexpr static address_of_t address_of{};
+
+
+
+	/**
+	 * @brief Class member variable access operator - function object type
+	*/
+	struct member_t : public operator_tag
+	{
+		template <typename ClassT, typename VarT>
+		constexpr auto operator()(ClassT& _obj, VarT jc::remove_const_t<ClassT>::* _member) const
+			noexcept(noexcept( std::declval<ClassT&>().*(std::declval<VarT jc::remove_const_t<ClassT>::*>()) ))
+			-> decltype(std::declval<ClassT&>().*(std::declval<VarT jc::remove_const_t<ClassT>::*>()))
+		{
+			return _obj.*_member;
+		};
+
+
+
+		// Wildcard overloads for function probing
+		constexpr auto operator()(wildcard w) const
+		{
+			return w;
+		};
+		constexpr auto operator()(wildcard w, wildcard) const
+		{
+			return w;
+		};
+	};
+
+	/**
+	 * @brief Class member variable access operator - "&" object
+	*/
+	constexpr static member_t member{};
 
 };
 

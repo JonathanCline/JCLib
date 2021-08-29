@@ -703,8 +703,8 @@ int test_op_bxor()
 	};
 
 	{
-		const value_type q = jc::pack(a, b) | operator_v;
-		ASSERT(q == expected_v, "packed and piped bxor operator failed");
+	const value_type q = jc::pack(a, b) | operator_v;
+	ASSERT(q == expected_v, "packed and piped bxor operator failed");
 	};
 
 	PASS();
@@ -785,6 +785,62 @@ int test_op_address_of()
 };
 
 
+int test_op_member()
+{
+	NEWTEST();
+
+	// Testing operator value alias
+	constexpr auto operator_v = jc::member;
+
+	// Test arguement binding
+	{
+		using value_type = std::pair<int, int>;
+		
+		constexpr auto first_fn = operator_v & (&value_type::first);
+		constexpr auto second_fn = operator_v & (&value_type::second);
+
+		value_type v{ 1, 12 };
+		auto& first = v.first;
+		auto& second = v.second;
+
+		// Test invocation access
+		{
+			auto& q = first_fn(v);
+			ASSERT(q == first, "bad member access operator (first)");
+		};
+		{
+			auto& q = second_fn(v);
+			ASSERT(q == second, "bad member access operator (second)");
+		};
+
+		// Test piped access
+		{
+			auto& q = v | first_fn;
+			ASSERT(q == first, "bad piped member access operator (first)");
+		};
+		{
+			auto& q = v | second_fn;
+			ASSERT(q == second, "bad piped member access operator (second)");
+		};
+
+#if JCLIB_VERSION_MAJOR >= 0 && JCLIB_VERSION_MINOR >= 2 && JCLIB_VERSION_PATCH >= 3
+		// Test packed piped access
+		{
+			auto q = jc::pack(v) | first_fn;
+			ASSERT(q == first, "bad piped member access operator (first)");
+		};
+		{
+			auto& q = jc::pack(v) | second_fn;
+			ASSERT(q == second, "bad piped member access operator (second)");
+		};
+#endif
+	};
+
+	PASS();
+};
+
+
+
 // Runs the tests for the various operators defined by jclib/functional.h
 int test_operators()
 {
@@ -823,7 +879,7 @@ int test_operators()
 
 	SUBTEST(test_op_dereference);
 	SUBTEST(test_op_address_of);
-
+	SUBTEST(test_op_member);
 	
 
 	PASS();
@@ -924,8 +980,13 @@ struct Foo
 
 constexpr auto add(int a, int b) { return a + b; };
 
+#include <jclib/ranges.h>
+#include <jclib/algorithm.h>
+
 int main()
 {
+	
+
 	SUBTEST(test_operators);
 	SUBTEST(test_piping);
 
