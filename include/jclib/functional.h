@@ -581,27 +581,6 @@ namespace jc
 	constexpr static disjunct_t disjunct{};
 
 
-
-	/**
-	 * @brief Unary dereference "*" function object type (ie. dereference(int*) -> int&)
-	*/
-	struct dereference_t : public operator_tag
-	{
-	public:
-		template <typename T>
-		constexpr auto operator()(T&& _value) const noexcept ->
-			decltype(*std::declval<T&&>())
-		{
-			return *_value;
-		};
-	};
-
-	/**
-	 * @brief Unary dereference "*" function object (ie. dereference(int*) -> int&)
-	*/
-	constexpr static dereference_t dereference{};
-
-
 	
 	/**
 	 * @brief Binary modulus "%" function object type (ie. modulo(3, 2) -> 1)
@@ -1190,5 +1169,40 @@ namespace jc
 };
 
 #pragma endregion BINARY_OPERATORS
+
+
+
+/*
+	Member access operators and other value access operators
+*/
+#pragma region ACCESSOR_OPERATORS
+
+namespace jc
+{
+	/**
+	 * @brief Unary dereference operator - "*" function object type (ie. dereference(int*) -> int&)
+	*/
+	struct dereference_t : public operator_tag
+	{
+	public:
+		template <typename T>
+		constexpr auto operator()(T&& _value) const noexcept ->
+			decltype(*std::declval<T&&>())
+		{
+			return *_value;
+		};
+	};
+
+	/**
+	 * @brief Unary dereference operator - "*" function object type (ie. dereference(int*) -> int&)
+	*/
+	constexpr static dereference_t dereference{};
+
+
+
+};
+
+#pragma endregion ACCESSOR_OPERATORS
+
 
 #endif
