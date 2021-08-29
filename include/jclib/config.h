@@ -146,7 +146,7 @@ namespace jc
 
 // Convenience macro for c++20 requires clauses
 #ifndef JCLIB_REQUIRES
-#ifdef __cpp_concepts
+#if JCLIB_FEATURE_CONCEPTS_V
 #define JCLIB_REQUIRES(x) requires (x)
 #else
 #define JCLIB_REQUIRES(x)
