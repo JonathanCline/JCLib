@@ -17,18 +17,29 @@
 
 /*
 	Provides range based std-algorithms using jclib ranges and provides a few other small algorithms
+
+	Constexpr versions of standard library algorithms will also be made available for C++14/17 if the
+	relevant CMake option is set.
 */
 
 #include <jclib/ranges.h>
 #include <jclib/functional.h>
 #include <jclib/feature.h>
 
-#define _JCLIB_ALGORITHM_
+// Algorithm config file
+#include <jclib/config/algorithm.h>
 
 #include <algorithm>
 
+#define _JCLIB_ALGORITHM_
+
 namespace jc
 {
+
+	
+
+
+
 	/**
 	 * @brief Returns an iterator the value specified if it exists
 	 * @tparam RangeT Range object type to look in
