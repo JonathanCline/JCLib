@@ -712,6 +712,79 @@ int test_op_bxor()
 
 
 
+// jc::address_of test
+int test_op_address_of()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::address_of;
+
+	// Test with non-const value
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type&>::value, "missing operator");
+		static_assert(jc::is_invocable_with_count<decltype(operator_v), 1>::value, "failed function probing");
+
+		value_type n = 125;
+		value_type* nptr = &n;
+
+		// Test invocation
+		{
+			auto q = operator_v(n);
+			ASSERT(q == nptr, "address_of operator failed");
+		};
+
+		// Test piped invocation
+		{
+			auto q = n | operator_v;
+			ASSERT(q == nptr, "piped address_of operator failed");
+		};
+
+#if JCLIB_VERSION_MAJOR >= 0 && JCLIB_VERSION_MINOR >= 2 && JCLIB_VERSION_PATCH >= 3
+		// Test packed piped invocation
+		{
+			auto q = jc::pack(n) | operator_v;
+			ASSERT(q == nptr, "packed and piped address_of operator failed");
+		};
+#endif
+
+	};
+
+	// Test with const value pointer
+	{
+		using value_type = const int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type&>::value, "missing operator");
+
+		value_type n = 125;
+		value_type* nptr = &n;
+
+		// Test invocation
+		{
+			auto q = operator_v(n);
+			ASSERT(q == nptr, "address_of operator with const value type failed");
+		};
+
+		// Test piped invocation
+		{
+			auto q = n | operator_v;
+			ASSERT(q == nptr, "piped address_of operator with const value type failed");
+		};
+
+#if JCLIB_VERSION_MAJOR >= 0 && JCLIB_VERSION_MINOR >= 2 && JCLIB_VERSION_PATCH >= 3
+		// Test packed piped invocation
+		{
+			auto q = jc::pack(n) | operator_v;
+			ASSERT(q == nptr, "packed and piped address_of operator with const value type failed");
+		};
+#endif
+	};
+
+	PASS();
+};
+
+
 // Runs the tests for the various operators defined by jclib/functional.h
 int test_operators()
 {
@@ -749,7 +822,7 @@ int test_operators()
 	// Test other operators
 
 	SUBTEST(test_op_dereference);
-
+	SUBTEST(test_op_address_of);
 
 	
 

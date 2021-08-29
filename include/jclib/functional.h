@@ -1200,6 +1200,31 @@ namespace jc
 
 
 
+	/**
+	 * @brief Unary address_of operator - "&" function object type (ie. address_of(int) -> int*)
+	*/
+	struct address_of_t : public operator_tag
+	{
+		template <typename T>
+		constexpr auto operator()(T&& val) const
+			noexcept(noexcept(&std::declval<T&&>()))
+			-> decltype(&std::declval<T&&>())
+		{
+			return &val;
+		};
+		
+		// Wildcard overload for function probing
+		constexpr auto operator()(wildcard w) const
+		{
+			return w;
+		};
+	};
+
+	/**
+	 * @brief Unary address_of operator - "&" function object (ie. address_of(int) -> int*)
+	*/
+	constexpr static address_of_t address_of{};
+
 };
 
 #pragma endregion ACCESSOR_OPERATORS
