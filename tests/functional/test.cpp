@@ -427,7 +427,269 @@ int test_op_dereference()
 	PASS();
 };
 
+// jc::invert test
+int test_op_invert()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::invert;
 
+	// Test operator
+	{
+		using value_type = bool;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type initial_v = false;
+		const value_type new_v = true;
+
+		value_type i = initial_v;
+
+		ASSERT(i == initial_v, "invalid invert test condition");
+
+		i = operator_v(i);
+		ASSERT(i == new_v, "invert  operator failed");
+
+		i = (i | operator_v);
+		ASSERT(i == initial_v, "piped invert operator failed");
+	};
+
+	PASS();
+};
+
+// jc::negate test
+int test_op_negate()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::negate;
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type initial_v = 5;
+		const value_type new_v = -5;
+
+		value_type i = initial_v;
+
+		ASSERT(i == initial_v, "invalid negate test condition");
+
+		i = operator_v(i);
+		ASSERT(i == new_v, "negate operator failed");
+
+		i = (i | operator_v);
+		ASSERT(i == initial_v, "piped negate operator failed");
+	};
+
+	PASS();
+};
+
+// jc::modulo test
+int test_op_modulo()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::modulo;
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type lhs_v = 10;
+		const value_type rhs_v = 4;
+		const value_type result_v = 2;
+
+		value_type i = operator_v(lhs_v, rhs_v);
+		ASSERT(i == result_v, "modulo operator failed");
+
+		i = (lhs_v | operator_v & rhs_v);
+		ASSERT(i == result_v, "piped modulo operator failed");
+	};
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type lhs_v = 11;
+		const value_type rhs_v = 4;
+		const value_type result_v = 3;
+
+		value_type i = operator_v(lhs_v, rhs_v);
+		ASSERT(i == result_v, "modulo operator failed");
+
+		i = (lhs_v | operator_v & rhs_v);
+		ASSERT(i == result_v, "piped modulo operator failed");
+	};
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+
+		const value_type lhs_v = 12;
+		const value_type rhs_v = 4;
+		const value_type result_v = 0;
+
+		value_type i = operator_v(lhs_v, rhs_v);
+		ASSERT(i == result_v, "modulo operator failed");
+
+		i = (lhs_v | operator_v & rhs_v);
+		ASSERT(i == result_v, "piped modulo operator failed");
+	};
+
+	PASS();
+};
+
+
+
+// jc::bnot test
+int test_op_bnot()
+{
+	NEWTEST();
+	constexpr auto operator_v = jc::bnot;
+
+	// Test operator
+	{
+		using value_type = int;
+
+		static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing operator");
+		static_assert(jc::is_invocable_with_count<decltype(operator_v), 1>::value, "failed function probing");
+
+		const value_type initial_v = 0b00001111;
+		const value_type new_v = ~initial_v;
+
+		value_type i = initial_v;
+
+		ASSERT(i == initial_v, "invalid bnot test condition");
+
+		i = operator_v(i);
+		ASSERT(i == new_v, "bnot operator failed");
+
+		i = (i | operator_v);
+		ASSERT(i == initial_v, "piped bnot operator failed");
+
+		i = jc::pack(i) | operator_v;
+		ASSERT(i == new_v, "packed and piped bnot operator failed");
+	};
+
+	PASS();
+};
+
+// jc::band test
+int test_op_band()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::band;
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+	static_assert(jc::is_invocable_with_count<decltype(operator_v), 2>::value, "failed function probing");
+
+	constexpr value_type operand_a_v = 0b00011011;
+	constexpr value_type operand_b_v = 0b00000111;
+	constexpr value_type expected_v = operand_a_v & operand_b_v;
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "band operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped band operator failed");
+	};
+
+	{
+		const value_type q = jc::pack(a, b) | operator_v;
+		ASSERT(q == expected_v, "packed and piped band operator failed");
+	};
+
+	PASS();
+};
+
+// jc::bor test
+int test_op_bor()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::bor;
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+	static_assert(jc::is_invocable_with_count<decltype(operator_v), 2>::value, "failed function probing");
+
+	constexpr value_type operand_a_v = 0b00011011;
+	constexpr value_type operand_b_v = 0b00000111;
+	constexpr value_type expected_v = operand_a_v | operand_b_v;
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "bor operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped bor operator failed");
+	};
+
+	{
+		const value_type q = jc::pack(a, b) | operator_v;
+		ASSERT(q == expected_v, "packed and piped bor operator failed");
+	};
+
+	PASS();
+};
+
+// jc::bxor test
+int test_op_bxor()
+{
+	NEWTEST();
+
+	constexpr auto operator_v = jc::bxor;
+	using value_type = int;
+
+	static_assert(jc::has_operator<decltype(operator_v), value_type, value_type>::value, "missing operator");
+	static_assert(jc::has_operator<decltype(operator_v), value_type>::value, "missing self-applied operator");
+	static_assert(jc::is_invocable_with_count<decltype(operator_v), 2>::value, "failed function probing");
+
+	constexpr value_type operand_a_v = 0b00011011;
+	constexpr value_type operand_b_v = 0b00000111;
+	constexpr value_type expected_v = operand_a_v ^ operand_b_v;
+
+	const value_type a = operand_a_v;
+	const value_type b = operand_b_v;
+
+	{
+		const value_type q = operator_v(a, b);
+		ASSERT(q == expected_v, "bxor operator failed");
+	};
+
+	{
+		const value_type q = b | (a & operator_v);
+		ASSERT(q == expected_v, "bound and piped bxor operator failed");
+	};
+
+	{
+		const value_type q = jc::pack(a, b) | operator_v;
+		ASSERT(q == expected_v, "packed and piped bxor operator failed");
+	};
+
+	PASS();
+};
 
 
 
@@ -443,16 +705,23 @@ int test_operators()
 	SUBTEST(test_op_times);
 	SUBTEST(test_op_divide);
 
+	SUBTEST(test_op_modulo);
+	SUBTEST(test_op_negate);
 
 
 	// Test binary arithmetic operators
 
-
+	SUBTEST(test_op_bnot);
+	SUBTEST(test_op_band);
+	SUBTEST(test_op_bor);
+	SUBTEST(test_op_bxor);
 
 
 
 	// Test logical operatorss
-	
+
+	SUBTEST(test_op_invert);
+
 	SUBTEST(test_op_conjuct);
 	SUBTEST(test_op_disjunct);
 
@@ -463,10 +732,87 @@ int test_operators()
 	SUBTEST(test_op_dereference);
 
 
+	
+
 	PASS();
 };
 
 
+
+// Tests the arguement pack piping behavior
+int test_arguement_pack_piping()
+{
+	NEWTEST();
+	
+	// Composed function used for the static assertions
+	constexpr auto test_fn = jc::plus | jc::equals & 4;
+	
+	// Extra testing to ensure function composition maintains the required traits
+	static_assert(jc::is_operator<decltype(test_fn)>::value, "composed test function failed is_opertor trait check");
+	static_assert(jc::is_invocable_with_count<decltype(test_fn), 2>::value, "composed test function failed is_invocable_with_count check");
+
+	// Test piping of immediate pack
+	static_assert(jc::pack(2, 2) | test_fn,
+		"failed expansion of piped arguement pack");
+
+	// Ensure that re-repacking doesn't break the piping
+	static_assert(jc::pack(2, 2) | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+	// Test piping of repacked immediate pack
+	static_assert(std::pair<int, int>{2, 2} | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+	// Ensure that re-repacking doesn't break the piping
+	static_assert(std::pair<int, int>{ 2, 2} | jc::repack | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+
+	
+	// Testing for piping of existing pack
+
+	constexpr std::pair<int, int> args_v{ 2, 2 };
+	constexpr auto packed_args_v = jc::pack(2, 2);
+
+
+	// Test piping of existing pack
+	static_assert(packed_args_v | test_fn,
+		"failed expansion of piped arguement pack");
+
+	// Ensure that re-repacking doesn't break the piping
+	static_assert(packed_args_v | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+	// Test piping of repacked non-pack value
+	static_assert(args_v | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+	// Ensure that re-repacking doesn't break the piping
+	static_assert(args_v | jc::repack | jc::repack | test_fn,
+		"failed repacking and piping of expanded arguement pack");
+
+
+
+
+
+	PASS();
+};
+
+
+// Main subtest for all jclib functional piping
+int test_piping()
+{
+	NEWTEST();
+
+
+
+
+	// Test arguement pack piping
+	SUBTEST(test_arguement_pack_piping);
+
+
+	PASS();
+};
 
 
 
@@ -489,6 +835,7 @@ constexpr auto add(int a, int b) { return a + b; };
 int main()
 {
 	SUBTEST(test_operators);
+	SUBTEST(test_piping);
 
 	if (!jc::has_operator<jc::plus_t, Foo, int>::value)
 	{
