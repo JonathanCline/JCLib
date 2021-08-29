@@ -175,5 +175,27 @@
 #endif
 
 
+/*
+	Test for __cpp_lib_constexpr_algorithms
+*/
+
+#define JCLIB_FEATURE_VALUE_CONSTEXPR_ALGORITHMS 201806L
+#if defined(__cpp_lib_constexpr_algorithms) && JCLIB_FEATURE_VALUE_CONSTEXPR_ALGORITHMS != __cpp_lib_constexpr_algorithms
+	#error "Feature testing value mismatch"
+#endif
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEXPR_ALGORITHMS || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_CONSTEXPR_ALGORITHMS
+	#define JCLIB_FEATURE_CONSTEXPR_ALGORITHMS
+#else
+	#ifdef JCLIB_FEATURE_CONSTEXPR_ALGORITHMS
+		#error "Feature testing macro was defined when it shouldn't be"
+	#endif
+#endif
+
+#ifdef JCLIB_FEATURE_CONSTEXPR_ALGORITHMS
+	#define JCLIB_FEATURE_CONSTEXPR_ALGORITHMS_V true
+#else
+	#define JCLIB_FEATURE_CONSTEXPR_ALGORITHMS_V false
+#endif
+
 
 #endif
