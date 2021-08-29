@@ -38,7 +38,7 @@ inline int newtest()
 
 #define ASSERT(_condition, ...) if(!( _condition )) { FAIL(TIMPL_FRONT(__VA_ARGS__)); }
 
-#define TEST_ALGORITHM_FN(algofn, expected, ...) ASSERT( expected == jc::##algofn( __VA_ARGS__ ), #algofn " failed! (" #__VA_ARGS__ ")"  )
+#define TEST_ALGORITHM_FN(algofn, expected, ...) ASSERT( expected == jc::algofn( __VA_ARGS__ ), #algofn " failed! (" #__VA_ARGS__ ")"  )
 
 
 
