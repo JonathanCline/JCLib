@@ -17,6 +17,9 @@
 
 #include <jclib/config/version.h>
 
+// Include the C++ feature testing header
+#include <jclib/feature.h>
+
 #define _JCLIB_CONFIG_
 
 #ifdef __cpp_constexpr
@@ -222,7 +225,16 @@ namespace jc
 	#define JCLIB_DEBUG_V false
 #endif
 
-
+// Make return type sfinae enable_if concepts switch
+#if JCLIB_FEATURE_CONCEPTS_V
+	// Uses enable_if_t if concepts are not available - for use with function return type enable_if SFINAE
+	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
+	#define JCLIB_RET_SFINAE_CXSWITCH(retType, ...) retType
+#else
+	// Uses enable_if_t if concepts are not available - for use with function return type enable_if SFINAE
+	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
+	#define JCLIB_RET_SFINAE_CXSWITCH(retType, ...) ::jc::enable_if_t<__VA_ARGS__, retType>
+#endif
 
 namespace jc
 {
