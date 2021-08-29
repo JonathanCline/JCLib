@@ -17,18 +17,148 @@
 
 /*
 	Provides range based std-algorithms using jclib ranges and provides a few other small algorithms
+
+	Constexpr versions of standard library algorithms will also be made available for C++14/17 if the
+	relevant CMake option is set.
 */
 
 #include <jclib/ranges.h>
 #include <jclib/functional.h>
 #include <jclib/feature.h>
 
-#define _JCLIB_ALGORITHM_
+// Algorithm config file
+#include <jclib/config/algorithm.h>
 
 #include <algorithm>
+#include <numeric>
+
+#define _JCLIB_ALGORITHM_
+
+
+/*
+	 Determine if the standard library has constexpr algorithms and add a macro for ease of implementation custom backports
+*/
+#if JCLIB_FEATURE_CPP_CONSTEXPR_ALGORITHMS_V
+
+	// Use standard library algorithms
+	#define JCLIB_ALGORITHM_H_USE_STD_ALGORITHMS
+	
+	// jclib/algorithm.h specific constexpr macro
+	#define JCLIB_ALGORITHM_H_CONSTEXPR constexpr
+
+#elif JCLIB_CONSTEXPR_ALGORITHMS_V
+
+	// Use custom algorithm backports
+	#define JCLIB_ALGORITHM_H_USE_CUSTOM_ALGORITHMS
+	
+	// jclib/algorithm.h specific constexpr macro
+	#define JCLIB_ALGORITHM_H_CONSTEXPR constexpr
+
+#else
+
+	// Use standard library algorithms
+	#define JCLIB_ALGORITHM_H_USE_STD_ALGORITHMS
+	
+	// jclib/algorithm.h specific constexpr macro
+	#define JCLIB_ALGORITHM_H_CONSTEXPR
+
+#endif
+
 
 namespace jc
 {
+	// Contains the type constraints used with algorithm functions regardless of implementation selected
+	namespace impl_algorithms_constraints
+	{
+#pragma region ACCUMULATE_CONSTRAINTS
+#if JCLIB_FEATURE_CONCEPTS_V
+		template <typename IterT, typename OpT, typename T>
+		concept cx_accumulate_constraints =
+			jc::cx_iterator<IterT> &&
+			jc::cx_invocable<OpT, T&&, jc::iterator_to_t<IterT>> &&
+			jc::cx_same_as<T, jc::invoke_result_t<OpT, T&&, jc::iterator_to_t<IterT>>>;
+	
+		template <typename IterT, typename OpT, typename T>
+		struct accumulate_constraints : 
+			jc::bool_constant<cx_accumulate_constraints<IterT, OpT, T>>
+		{};
+#else
+		template <typename IterT, typename OpT, typename T>
+		struct accumulate_constraints : jc::bool_constant
+			<
+				jc::is_iterator<IterT>::value&&
+				jc::is_invocable<OpT, T&&, jc::iterator_to_t<IterT>>::value&&
+				jc::is_same<jc::invoke_result_t<OpT, T&&, jc::iterator_to_t<IterT>>, T>::value
+			>
+		{};
+#endif
+#pragma endregion ACCUMULATE_CONSTRAINTS
+	};
+
+	// Iterator based accumulate
+	template <typename IterT, typename OpT = jc::plus_t, typename T = jc::remove_cvref_t<jc::iterator_to_t<IterT>>>
+	JCLIB_REQUIRES((impl_algorithms_constraints::cx_accumulate_constraints<IterT, OpT, T>))
+	JCLIB_ALGORITHM_H_CONSTEXPR inline auto accumulate(IterT _begin, const IterT _end, const OpT& _op = jc::plus, T _init = T{})
+		noexcept(noexcept(
+			jc::invoke(std::declval<const OpT>(), std::declval<T&&>(), std::declval<jc::iterator_to_t<IterT>>())
+		))
+		-> JCLIB_RET_SFINAE_CXSWITCH(T, impl_algorithms_constraints::accumulate_constraints<IterT, OpT, T>::value)
+	{
+#if defined(JCLIB_ALGORITHM_H_USE_STD_ALGORITHMS)
+		return ::std::accumulate(_begin, _end, std::move(_init), _op);
+#else
+		// Exit early if 0 length range
+		if (_begin == _end)
+		{
+			return _init;
+		};
+
+		// Preform accumulate
+		for (auto _at = _begin; _at != _end; _at = jc::next(_at, 1))
+		{
+			_init = jc::invoke(_op, std::move(_init), *_at);
+		};
+
+		// Return result
+		return _init;
+#endif
+	};
+
+	// Range based accumulate
+	template <typename RangeT, typename OpT = jc::plus_t, typename T = jc::remove_const_t<jc::ranges::value_t<RangeT>>>
+	JCLIB_REQUIRES((jc::cx_range<RangeT>))
+	JCLIB_ALGORITHM_H_CONSTEXPR inline auto accumulate(RangeT&& _range, const OpT& _op = jc::plus, T _init = T{})
+		noexcept(noexcept(
+			jc::accumulate
+			(
+				std::declval<jc::ranges::iterator_t<RangeT>>(),
+				std::declval<jc::ranges::iterator_t<RangeT>>(),
+				std::declval<const OpT&>(),
+				std::declval<T&&>()
+			)
+		))
+		-> JCLIB_RET_SFINAE_CXSWITCH
+		(
+			decltype(jc::accumulate
+			(
+				std::declval<jc::ranges::iterator_t<RangeT>>(),
+				std::declval<jc::ranges::iterator_t<RangeT>>(),
+				std::declval<const OpT&>(),
+				std::declval<T&&>()
+			)),
+			jc::ranges::is_range<RangeT>::value
+		)
+	{
+		return jc::accumulate(jc::begin(_range), jc::end(_range), _op, std::move(_init));
+	};
+
+
+
+
+
+
+
+
 	/**
 	 * @brief Returns an iterator the value specified if it exists
 	 * @tparam RangeT Range object type to look in

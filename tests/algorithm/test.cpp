@@ -261,8 +261,171 @@ int test_contains_if()
 	PASS();
 };
 
+#include <array>
 
 
+template <typename T>
+constexpr auto summate(const T& _range)
+{
+	auto _sum = jc::ranges::value_t<T>{};
+	for (auto& v : _range)
+	{
+		_sum += v;
+	};
+	return _sum;
+};
+
+
+// jc::accumulate test
+int test_accumulate()
+{
+	NEWTEST();
+
+	// Testing input ranges
+
+	const int c_array_const[4]{ 0, 1, 2, 3 };
+	int c_array[4]{ 0, 1, 2, 3 };
+
+	const std::array<int, 4> cpp_array_const{ 0, 1, 2, 3 };
+	std::array<int, 4> cpp_array{ cpp_array_const };
+
+	// Check preconditions
+	const auto sum = summate(cpp_array_const);
+
+	ASSERT(summate(c_array) == sum, "invalid test preconditions on c_array");
+	ASSERT(summate(c_array_const) == sum, "invalid test preconditions on c_array_const");
+	ASSERT(summate(cpp_array) == sum, "invalid test preconditions on cpp_array");
+	ASSERT(summate(cpp_array_const) == sum, "invalid test preconditions on cpp_array_const");
+
+	const int _init = 0;
+	const auto& _accumFn = jc::plus;
+
+	// Test C-Array
+	{
+		auto& _data = c_array;
+#define _IGNORE_TEST_RANGE_NAME_HERE "c_array"
+
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data), _accumFn, _init);
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch");
+		};
+		{
+			auto _result = jc::accumulate(_data, _accumFn, _init);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch");
+		};
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data), _accumFn);
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch - bad default init value");
+		};
+		{
+			auto _result = jc::accumulate(_data, _accumFn);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch - bad default init value");
+		};
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data));
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch - bad default op function value");
+		};
+		{
+			auto _result = jc::accumulate(_data);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch - bad default op function value");
+		};
+	};
+
+	// Test Const C-Array
+	{
+		auto& _data = c_array_const;
+#define _IGNORE_TEST_RANGE_NAME_HERE "c_array_const"
+
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data), _accumFn, _init);
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch");
+		};
+		{
+			auto _result = jc::accumulate(_data, _accumFn, _init);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch");
+		};
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data), _accumFn);
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch - bad default init value");
+		};
+		{
+			auto _result = jc::accumulate(_data, _accumFn);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch - bad default init value");
+		};
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data));
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch - bad default op function value");
+		};
+		{
+			auto _result = jc::accumulate(_data);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch - bad default op function value");
+		};
+	};
+
+	// Test C++ Array
+	{
+		auto& _data = cpp_array;
+#define _IGNORE_TEST_RANGE_NAME_HERE "cpp_array"
+
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data), _accumFn, _init);
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch");
+		};
+		{
+			auto _result = jc::accumulate(_data, _accumFn, _init);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch");
+		};
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data), _accumFn);
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch - bad default init value");
+		};
+		{
+			auto _result = jc::accumulate(_data, _accumFn);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch - bad default init value");
+		};
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data));
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch - bad default op function value");
+		};
+		{
+			auto _result = jc::accumulate(_data);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch - bad default op function value");
+		};
+	};
+
+	// Test Const C++ Array
+	{
+		auto& _data = cpp_array_const;
+#define _IGNORE_TEST_RANGE_NAME_HERE "cpp_array_const"
+
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data), _accumFn, _init);
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch");
+		};
+		{
+			auto _result = jc::accumulate(_data, _accumFn, _init);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch");
+		};
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data), _accumFn);
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch - bad default init value");
+		};
+		{
+			auto _result = jc::accumulate(_data, _accumFn);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch - bad default init value");
+		};
+		{
+			const auto _result = jc::accumulate(jc::begin(_data), jc::end(_data));
+			ASSERT(_result == sum, "accumulate result on " _IGNORE_TEST_RANGE_NAME_HERE " mismatch - bad default op function value");
+		};
+		{
+			auto _result = jc::accumulate(_data);
+			ASSERT(_result == sum, "range based accumulate on " _IGNORE_TEST_RANGE_NAME_HERE " result mismatch - bad default op function value");
+		};
+	};
+
+	PASS();
+};
 
 
 
@@ -279,6 +442,7 @@ int main()
 	SUBTEST(test_contains);
 	SUBTEST(test_contains_if);
 
+	SUBTEST(test_accumulate);
 
 	PASS();
 };
