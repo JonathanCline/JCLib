@@ -1149,6 +1149,25 @@ namespace jc
 	*/
 	constexpr static band_t band{};
 
+	/**
+	 * @brief Binary OR operator - "|" function object type
+	*/
+	struct bor_t : public operator_tag
+	{
+		template <typename LT, typename RT>
+		constexpr auto operator()(LT&& lhs, RT&& rhs) const
+			noexcept(noexcept(std::declval<LT&&>() | std::declval<RT&&>()))
+			-> decltype(std::declval<LT&&>() | std::declval<RT&&>())
+		{
+			return lhs | rhs;
+		};
+	};
+
+	/**
+	 * @brief Binary OR operator - "|" function object
+	*/
+	constexpr static bor_t bor{};
+
 };
 
 #pragma endregion BINARY_OPERATORS
