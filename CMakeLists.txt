@@ -24,7 +24,6 @@ project(jclib
 	DESCRIPTION "A collection of utilities and tools for c++"
 	HOMEPAGE_URL "https://github.com/JonathanCline/JCLib")
 
-include(CTest)
 
 add_library(${PROJECT_NAME} INTERFACE)
 
@@ -57,13 +56,27 @@ endif()
 
 
 #
-#	Add test helper cmake file
+#	Add additional Cmake script files
 #
-include(jclibtest.cmake)
 
+include("utility.cmake")
+
+
+# Add test directory if testing is enabled
 if(JCLIB_BUILD_TESTS)
+	
+	# Look for CTest
+	include(CTest)
+
+	# Add test support library
+	add_subdirectory("test_support")
+
+	# Enable CTest(ing)
 	enable_testing()
+
+	# Add test directory
 	add_subdirectory("tests")
+
 endif()
 
 

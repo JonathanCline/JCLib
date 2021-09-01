@@ -1,17 +1,29 @@
 #include <jclib/memory.h>
 
-#include <iostream>
+// Add test support header
+#include <jclib-test.hpp>
 
-#include <cassert>
+
 
 bool destroy_at_called_v = false;
+int destroy_at_result = 0;
 
 struct Foo
 {
 	~Foo()
 	{
-		assert(!destroy_at_called_v);
-		assert(!called_destructor);
+		if (destroy_at_called_v != false)
+		{
+			destroy_at_result = 1;
+			return;
+		};
+		
+		if (called_destructor != false)
+		{
+			destroy_at_result = 2;
+			return;
+		};
+
 		called_destructor = true;
 	};
 
@@ -39,11 +51,6 @@ int main()
 
 	delete[] _mblock_2;
 
-
-
 	auto _ptr = jc::make_unique<int>(2);
-
-
-
-	return 0;
+	return destroy_at_result;
 };
