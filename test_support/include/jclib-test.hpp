@@ -55,8 +55,11 @@ namespace jctest
 	};
 };
 
+// The name of the test code variable
+#define TESTCODE_VAR _jclib_testCode
+
 // Sets the subtest function
-#define NEWTEST() const auto _testCode = ::jctest::impl::newtest(); {}
+#define NEWTEST() const auto TESTCODE_VAR = ::jctest::impl::newtest(); {}
 
 // Marks subtest function as failed (returns the test code and prints the message to the output stream)
 #define FAIL(_msg) FAIL_I(_testCode, _msg)
