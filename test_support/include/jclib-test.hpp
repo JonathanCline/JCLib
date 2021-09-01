@@ -63,13 +63,13 @@ namespace jctest
 #define TESTCODE_VAR _jclib_testCode
 
 // The full test code variable declaration
-#define TESTCODE_VARDECL const ::jctest::impl::testcode_t TESTCODE_VAR
+#define TESTCODE_VARDECL const ::jctest::testcode_t TESTCODE_VAR
 
 // Sets the subtest function
 #define NEWTEST() TESTCODE_VARDECL = ::jctest::impl::newtest(); {}
 
 // Marks subtest function as failed (returns the test code and prints the message to the output stream)
-#define FAIL(_msg) FAIL_I(_testCode, _msg)
+#define FAIL(_msg) FAIL_I(TESTCODE_VAR, _msg)
 
 // Marks subtest function as passing and returns (returns 0)
 #define PASS() { return 0; }
