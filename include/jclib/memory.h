@@ -79,35 +79,6 @@ namespace jc
 
 
 
-	namespace impl
-	{
-#ifndef __cpp_conditional_explicit
-		// CRTP type for the optional implicit conversion operator for borrow_ptr
-		template <typename T, typename ValT, bool Enable>
-		struct borrow_ptr_implicit_conversion_impl;
-
-		// Implements the IMPLICIT conversion operator
-		template <typename T, typename ValT>
-		struct borrow_ptr_implicit_conversion_impl<T, ValT, true>
-		{
-			constexpr operator ValT*() const noexcept
-			{
-				return static_cast<const T*>(this)->get();
-			};
-		};
-
-		// Implements the EXPLICIT conversion operator
-		template <typename T, typename ValT>
-		struct borrow_ptr_implicit_conversion_impl<T, ValT, false>
-		{
-			constexpr explicit operator ValT*() const noexcept
-			{
-				return static_cast<const T*>(this)->get();
-			};
-		};
-#endif
-	};
-
 	/**
 	 * @brief Small wrapper around a pointer to indicate a borrowing relationship
 	 * @tparam T Type to point to
@@ -137,7 +108,7 @@ namespace jc
 		*/
 		using difference_type = std::ptrdiff_t;
 
-	protected:
+	private:
 
 		// Returns a reference to the held pointer
 		pointer& raw_get() noexcept
@@ -396,40 +367,248 @@ namespace jc
 
 	};
 
-
-
 	/**
 	 * @brief Same as a borrow_ptr but may never be null
 	 * @tparam T Type to point to
 	*/
 	template <typename T>
-	struct reference_ptr : public borrow_ptr<T>
+	struct reference_ptr
 	{
 	public:
+		/**
+		 * @brief Type being pointed
+		*/
 		using value_type = T;
+
+		/**
+		 * @brief Pointer held by this type
+		*/
 		using pointer = value_type*;
+
+		/**
+		 * @brief Reference to the type being held
+		*/
 		using reference = value_type&;
 
+		/**
+		 * @brief Type returned from subtraction operations
+		*/
+		using difference_type = std::ptrdiff_t;
+
+	private:
+
+		// Returns a reference to the held pointer
+		pointer& raw_get() noexcept
+		{
+			return this->ptr_;
+		};
+
+		// Returns a reference to the held pointer
+		const pointer& raw_get() const noexcept
+		{
+			return this->ptr_;
+		};
+
+	public:
+
+		/**
+		 * @brief Returns the pointer being held
+		 * @return Held pointer value
+		*/
+		constexpr pointer get() const noexcept
+		{
+			return this->raw_get();
+		};
+
+		/**
+		 * @brief Implicitly converts to a borrow_ptr<T> as this implements the same sort of relationship
+		 * @return borrow_ptr containing the pointer this holds
+		*/
+		constexpr operator borrow_ptr<T>() const noexcept
+		{
+			return borrow_ptr<T>{ this->get() };
+		};
+
+		/**
+		 * @brief Returns the pointer being held
+		 * @return Held pointer value
+		*/
+		constexpr pointer operator->() const noexcept
+		{
+			return this->get();
+		};
+
+		/**
+		 * @brief Returns a reference to the value being pointed to
+		 * @return Reference to the held value
+		*/
+		constexpr reference operator*() const noexcept
+		{
+			return *this->get();
+		};
+
+		/**
+		 * @brief Checks if this is holding a valid pointer
+		 * @return False if pointer is null, true otherwise
+		*/
 		constexpr bool good() const noexcept
 		{
-			JCLIB_ASSERT(borrow_ptr<value_type>::good());
+			JCLIB_ASSERT(this->get() != nullptr);
 			return true;
 		};
+
+		/**
+		 * @brief Checks if this is holding a valid pointer
+		 * @return False if pointer is null, true otherwise
+		*/
 		constexpr explicit operator bool() const noexcept
 		{
 			return this->good();
 		};
 
-		constexpr reference_ptr() = delete;
-		
-		constexpr reference_ptr(reference _ref) noexcept :
-			borrow_ptr<value_type>{ &_ref }
-		{};
-		constexpr reference_ptr& operator=(reference _ref) noexcept
+
+		/**
+		 * @brief Returns the distance between the held pointer and another reference_ptr's held pointer
+		 * @param rhs Other reference_ptr
+		 * @return Distance between the pointers
+		*/
+		constexpr difference_type operator-(const reference_ptr& rhs) const noexcept
 		{
-			borrow_ptr<value_type>::operator=(&_ref);
+			return this->get() - rhs.get();
+		};
+
+
+		// Distance functions for held pointer type
+
+		friend inline constexpr difference_type operator-(const reference_ptr& _lhs, pointer _rhs) noexcept
+		{
+			return _lhs.get() - _rhs;
+		};
+		friend inline constexpr difference_type operator-(pointer _lhs, const reference_ptr& _rhs) noexcept
+		{
+			return _lhs - _rhs.get();
+		};
+
+
+		// Pointer arithmetic, returns borrow_ptr
+
+		constexpr jc::borrow_ptr<value_type> operator+(difference_type _count) const noexcept
+		{
+			return jc::borrow_ptr<value_type>{ this->get() + _count };
+		};
+		constexpr jc::borrow_ptr<value_type> operator-(difference_type _count) const noexcept
+		{
+			return jc::borrow_ptr<value_type>{ this->get() - _count };
+		};
+
+
+		// Pointer comparisons
+
+		constexpr bool operator==(const reference_ptr& rhs) const noexcept
+		{
+			return this->get() == rhs.get();
+		};
+		friend inline constexpr bool operator==(const reference_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() == rhs;
+		};
+		friend inline constexpr bool operator==(pointer lhs, const reference_ptr& rhs) noexcept
+		{
+			return rhs == lhs;
+		};
+
+		constexpr bool operator!=(const reference_ptr& rhs) const noexcept
+		{
+			return this->get() != rhs.get();
+		};
+		friend inline constexpr bool operator!=(const reference_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() != rhs;
+		};
+		friend inline constexpr bool operator!=(pointer lhs, const reference_ptr& rhs) noexcept
+		{
+			return rhs != lhs;
+		};
+
+		constexpr bool operator>(const reference_ptr& rhs) const noexcept
+		{
+			return this->get() > rhs.get();
+		};
+		friend inline constexpr bool operator>(const reference_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() > rhs;
+		};
+		friend inline constexpr bool operator>(pointer lhs, const reference_ptr& rhs) noexcept
+		{
+			return lhs > rhs.get();
+		};
+		constexpr bool operator>=(const reference_ptr& rhs) const noexcept
+		{
+			return this->get() >= rhs.get();
+		};
+		friend inline constexpr bool operator>=(const reference_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() >= rhs;
+		};
+		friend inline constexpr bool operator>=(pointer lhs, const reference_ptr& rhs) noexcept
+		{
+			return lhs >= rhs.get();
+		};
+
+		constexpr bool operator<(const reference_ptr& rhs) const noexcept
+		{
+			return this->get() < rhs.get();
+		};
+		friend inline constexpr bool operator<(const reference_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() < rhs;
+		};
+		friend inline constexpr bool operator<(pointer lhs, const reference_ptr& rhs) noexcept
+		{
+			return lhs < rhs.get();
+		};
+		constexpr bool operator<=(const reference_ptr& rhs) const noexcept
+		{
+			return this->get() <= rhs.get();
+		};
+		friend inline constexpr bool operator<=(const reference_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() <= rhs;
+		};
+		friend inline constexpr bool operator<=(pointer lhs, const reference_ptr& rhs) noexcept
+		{
+			return lhs <= rhs.get();
+		};
+
+
+		// Reference ptr may never be null
+		constexpr reference_ptr() noexcept = delete;
+
+		/**
+		 * @brief Sets the held pointer to a user-provided value
+		 * @param _ptr Reference to the value to hold
+		*/
+		constexpr reference_ptr(reference _val) noexcept :
+			ptr_{ &_val }
+		{};
+
+		/**
+		 * @brief Sets the held pointer to a user-provided value
+		 * @param _ptr Reference to the value to hold
+		 * @return Reference to this object
+		*/
+		constexpr reference_ptr& operator=(reference _ptr) noexcept
+		{
+			this->raw_get() = &_ptr;
 			return *this;
 		};
+
+	private:
+
+		/**
+		 * @brief The held pointer
+		*/
+		pointer ptr_;
 
 	};
 
