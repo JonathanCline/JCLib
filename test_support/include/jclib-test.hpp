@@ -45,18 +45,28 @@
 // Helper function
 namespace jctest
 {
+	// Type used to hold test codes
+	using testcode_t = int;
+
 	namespace impl
 	{
-		inline int newtest()
+		inline testcode_t newtest()
 		{
-			static int count = 0;
+			static testcode_t count = 0;
 			return ++count;
 		};
 	};
 };
 
+
+// The name of the test code variable
+#define TESTCODE_VAR _jclib_testCode
+
+// The full test code variable declaration
+#define TESTCODE_VARDECL const ::jctest::impl::testcode_t TESTCODE_VAR
+
 // Sets the subtest function
-#define NEWTEST() const auto _testCode = ::jctest::impl::newtest(); {}
+#define NEWTEST() TESTCODE_VARDECL = ::jctest::impl::newtest(); {}
 
 // Marks subtest function as failed (returns the test code and prints the message to the output stream)
 #define FAIL(_msg) FAIL_I(_testCode, _msg)
