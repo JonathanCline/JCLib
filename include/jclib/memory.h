@@ -264,6 +264,82 @@ namespace jc
 
 		// Pointer comparisons
 
+		constexpr bool operator==(const borrow_ptr& rhs) const noexcept
+		{
+			return this->get() == rhs.get();
+		};
+		friend inline constexpr bool operator==(const borrow_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() == rhs;
+		};
+		friend inline constexpr bool operator==(pointer lhs, const borrow_ptr& rhs) noexcept
+		{
+			return rhs == lhs;
+		};
+
+		constexpr bool operator!=(const borrow_ptr& rhs) const noexcept
+		{
+			return this->get() != rhs.get();
+		};
+		friend inline constexpr bool operator!=(const borrow_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() != rhs;
+		};
+		friend inline constexpr bool operator!=(pointer lhs, const borrow_ptr& rhs) noexcept
+		{
+			return rhs != lhs;
+		};
+
+		constexpr bool operator>(const borrow_ptr& rhs) const noexcept
+		{
+			return this->get() > rhs.get();
+		};
+		friend inline constexpr bool operator>(const borrow_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() > rhs;
+		};
+		friend inline constexpr bool operator>(pointer lhs, const borrow_ptr& rhs) noexcept
+		{
+			return lhs > rhs.get();
+		};
+		constexpr bool operator>=(const borrow_ptr& rhs) const noexcept
+		{
+			return this->get() >= rhs.get();
+		};
+		friend inline constexpr bool operator>=(const borrow_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() >= rhs;
+		};
+		friend inline constexpr bool operator>=(pointer lhs, const borrow_ptr& rhs) noexcept
+		{
+			return lhs >= rhs.get();
+		};
+
+		constexpr bool operator<(const borrow_ptr& rhs) const noexcept
+		{
+			return this->get() < rhs.get();
+		};
+		friend inline constexpr bool operator<(const borrow_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() < rhs;
+		};
+		friend inline constexpr bool operator<(pointer lhs, const borrow_ptr& rhs) noexcept
+		{
+			return lhs < rhs.get();
+		};
+		constexpr bool operator<=(const borrow_ptr& rhs) const noexcept
+		{
+			return this->get() <= rhs.get();
+		};
+		friend inline constexpr bool operator<=(const borrow_ptr& lhs, pointer rhs) noexcept
+		{
+			return lhs.get() <= rhs;
+		};
+		friend inline constexpr bool operator<=(pointer lhs, const borrow_ptr& rhs) noexcept
+		{
+			return lhs <= rhs.get();
+		};
+
 
 
 

@@ -96,17 +96,47 @@ int subtest_distance()
 
 
 template <typename T, typename DT>
-int runcase_add( TESTCODE_VAR, jc::borrow_ptr<T> lhs, DT rhs)
+int runcase_add(TESTCODE_VARDECL, jc::borrow_ptr<T> lhs, DT rhs, int _caseNum)
 {
 	const auto _ptr = lhs.get();
 	const auto _expected = _ptr + rhs;
 	const auto _result = lhs + rhs;
-	
+	ASSERT(_expected == _result.get(), "failed borrow_ptr + case ", std::to_string(_caseNum));
+	PASS();
+};
+template <typename T, typename DT>
+int runcase_addeq(TESTCODE_VARDECL, jc::borrow_ptr<T> lhs, DT rhs, int _caseNum)
+{
+	auto _ptr = lhs.get();
+	auto _expected = (_ptr += rhs);
+	auto _result = (lhs += rhs);
+	ASSERT(_expected == _result.get(), "failed borrow_ptr += case ", std::to_string(_caseNum));
+	PASS();
+};
+
+template <typename T, typename DT>
+int runcase_sub(TESTCODE_VARDECL, jc::borrow_ptr<T> lhs, DT rhs, int _caseNum)
+{
+	const auto _ptr = lhs.get();
+	const auto _expected = _ptr - rhs;
+	const auto _result = lhs - rhs;
+	ASSERT(_expected == _result.get(), "failed borrow_ptr - case ", std::to_string(_caseNum));
+	PASS();
+};
+template <typename T, typename DT>
+int runcase_subeq(TESTCODE_VARDECL, jc::borrow_ptr<T> lhs, DT rhs, int _caseNum)
+{
+	auto _ptr = lhs.get();
+	auto _expected = (_ptr -= rhs);
+	auto _result = (lhs -= rhs);
+	ASSERT(_expected == _result.get(), "failed borrow_ptr -= case ", std::to_string(_caseNum));
+	PASS();
 };
 
 
+
 // Tests borrow_ptr arithmetic behavior
-int subtest_distance()
+int subtest_arithmetic()
 {
 	NEWTEST();
 
@@ -115,21 +145,183 @@ int subtest_distance()
 	type _val{};
 	type* _ptr = &_val;
 	jc::borrow_ptr<type> _bptr{ &_val };
-
+	
+	// Testing out using a set of test cases to run
+	using Case = int;
+	const Case _testCases[] =
 	{
-		// Test "+" operator
-		const auto _operand = 12;
-		
-		// Test lhs
-		{
-			const auto _expected = _ptr + _operand;
-			const auto _result = _val + _operand;
-			ASSERT(_bptr.get() == _expected);
-		};
+		12,
+		25,
+		69,
+		12551,
+		-12,
+		0
+	};
+	constexpr int _testCaseCount = sizeof(_testCases) / sizeof(Case);
+
+	// Test "+" operator
+	for (int n = 0; n != _testCaseCount; ++n)
+	{
+		SUBTEST(runcase_add, TESTCODE_VAR, _bptr, _testCases[n], n);
+	};
+
+	// Test "+=" operator
+	for (int n = 0; n != _testCaseCount; ++n)
+	{
+		SUBTEST(runcase_addeq, TESTCODE_VAR, _bptr, _testCases[n], n);
+	};
+
+	// Test "-" operator
+	for (int n = 0; n != _testCaseCount; ++n)
+	{
+		SUBTEST(runcase_sub, TESTCODE_VAR, _bptr, _testCases[n], n);
+	};
+
+	// Test "-=" operator
+	for (int n = 0; n != _testCaseCount; ++n)
+	{
+		SUBTEST(runcase_subeq, TESTCODE_VAR, _bptr, _testCases[n], n);
+	};
+
+
+	PASS();
+};
+
+
+
+
+
+// Tests borrow_ptr comparison behavior
+int subtest_comparison()
+{
+	NEWTEST();
+
+	using type = int;
+
+	type lhsval{}, rhsval{};
+
+	type* lhsptr = &lhsval, *rhsptr = &rhsval;
+	jc::borrow_ptr<type> lhs = &lhsval, rhs = &rhsval;
+
+	// Test borrow_ptr == borrow_ptr
+	{
+		const auto _expected = (lhsptr == rhsptr);
+		const auto _result = (lhs == rhs);
+		ASSERT(_expected == _result, "equality comparison mismatch");
+	};
+	// Test borrow_ptr<T> == T*
+	{
+		const auto _expected = (lhsptr == lhsptr);
+		const auto _result = (lhs == lhsptr);
+		ASSERT(_expected == _result, "equality (borrow_ptr<T> == T*) comparison mismatch");
+	};
+	// Test T* == borrow_ptr<T> 
+	{
+		const auto _expected = (lhsptr == lhsptr);
+		const auto _result = (lhsptr == lhs);
+		ASSERT(_expected == _result, "equality (T* == borrow_ptr<T>) comparison mismatch");
+	};
+
+	// Test borrow_ptr != borrow_ptr
+	{
+		const auto _expected = (lhsptr != rhsptr);
+		const auto _result = (lhs != rhs);
+		ASSERT(_expected == _result, "!= comparison mismatch");
+	};
+	// Test borrow_ptr<T> != T*
+	{
+		const auto _expected = (lhsptr != lhsptr);
+		const auto _result = (lhs != lhsptr);
+		ASSERT(_expected == _result, "(borrow_ptr<T> != T*) comparison mismatch");
+	};
+	// Test T* != borrow_ptr<T> 
+	{
+		const auto _expected = (lhsptr != lhsptr);
+		const auto _result = (lhsptr != lhs);
+		ASSERT(_expected == _result, "(T* != borrow_ptr<T>) comparison mismatch");
+	};
+
+	// Test borrow_ptr > borrow_ptr
+	{
+		const auto _expected = (lhsptr > rhsptr);
+		const auto _result = (lhs > rhs);
+		ASSERT(_expected == _result, "> comparison mismatch");
+	};
+	// Test borrow_ptr<T> > T*
+	{
+		const auto _expected = (lhsptr > lhsptr);
+		const auto _result = (lhs > lhsptr);
+		ASSERT(_expected == _result, "(borrow_ptr<T> > T*) comparison mismatch");
+	};
+	// Test T* > borrow_ptr<T> 
+	{
+		const auto _expected = (lhsptr > lhsptr);
+		const auto _result = (lhsptr > lhs);
+		ASSERT(_expected == _result, "(T* > borrow_ptr<T>) comparison mismatch");
+	};
+
+	// Test borrow_ptr >= borrow_ptr
+	{
+		const auto _expected = (lhsptr >= rhsptr);
+		const auto _result = (lhs >= rhs);
+		ASSERT(_expected == _result, ">= comparison mismatch");
+	};
+	// Test borrow_ptr<T> >= T*
+	{
+		const auto _expected = (lhsptr >= lhsptr);
+		const auto _result = (lhs >= lhsptr);
+		ASSERT(_expected == _result, "(borrow_ptr<T> >= T*) comparison mismatch");
+	};
+	// Test T* >= borrow_ptr<T> 
+	{
+		const auto _expected = (lhsptr >= lhsptr);
+		const auto _result = (lhsptr >= lhs);
+		ASSERT(_expected == _result, "(T* >= borrow_ptr<T>) comparison mismatch");
+	};
+
+	// Test borrow_ptr > borrow_ptr
+	{
+		const auto _expected = (lhsptr < rhsptr);
+		const auto _result = (lhs < rhs);
+		ASSERT(_expected == _result, "< comparison mismatch");
+	};
+	// Test borrow_ptr<T> > T*
+	{
+		const auto _expected = (lhsptr < lhsptr);
+		const auto _result = (lhs < lhsptr);
+		ASSERT(_expected == _result, "(borrow_ptr<T> < T*) comparison mismatch");
+	};
+	// Test T* > borrow_ptr<T> 
+	{
+		const auto _expected = (lhsptr < lhsptr);
+		const auto _result = (lhsptr < lhs);
+		ASSERT(_expected == _result, "(T* < borrow_ptr<T>) comparison mismatch");
+	};
+
+	// Test borrow_ptr <= borrow_ptr
+	{
+		const auto _expected = (lhsptr <= rhsptr);
+		const auto _result = (lhs <= rhs);
+		ASSERT(_expected == _result, "<= comparison mismatch");
+	};
+	// Test borrow_ptr<T> <= T*
+	{
+		const auto _expected = (lhsptr <= lhsptr);
+		const auto _result = (lhs <= lhsptr);
+		ASSERT(_expected == _result, "(borrow_ptr<T> <= T*) comparison mismatch");
+	};
+	// Test T* <= borrow_ptr<T> 
+	{
+		const auto _expected = (lhsptr <= lhsptr);
+		const auto _result = (lhsptr <= lhs);
+		ASSERT(_expected == _result, "(T* <= borrow_ptr<T>) comparison mismatch");
 	};
 
 	PASS();
 };
+
+
+
 
 
 
@@ -138,5 +330,7 @@ int main()
 	NEWTEST();
 	SUBTEST(subtest_construction);
 	SUBTEST(subtest_distance);
+	SUBTEST(subtest_arithmetic);
+	SUBTEST(subtest_comparison);
 	PASS();
 };
