@@ -1,4 +1,4 @@
-name: CMake
+name: clang_debug
 
 on: [push]
 
@@ -20,11 +20,11 @@ jobs:
     - name: Checkout submodules
       uses: textbook/git-checkout-submodule-action@2.1.1
       
-    - name: Update Gcc and G++
+    - name: Update clang
       shell: bash
       run:   |
          sudo apt update
-         sudo apt install gcc-10 g++-10
+         sudo apt install clang
          
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
@@ -36,8 +36,8 @@ jobs:
       # access regardless of the host operating system
       shell: bash
       env: 
-        CC:  gcc-10 
-        CXX: g++-10
+        CC:  clang
+        CXX: clang++
       working-directory: ${{runner.workspace}}/build
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
