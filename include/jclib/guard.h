@@ -327,7 +327,7 @@ namespace jc
 		template <typename... Ts, typename = jc::enable_if_t<jc::is_forwardable_to<guarded_type, Ts...>::value>>
 		constexpr explicit guard(guard_state _state, Ts&&... _args)
 			noexcept(noexcept(
-				guarded_type{ std::forward<Ts>(std::declval<Ts&&>()) }
+				guarded_type{ std::forward<Ts>(std::declval<Ts&&>())... }
 			))
 			: base_guarded{ std::forward<Ts>(_args)... }
 		{
