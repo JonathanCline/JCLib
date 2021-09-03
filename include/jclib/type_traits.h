@@ -384,8 +384,39 @@ namespace jc
 
 	namespace impl
 	{
+		/**
+		 * @brief Used to mark function_traits given a noexcept function type
+		*/
 		struct noexcept_function_tag {};
+		
+		/**
+		 * @brief Used to mark function_traits given a const (member) function type
+		*/
 		struct const_function_tag {};
+
+
+
+		/**
+		 * @brief Used to mark function_traits given any function type, NOT FUNCTION OBJECT TYPES
+		*/
+		struct function_tag {};
+
+		/**
+		 * @brief Used to mark function_traits given any function pointer type
+		*/
+		struct function_pointer_tag {};
+
+		/**
+		 * @brief Used to mark function_traits given a member function type
+		*/
+		struct member_function_tag {};
+		
+		/**
+		 * @brief Used to mark function_traits given a free function type
+		*/
+		struct free_function_tag {};
+
+
 
 
 		/**
@@ -393,70 +424,123 @@ namespace jc
 		 * @tparam OpT Function or other invocable type
 		*/
 		template <typename OpT>
-		struct function_traits_impl;
+		struct function_traits_impl
+		{};
 
-
-		// function signature type
+		/**
+		 * @brief Function signature type traits
+		*/
 		template <typename ReturnT, typename... Ts>
-		struct function_traits_impl<ReturnT(Ts...)>
+		struct function_traits_impl<ReturnT(Ts...)> :
+			public function_tag
 		{
 			using return_type = ReturnT;
 			using arguement_typelist = std::tuple<Ts...>;
 		};
 
-		// free function type
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+		/**
+		 * @brief Function signature type traits
+		*/
 		template <typename ReturnT, typename... Ts>
-		struct function_traits_impl<ReturnT(*)(Ts...)>
-		{
-			using return_type = ReturnT;
-			using arguement_typelist = std::tuple<Ts...>;
-		};
-
-#if __cpp_noexcept_function_type
-		// noexcept free function type
-		template <typename ReturnT, typename... Ts>
-		struct function_traits_impl<ReturnT(*)(Ts...) noexcept> : noexcept_function_tag
+		struct function_traits_impl<ReturnT(Ts...) noexcept> :
+			public function_tag,
+			public noexcept_function_tag
 		{
 			using return_type = ReturnT;
 			using arguement_typelist = std::tuple<Ts...>;
 		};
 #endif
 
-		// member function type
+		/**
+		 * @brief Free function signature type traits
+		*/
+		template <typename ReturnT, typename... Ts>
+		struct function_traits_impl<ReturnT(*)(Ts...)> :
+			public function_tag,
+			public free_function_tag,
+			public function_pointer_tag
+		{
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+#if JCLIB_FEATURE_CPP_NOEXCEPT_FUNCTION_TYPE_V
+
+		/**
+		 * @brief Noexcept Free function type
+		*/
+		template <typename ReturnT, typename... Ts>
+		struct function_traits_impl<ReturnT(*)(Ts...) noexcept> :
+			public function_tag,
+			public free_function_tag,
+			public noexcept_function_tag,
+			public function_pointer_tag
+		{
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+#endif
+
+		/**
+		 * @brief Member function type
+		*/
 		template <typename ReturnT, typename ClassT, typename... Ts>
-		struct function_traits_impl<ReturnT(ClassT::*)(Ts...)>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...)> :
+			public function_tag,
+			public member_function_tag,
+			public function_pointer_tag
 		{
 			using class_type = ClassT;
 			using return_type = ReturnT;
 			using arguement_typelist = std::tuple<Ts...>;
 		};
 
-#if __cpp_noexcept_function_type
-		// noexcept member function type
+#if JCLIB_FEATURE_CPP_NOEXCEPT_FUNCTION_TYPE_V
+		/**
+		 * @brief Noexcept member function type
+		*/
 		template <typename ReturnT, typename ClassT, typename... Ts>
-		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) noexcept> : noexcept_function_tag
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) noexcept> :
+			public function_tag,
+			public member_function_tag,
+			public noexcept_function_tag,
+			public function_pointer_tag
 		{
 			using class_type = ClassT;
 			using return_type = ReturnT;
 			using arguement_typelist = std::tuple<Ts...>;
 		};
 #endif
-
-		// const member function type
+		
+		/**
+		 * @brief Const member function type
+		*/
 		template <typename ReturnT, typename ClassT, typename... Ts>
-		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) const> : const_function_tag
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) const> :
+			public function_tag,
+			public member_function_tag,
+			public const_function_tag,
+			public function_pointer_tag
 		{
-			using class_type = const ClassT;
+			using class_type = ClassT;
 			using return_type = ReturnT;
 			using arguement_typelist = std::tuple<Ts...>;
 		};
 
-#if __cpp_noexcept_function_type
-		// const noexcept member function type
+#if JCLIB_FEATURE_CPP_NOEXCEPT_FUNCTION_TYPE_V
+		/**
+		 * @brief Const noexcept member function type
+		*/
 		template <typename ReturnT, typename ClassT, typename... Ts>
-		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) const noexcept> : const_function_tag, noexcept_function_tag
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) const noexcept> :
+			public function_tag,
+			public member_function_tag,
+			public const_function_tag,
+			public noexcept_function_tag,
+			public function_pointer_tag
 		{
-			using class_type = const ClassT;
+			using class_type = ClassT;
 			using return_type = ReturnT;
 			using arguement_typelist = std::tuple<Ts...>;
 		};
@@ -537,6 +621,195 @@ namespace jc
 	template <typename OpT>
 	constexpr inline auto function_arguement_count_v = function_arguement_count<OpT>::value;
 #endif
+
+
+
+
+	/**
+	 * @brief Trait tests if a type is a function signature, function pointer, or member function pointer
+	 * @tparam T Type to test
+	*/
+	template <typename T>
+	struct is_function : public jc::bool_constant
+		<
+			jc::is_base_of
+			<
+				jc::impl::function_tag,
+				jc::impl::function_traits_impl<T>
+			>::value
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Trait tests if a type is a function signature, function pointer, or member function pointer
+	 * @tparam T Type to test
+	*/
+	template <typename T>
+	constexpr inline auto is_function_v = is_function<T>::value;
+#endif
+
+
+	/**
+	 * @brief Trait tests if a type is a function pointer
+	 * @tparam T Type to test
+	*/
+	template <typename T>
+	struct is_function_pointer : public jc::bool_constant
+		<
+			jc::is_base_of
+			<
+				jc::impl::function_pointer_tag,
+				jc::impl::function_traits_impl<T>
+			>::value
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Trait tests if a type is a function pointer
+	 * @tparam T Type to test
+	*/
+	template <typename T>
+	constexpr inline bool is_function_pointer_v = is_function_pointer<T>::value;
+#endif
+
+
+	/**
+	 * @brief Trait tests if a type is a member function pointer
+	 * @tparam T Type to test
+	*/
+	using std::is_member_function_pointer;
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Trait tests if a type is a member function pointer
+	 * @tparam T Type to test
+	*/
+	using std::is_member_function_pointer_v;
+#endif
+
+
+	/**
+	 * @brief Trait tests if a type is a free function pointer
+	 * @tparam T Type to test
+	*/
+	template <typename T>
+	struct is_free_function_pointer :
+		public jc::bool_constant<jc::is_base_of<impl::free_function_tag, impl::function_traits_impl<T>>::value>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Trait tests if a type is a free function pointer
+	 * @tparam T Type to test
+	*/
+	template <typename T>
+	constexpr inline bool is_free_function_pointer_v = is_free_function_pointer<T>::value;
+#endif
+
+
+	namespace impl
+	{
+		// is_invocable implementation
+		template <typename Op, typename Tup, typename = void>
+		struct invocable_impl :
+			public jc::false_type
+		{};
+
+#if true
+		// is_invocable function pointer case
+		template <typename Op, template <typename... Ts> typename Tup, typename... Ts>
+		struct invocable_impl<Op, Tup<Ts...>, jc::enable_if_t
+			<
+				// Functions are allowed
+				jc::is_function<Op>::value 
+			>> : public jc::true_type
+		{
+			using return_type = typename impl::function_traits_impl<Op>::return_type;
+		};
+
+		// is_invocable function pointer case
+		template <typename Op, template <typename... Ts> typename Tup, typename... Ts>
+		struct invocable_impl<Op, Tup<Ts...>, jc::void_t
+			<
+			// Regular functions not allowed
+			jc::enable_if_t<!jc::is_function<Op>::value>,
+
+			// Check for valid invoke expression
+			decltype(std::declval<Op>()(std::declval<Ts>()...))
+			>>
+			: public jc::true_type
+		{
+			using return_type = decltype(std::declval<Op>()(std::declval<Ts>()...));
+		};
+
+#else
+		// is_invocable free function case
+		template <typename Op, template <typename... Ts> typename Tup, typename... Ts>
+		struct invocable_impl<Op, Tup<Ts...>, void_t <
+
+			// Only for free functions
+			jc::enable_if_t<jc::is_free_function_pointer<Op>::value>,
+
+			// Use decltype to see if the following expression is valid
+			decltype( std::declval<Op>()( std::declval<Ts>()... ) )
+
+			>> : public jc::true_type
+		{
+			using return_type = typename impl::function_traits_impl<Op>::return_type;
+		};
+
+		// is_invocable member function case
+		template <typename Op, template <typename... Ts> typename Tup, typename... Ts>
+		struct invocable_impl<Op, Tup<Ts...>, void_t <
+
+			// Only for member functions
+			jc::enable_if_t<jc::is_member_function_pointer<Op>::value>,
+
+			// Use decltype to see if the following expression is valid
+			decltype
+			(
+				(std::declval<typename impl::function_traits_impl<Op>::class_type>().*std::declval<Op>())
+				(std::declval<Ts>()...)
+				)
+
+			>> : public jc::true_type
+		{
+			using return_type = typename impl::function_traits_impl<Op>::return_type;
+		};
+
+		// is_invocable function object case
+		template <typename Op, template <typename... Ts> typename Tup, typename... Ts>
+		struct invocable_impl<Op, Tup<Ts...>, void_t <
+
+			// This must not be given a function pointer / signature / member function pointer
+			jc::enable_if_t<!jc::is_function<Op>::value>,
+
+			// Use decltype to see if the following expression is valid
+			decltype(std::declval<Op>()(std::declval<Ts>()...))
+
+			>> : public jc::true_type
+		{
+			using return_type = decltype(std::declval<Op>()(std::declval<Ts>()...));
+		};
+#endif
+
+	};
+
+	/**
+	 * @brief Is true is if Op is invocable given a list of arguements (backport of C++17 std::is_invocable)
+	 * @tparam Op Function or other callable type to check
+	 * @tparam ...Ts Arguement types
+	*/
+	template <typename Op, typename... Ts>
+	using is_invocable = impl::invocable_impl<Op, std::tuple<Ts...>>;
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	template <typename Op, typename... Ts>
+	constexpr inline auto is_invocable_v = is_invocable<Op, Ts...>::value;
+#endif
+
 
 
 
@@ -680,119 +953,6 @@ namespace jc
 
 	namespace impl
 	{
-		template <typename Op, typename Tup, typename = void>
-		struct invocable_impl : false_type {};
-
-		// generic function case
-		template <typename Op, typename... ArgTs>
-		struct invocable_impl <Op, std::tuple<ArgTs...>,
-			void_t<decltype(std::declval<Op>()(std::declval<ArgTs>()...))>
-		> : true_type
-		{
-			using arguement_typelist = std::tuple<ArgTs...>;
-			using return_type = decltype(std::declval<Op>()(std::declval<ArgTs>()...));
-		};
-
-		// needed to handle case where the function has no arguements
-		template <typename Op>
-		struct invocable_impl <Op, std::tuple<void>,
-			void_t<decltype(std::declval<Op>()())>
-		> : true_type
-		{
-			using arguement_typelist = std::tuple<void>;
-			using return_type = decltype(std::declval<Op>()());
-		};
-
-		// free function case, should be handled by the general case but im leaving this in for now
-		template <typename ReturnT, typename... ArgTs>
-		struct invocable_impl<ReturnT(*)(ArgTs...), std::tuple<ArgTs...>,
-			void_t<decltype(
-				(*std::declval<ReturnT(*)(ArgTs...)>())(std::declval<ArgTs>()...)
-				)>
-		> : true_type
-		{
-			using arguement_typelist = std::tuple<ArgTs...>;
-			using return_type = ReturnT;
-		};
-
-		// needed to handle case where the function has no arguements
-		template <typename ReturnT>
-		struct invocable_impl<ReturnT(*)(), std::tuple<void>,
-			void_t<decltype((*std::declval<ReturnT(*)()>())())>
-		> : true_type
-		{
-			using arguement_typelist = std::tuple<void>;
-			using return_type = ReturnT;
-		};
-
-		// member function case
-		template <typename ReturnT, typename ClassT, typename... ArgTs>
-		struct invocable_impl<ReturnT(ClassT::*)(ArgTs...), std::tuple<ArgTs...>,
-			void_t<decltype(
-				(std::declval<ClassT*>()->*std::declval<ReturnT(ClassT::*)(ArgTs...)>())(std::declval<ArgTs>()...)
-				)>
-		> : true_type
-		{
-			using arguement_typelist = std::tuple<ArgTs...>;
-			using return_type = ReturnT;
-		};
-
-		// needed to handle case where the function has no arguements
-		template <typename ReturnT, typename ClassT>
-		struct invocable_impl<ReturnT(ClassT::*)(), std::tuple<void>,
-			void_t<decltype((std::declval<ClassT*>()->*std::declval<ReturnT(ClassT::*)()>())())>
-		> : true_type
-		{
-			using arguement_typelist = std::tuple<void>;
-			using return_type = ReturnT;
-		};
-
-		// const member function case
-		template <typename ReturnT, typename ClassT, typename... ArgTs>
-		struct invocable_impl<ReturnT(ClassT::*)(ArgTs...) const, std::tuple<ArgTs...>,
-			void_t<decltype(
-				(std::declval<const ClassT*>()->*std::declval<ReturnT(ClassT::*)(ArgTs...) const>())(std::declval<ArgTs>()...)
-				)>
-		> : true_type
-		{
-			using arguement_typelist = std::tuple<ArgTs...>;
-			using return_type = ReturnT;
-		};
-
-		// const member function with no args case
-		template <typename ReturnT, typename ClassT>
-		struct invocable_impl<ReturnT(ClassT::*)() const, std::tuple<void>,
-			void_t<decltype(
-				(std::declval<const ClassT*>()->*std::declval<ReturnT(ClassT::*)() const>())()
-				)>
-		> : true_type
-		{
-			using arguement_typelist = std::tuple<void>;
-			using return_type = ReturnT;
-		};
-	};
-
-	/**
-	 * @brief Is true is if Op is invocable given a list of arguements (backport of C++17 std::is_invocable)
-	 * @tparam Op Function or other callable type to check
-	 * @tparam ...Ts Arguement types
-	*/
-	template <typename Op, typename... Ts>
-	using is_invocable = impl::invocable_impl<Op, std::tuple<Ts...>>;
-
-#ifdef __cpp_inline_variables
-	template <typename Op, typename... Ts>
-	JCLIB_CONSTEXPR inline bool is_invocable_v = is_invocable<Op, Ts...>::value;
-#endif
-
-
-
-
-
-
-
-	namespace impl
-	{
 		template <typename Op, typename Args, typename = void>
 		struct invoke_result_impl;
 		
@@ -818,57 +978,20 @@ namespace jc
 
 
 
-
-
-	using std::is_function;
-
-#ifdef __cpp_inline_variables
-	using std::is_function_v;
-#endif
-
-	template <typename T, typename = void>
-	struct is_function_pointer : public false_type {};
-
-	template <typename RetT, typename... Args>
-	struct is_function_pointer<RetT(*)(Args...), void> : public true_type {};
-
-	template <typename RetT, typename ScopeT, typename... Args>
-	struct is_function_pointer<RetT(ScopeT::*)(Args...), void> : public true_type {};
-
-#ifdef __cpp_inline_variables
-	template <typename T>
-	JCLIB_CONSTEXPR static bool is_function_pointer_v = is_function_pointer<T>::value;
-#endif
-
-
-	/*
-		Member function pointer
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Trait tests if a type is a noexcept function
+	 * @tparam T Type to test
 	*/
-
-	using std::is_member_function_pointer;
-#ifdef __cpp_inline_variables
-	using std::is_member_function_pointer_v;
-#endif
-
-
-	/*
-		Free function pointer
-	*/
-
 	template <typename T>
-	struct is_free_function_pointer : bool_constant<is_function_pointer<T>::value && !is_member_function_pointer<T>::value> {};
-
-#ifdef __cpp_inline_variables
-	template <typename T>
-	JCLIB_CONSTEXPR static bool is_free_function_pointer_v = is_free_function_pointer<T>::value;
-#endif
-
-#ifdef __cpp_noexcept_function_type
-	template <typename T>
-	struct is_noexcept_function : false_type {};
-	template <typename RetT, typename... Vals>
-	struct is_noexcept_function<RetT(Vals...) noexcept> : true_type {};
+	struct is_noexcept_function :
+		jc::bool_constant<jc::is_base_of<impl::noexcept_function_tag, impl::function_traits_impl<T>>::value>
+	{};
 #else
+	/**
+	 * @brief Trait tests if a type is a noexcept function pointer
+	 * @tparam T Type to test
+	*/
 	template <typename T>
 	struct is_noexcept_function : false_type {};
 #endif

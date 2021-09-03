@@ -198,4 +198,26 @@
 #endif
 
 
+
+/*
+	Test for __cpp_noexcept_function_type
+*/
+
+#define JCLIB_FEATURE_VALUE_CPP_NOEXCEPT_FUNCTION_TYPE 201510L
+#if defined(__cpp_noexcept_function_type) && JCLIB_FEATURE_VALUE_CPP_NOEXCEPT_FUNCTION_TYPE < __cpp_noexcept_function_type
+#error "Feature testing value mismatch"
+#endif
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CPP_NOEXCEPT_FUNCTION_TYPE || __cpp_noexcept_function_type >= JCLIB_FEATURE_VALUE_CPP_NOEXCEPT_FUNCTION_TYPE
+#define JCLIB_FEATURE_CPP_NOEXCEPT_FUNCTION_TYPE
+#else
+#ifdef JCLIB_FEATURE_CPP_NOEXCEPT_FUNCTION_TYPE
+#error "Feature testing macro was defined when it shouldn't be"
+#endif
+#endif
+
+#ifdef JCLIB_FEATURE_CPP_NOEXCEPT_FUNCTION_TYPE
+#define JCLIB_FEATURE_CPP_NOEXCEPT_FUNCTION_TYPE_V true
+#else
+#define JCLIB_FEATURE_CPP_NOEXCEPT_FUNCTION_TYPE_V false
+#endif
 #endif
