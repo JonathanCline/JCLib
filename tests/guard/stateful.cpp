@@ -33,7 +33,7 @@ struct GuardedObject
 		{
 			if (this->gstate)
 			{
-				this->gstate->set_state_dead_called;
+				this->gstate->set_state_dead_called = true;
 			};
 			this->gstate = nullptr;
 		}
