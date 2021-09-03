@@ -20,6 +20,8 @@
 */
 
 #include "jclib/config.h"
+#include "jclib/feature.h"
+
 
 #define _JCLIB_TYPE_TRAITS_
 
@@ -294,14 +296,70 @@ namespace jc
 	using std::is_trivial_v;
 #endif
 
-	template <typename From, typename To>
-	struct is_forwardable_to : public bool_constant<is_constructible<From, std::remove_reference_t<To>>::value> {};
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_CONCEPTS_V
+	namespace impl
+	{
+		template <typename From, typename To>
+		concept cx_is_forwardable_to_impl = requires (From&& _from)
+		{
+			To{ std::forward<From>(_from) };
+		};
+	};
+#endif
+
+
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	struct is_forwardable_to : public bool_constant <
+#if JCLIB_FEATURE_CONCEPTS_V
+			impl::cx_is_forwardable_to_impl<From, To>
+#else
+			is_constructible<decltype(std::forward<From>(std::declval<From&&>())), To>::value
+#endif
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
 	template <typename From, typename To>
 	JCLIB_CONSTEXPR inline bool is_forwardable_to_v = is_forwardable_to<From, To>::value;
 #endif
 	
+
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value and would be noexcept
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	struct is_noexcept_forwardable_to : public
+		bool_constant
+		<
+			is_forwardable_to<From, To>::value &&
+			noexcept(noexcept(To{ std::forward<From>(std::declval<From&&>()) }))
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value and would be noexcept
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	JCLIB_CONSTEXPR inline bool is_noexcept_forwardable_to_v = is_noexcept_forwardable_to<From, To>::value;
+#endif
+
+
 
 	/*
 		Misc. Type Traits
@@ -316,9 +374,309 @@ namespace jc
 #endif
 
 
+
+
+
+
 	/*
 		Function related
 	*/
+
+	namespace impl
+	{
+		struct noexcept_function_tag {};
+		struct const_function_tag {};
+
+
+		/**
+		 * @brief Determines function properties based on specialization selection
+		 * @tparam OpT Function or other invocable type
+		*/
+		template <typename OpT>
+		struct function_traits_impl;
+
+
+		// function signature type
+		template <typename ReturnT, typename... Ts>
+		struct function_traits_impl<ReturnT(Ts...)>
+		{
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+		// free function type
+		template <typename ReturnT, typename... Ts>
+		struct function_traits_impl<ReturnT(*)(Ts...)>
+		{
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+#if __cpp_noexcept_function_type
+		// noexcept free function type
+		template <typename ReturnT, typename... Ts>
+		struct function_traits_impl<ReturnT(*)(Ts...) noexcept> : noexcept_function_tag
+		{
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+#endif
+
+		// member function type
+		template <typename ReturnT, typename ClassT, typename... Ts>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...)>
+		{
+			using class_type = ClassT;
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+#if __cpp_noexcept_function_type
+		// noexcept member function type
+		template <typename ReturnT, typename ClassT, typename... Ts>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) noexcept> : noexcept_function_tag
+		{
+			using class_type = ClassT;
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+#endif
+
+		// const member function type
+		template <typename ReturnT, typename ClassT, typename... Ts>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) const> : const_function_tag
+		{
+			using class_type = const ClassT;
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+#if __cpp_noexcept_function_type
+		// const noexcept member function type
+		template <typename ReturnT, typename ClassT, typename... Ts>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) const noexcept> : const_function_tag, noexcept_function_tag
+		{
+			using class_type = const ClassT;
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+#endif
+	};
+
+
+	template <typename OpT, typename Enable = void>
+	struct function_arguements;
+
+	template <typename OpT>
+	struct function_arguements<OpT,
+		void_t<typename impl::function_traits_impl<OpT>::arguement_typelist>
+	>
+	{
+		using type = typename impl::function_traits_impl<OpT>::arguement_typelist;
+	};
+
+	template <typename OpT>
+	using function_arguements_t = typename function_arguements<OpT>::type;
+
+
+
+
+
+	namespace impl
+	{
+		template <typename RetT, typename T>
+		struct function_signature_impl;
+
+		template <typename RetT, template <typename... Ts> typename T, typename... Ts>
+		struct function_signature_impl<RetT, T<Ts...>>
+		{
+			using type = RetT(Ts...);
+		};
+	};
+
+	template <typename OpT, typename Enable = void>
+	struct function_signature;
+
+	template <typename OpT>
+	struct function_signature<OpT, void_t
+		<
+			typename impl::function_traits_impl<OpT>::return_type,
+			typename impl::function_traits_impl<OpT>::arguement_typelist
+		>>
+	{
+		using type = typename impl::function_signature_impl
+			<
+				typename impl::function_traits_impl<OpT>::return_type,
+				typename impl::function_traits_impl<OpT>::arguement_typelist
+			>::type;
+	};
+
+	template <typename OpT>
+	using function_signature_t = typename function_signature<OpT>::type;
+
+
+
+
+
+
+	template <typename OpT, typename Enable = void>
+	struct function_arguement_count;
+
+	template <typename OpT>
+	struct function_arguement_count<OpT,
+		jc::void_t<typename impl::function_traits_impl<OpT>::arguement_typelist>
+	> :
+		public std::integral_constant
+		<
+			size_t,
+			std::tuple_size<typename impl::function_traits_impl<OpT>::arguement_typelist>::value
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	template <typename OpT>
+	constexpr inline auto function_arguement_count_v = function_arguement_count<OpT>::value;
+#endif
+
+
+
+	namespace impl
+	{
+		/**
+		 * @brief Type used to fake any value
+		*/
+		struct wildcard
+		{
+			constexpr auto operator==(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator!=(wildcard rhs) const noexcept { return true; };
+
+			constexpr auto operator>(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator<(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator>=(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator<=(wildcard rhs) const noexcept { return true; };
+
+			constexpr auto operator+(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator-(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator*(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator/(wildcard rhs) const noexcept { return *this; };
+
+			constexpr auto& operator+=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator-=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator*=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator/=(wildcard rhs) noexcept { return *this; };
+
+			constexpr auto& operator++() noexcept { return *this; };
+			constexpr auto operator++(int) noexcept { return *this; };
+
+			constexpr auto& operator--() noexcept { return *this; };
+			constexpr auto operator--(int) noexcept { return *this; };
+
+			constexpr auto operator~() const noexcept { return *this; };
+			constexpr auto operator!() const noexcept { return *this; };
+			constexpr auto operator-() const noexcept { return *this; };
+
+			constexpr auto operator&(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator|(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator^(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator&=(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator|=(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator^=(wildcard rhs) const noexcept { return *this; };
+
+			constexpr auto operator>>(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator<<(wildcard rhs) const noexcept { return *this; };
+			constexpr auto& operator>>=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator<<=(wildcard rhs) noexcept { return *this; };
+
+			constexpr auto operator*() noexcept { return *this; };
+			constexpr auto operator*() const noexcept { return *this; };
+			constexpr auto operator->() noexcept { return *this; };
+			constexpr auto operator->() const noexcept { return *this; };
+
+			constexpr auto operator%(wildcard rhs) const noexcept { return *this; };
+
+
+
+			template <typename T>
+			constexpr operator T& () const noexcept;
+
+			template <typename T>
+			constexpr operator T && () const noexcept;
+
+
+			constexpr wildcard() = delete;
+		};
+
+
+		// Used to turn pack expansion into the wildcard type
+		template <size_t N>
+		struct wildcard_pos_void
+		{
+			using type = wildcard;
+		};
+
+
+		// Turns an index sequence into a wildcard tuple
+		template <typename T>
+		struct make_wildcard_tuple_impl;
+
+		template <size_t... Ns>
+		struct make_wildcard_tuple_impl<std::index_sequence<Ns...>>
+		{
+			// pack expansion abuse
+			using type = std::tuple<typename wildcard_pos_void<Ns>::type...>;
+		};
+
+
+		template <size_t N>
+		using make_wildcard_tuple_t = typename make_wildcard_tuple_impl<std::make_index_sequence<N>>::type;
+
+
+
+		
+
+
+		template <typename OpT, typename T, typename Enable = void>
+		struct invocable_with_arg_count_impl : jc::false_type {};
+
+		template <typename OpT, template <typename... Ts> typename TupT, typename... Ts>
+		struct invocable_with_arg_count_impl<OpT, TupT<Ts...>, void_t
+			<
+			decltype(std::declval<OpT>()(std::declval<Ts>()...))
+			>> : jc::true_type
+		{};
+	};
+
+	/**
+	 * @brief Wildcard type used for function trait probing (ie. jc::is_invocable_with_count)
+	*/
+	using wildcard = jc::impl::wildcard;
+
+
+	/**
+	 * @brief Tests if a type is invocable given 'N' number of arguements
+	 * @tparam OpT Type to test
+	 * @tparam N Number of arguements
+	*/
+	template <typename OpT, size_t N>
+	struct is_invocable_with_count :
+		public impl::invocable_with_arg_count_impl<OpT, impl::make_wildcard_tuple_t<N>>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+
+	/**
+	 * @brief Tests if a type is invocable given 'N' number of arguements
+	 * @tparam OpT Type to test
+	 * @tparam N Number of arguements
+	*/
+	template <typename OpT, size_t N>
+	constexpr inline auto is_invocable_with_count_v = is_invocable_with_count<OpT, N>::value;
+
+#endif
+
+
+
+
 
 	namespace impl
 	{
@@ -331,6 +689,7 @@ namespace jc
 			void_t<decltype(std::declval<Op>()(std::declval<ArgTs>()...))>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<ArgTs...>;
 			using return_type = decltype(std::declval<Op>()(std::declval<ArgTs>()...));
 		};
 
@@ -340,6 +699,7 @@ namespace jc
 			void_t<decltype(std::declval<Op>()())>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<void>;
 			using return_type = decltype(std::declval<Op>()());
 		};
 
@@ -351,6 +711,7 @@ namespace jc
 				)>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<ArgTs...>;
 			using return_type = ReturnT;
 		};
 
@@ -360,6 +721,7 @@ namespace jc
 			void_t<decltype((*std::declval<ReturnT(*)()>())())>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<void>;
 			using return_type = ReturnT;
 		};
 
@@ -371,6 +733,7 @@ namespace jc
 				)>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<ArgTs...>;
 			using return_type = ReturnT;
 		};
 
@@ -380,6 +743,7 @@ namespace jc
 			void_t<decltype((std::declval<ClassT*>()->*std::declval<ReturnT(ClassT::*)()>())())>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<void>;
 			using return_type = ReturnT;
 		};
 
@@ -391,6 +755,7 @@ namespace jc
 				)>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<ArgTs...>;
 			using return_type = ReturnT;
 		};
 
@@ -402,10 +767,16 @@ namespace jc
 				)>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<void>;
 			using return_type = ReturnT;
 		};
 	};
 
+	/**
+	 * @brief Is true is if Op is invocable given a list of arguements (backport of C++17 std::is_invocable)
+	 * @tparam Op Function or other callable type to check
+	 * @tparam ...Ts Arguement types
+	*/
 	template <typename Op, typename... Ts>
 	using is_invocable = impl::invocable_impl<Op, std::tuple<Ts...>>;
 
@@ -413,6 +784,12 @@ namespace jc
 	template <typename Op, typename... Ts>
 	JCLIB_CONSTEXPR inline bool is_invocable_v = is_invocable<Op, Ts...>::value;
 #endif
+
+
+
+
+
+
 
 	namespace impl
 	{

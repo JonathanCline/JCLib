@@ -1,6 +1,6 @@
 #pragma once
-#ifndef JCLIB_CONFIG_VERSION_H
-#define JCLIB_CONFIG_VERSION_H
+#ifndef JCLIB_CONFIG_ALGORITHM_H
+#define JCLIB_CONFIG_ALGORITHM_H
 
 /*
 	Copyright 2021 Jonathan Cline
@@ -15,8 +15,17 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#define JCLIB_VERSION_MAJOR ${JCLIB_VERSION_MAJOR}
-#define JCLIB_VERSION_MINOR ${JCLIB_VERSION_MINOR}
-#define JCLIB_VERSION_PATCH	${JCLIB_VERSION_PATCH}
+/**
+ *	@brief Enables custom std algorithm implementations for backporting constexpr support when using C++14/17
+*/
+#cmakedefine JCLIB_CONSTEXPR_ALGORITHMS
+
+#ifdef JCLIB_CONSTEXPR_ALGORITHMS
+	// Enables custom std algorithm implementations for backporting constexpr support when using C++14/17
+	#define JCLIB_CONSTEXPR_ALGORITHMS_V true
+#else
+	// Enables custom std algorithm implementations for backporting constexpr support when using C++14/17
+	#define JCLIB_CONSTEXPR_ALGORITHMS_V false
+#endif
 
 #endif

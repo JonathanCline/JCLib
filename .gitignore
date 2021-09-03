@@ -3,5 +3,5 @@ out/
 
 CMakeSettings.json
 
-config/include
 doc/doxy/
+config/include

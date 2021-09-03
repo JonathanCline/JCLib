@@ -829,7 +829,7 @@ namespace jc
 					return this->end_;
 				};
 
-				constexpr filter_view_impl(RangeT& _range, jc::remove_cvref_t<OpT>&& _op) :
+				constexpr filter_view_impl(RangeT& _range, jc::remove_cvref_t<OpT> _op) :
 					filter_{ std::move(_op) },
 					begin_{ ranges::begin(_range), ranges::end(_range),  this->filter_ },
 					end_{ ranges::end(_range), ranges::end(_range), this->filter_ }
@@ -870,6 +870,13 @@ namespace jc
 					ranges::filter_view<remove_reference_t<RangeT>, OpT>
 				{
 					return ranges::filter_view<remove_reference_t<RangeT>, OpT>{ _range, std::move(_filter.op) };
+				};
+
+				template <typename RangeT>
+				constexpr auto operator()(RangeT&& _range) const
+					-> ranges::filter_view<remove_reference_t<RangeT>, OpT>
+				{
+					return ranges::filter_view<remove_reference_t<RangeT>, OpT>{ _range, this->op };
 				};
 
 				constexpr filter_impl(OpT&& _op) noexcept :
@@ -1409,8 +1416,8 @@ namespace jc
 				constexpr iterator begin() const noexcept { return this->begin_; };
 				constexpr iterator end() const noexcept { return this->end_; };
 
-				constexpr transform_view_impl(RangeT& _range, remove_cvref_t<OpT>&& _op) :
-					op_{ std::forward<OpT>(_op) },
+				constexpr transform_view_impl(RangeT& _range, jc::remove_cvref_t<OpT> _op) :
+					op_{ std::move(_op) },
 					begin_{ iterator{ jc::ranges::begin(_range), jc::ranges::end(_range), this->op_ } },
 					end_{ iterator{ jc::ranges::end(_range), jc::ranges::end(_range), this->op_} }
 				{};
