@@ -23,11 +23,412 @@
 
 namespace jc
 {
+	/**
+	 * @brief Guard state values
+	*/
 	enum class guard_state : bool
 	{
-		held = true,
-		released = false
+		/**
+		 * @brief Guard is still alive and may be reset
+		*/
+		alive = true,
+
+		/**
+		 * @brief Guard is dead and will not run the 
+		*/
+		dead = false
 	};
+
+#if true
+
+	namespace impl
+	{
+		/**
+		 * @brief Checks if a guarded type is considered stateful (has get_state() and set_state() methods)
+		 * @tparam T Guarded type to check
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename T, typename Enable = void>
+		struct is_stateful_guarded :
+			public jc::false_type
+		{};
+
+
+		// Stateful guarded true condition. Requires that T has
+		//
+		//		const T.get_state() -> jc::guard_state
+		//		T.set_state(jc::guard_state)
+		//
+		template <typename T>
+		struct is_stateful_guarded<T, jc::void_t
+			<
+				// Must have a get_state() method returning a guard state convertible value
+				jc::enable_if_t<std::is_same<decltype(std::declval<const T>().get_state()), guard_state>::value>,
+
+				// Must have a set_state(jc::guard_state) method
+				decltype(std::declval<T>().set_state(std::declval<jc::guard_state>()))
+			>>
+			: public jc::true_type
+		{};
+
+		/**
+		 * @brief Checks if a type is a valid guarded type for jc::guard
+		 * @tparam T type to check
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename T, typename Enable = void>
+		struct is_guarded :
+			public jc::false_type
+		{};
+		
+		//	True case for is_guarded. Requires that T must have
+		//	
+		//		T.reset()
+		//
+		template <typename T>
+		struct is_guarded<T, jc::void_t
+			<
+				// Must have a reset() method
+				decltype(std::declval<T>().reset())
+			>>
+			: public jc::true_type
+		{};
+
+
+
+
+		/**
+		 * @brief Guard state implementation stateless guardeds
+		 * @tparam GuardedT Guarded type
+		*/
+		template <typename GuardedT, typename Enable = void>
+		class guard_base_state
+		{
+		protected:
+
+			/**
+			 * @brief Gets the state of the guard
+			 * @parma _guarded Guarded object
+			 * @return Guard state value
+			*/
+			constexpr guard_state get_guard_state(const GuardedT&) const noexcept
+			{
+				return this->state_;
+			};
+
+			/**
+			 * @brief Sets the state of the guard
+			 * @parma _guarded Guarded object
+			 * @param Guard state value
+			*/
+			constexpr void set_guard_state(GuardedT& _guarded, guard_state _state) noexcept
+			{
+				this->state_ = _state;
+			};
+
+			constexpr guard_base_state() noexcept = default;
+			~guard_base_state() = default;
+
+		private:
+			/**
+			 * @brief Guard state value
+			*/
+			guard_state state_;
+		};
+
+
+		/**
+		 * @brief Guard state implementation for stateful guardeds
+		 * @tparam GuardedT Guarded type
+		*/
+		template <typename GuardedT>
+		class guard_base_state<GuardedT, jc::enable_if_t<is_stateful_guarded<GuardedT>::value>>
+		{
+		protected:
+
+			/**
+			 * @brief Gets the state of the guard
+			 * @parma _guarded Guarded object
+			 * @return Guard state value
+			*/
+			constexpr guard_state get_guard_state(const GuardedT& _guarded) const noexcept
+			{
+				return _guarded.get_state();
+			};
+
+			/**
+			 * @brief Sets the state of the guard
+			 * @parma _guarded Guarded object
+			 * @param Guard state value
+			*/
+			constexpr void set_guard_state(GuardedT& _guarded, guard_state _state) noexcept
+			{
+				_guarded.set_state(_state);
+			};
+
+			constexpr guard_base_state() noexcept = default;
+			~guard_base_state() = default;
+		};
+
+
+
+
+		/**
+		 * @brief Guard implementation part for managing the guarded object memory
+		 * @tparam GuardedT Guarded object
+		 * @tparam Enable SFINAE specialization point
+		*/
+		template <typename GuardedT>
+		class guard_base_guarded
+		{
+		protected:
+
+			/**
+			 * @brief Returns the guarded object
+			 * @return GuardedT reference
+			*/
+			constexpr GuardedT& get_guarded() noexcept
+			{
+				return this->guarded_;
+			};
+
+			/**
+			 * @brief Returns the guarded object
+			 * @return GuardedT reference
+			*/
+			constexpr const GuardedT& get_guarded() const noexcept
+			{
+				return this->guarded_;
+			};
+
+			/**
+			 * @brief Invokes the guarded object, does not check state
+			*/
+			constexpr void invoke_guarded()
+			{
+				this->get_guarded().reset();
+			};
+
+
+			constexpr guard_base_guarded() noexcept = default;
+
+			/**
+			 * @brief Constructs the guard guarded in place
+			*/
+			template <typename... Ts, typename = jc::enable_if_t<jc::is_constructible<GuardedT, Ts...>::value>>
+			constexpr guard_base_guarded(Ts&&... _args)
+				noexcept(noexcept(GuardedT{ std::forward<Ts>(std::declval<Ts&&>())... })) :
+				guarded_{ std::forward<Ts>(_args)... }
+			{};
+
+		private:
+			/**
+			 * @brief Guarded object
+			*/
+			GuardedT guarded_{};
+		};
+
+	};
+
+
+	/**
+	 * @brief Generic guard type for implementing RAII behavior
+	 * @tparam GuardedT Guard guarded object type
+	 * @tparam Enable SFINAE specialization point
+	*/
+	template <typename GuardedT, typename Enable = void>
+	class guard;
+
+	/**
+	 * @brief Generic guard type for implementing RAII behavior
+	 * @tparam GuardedT Guard guarded object type
+	*/
+	template <typename GuardedT>
+	class guard <GuardedT, jc::enable_if_t<impl::is_guarded<GuardedT>::value>> :
+
+		// Add guarded object part
+		private impl::guard_base_guarded<GuardedT>,
+
+		// Add state management part
+		private impl::guard_base_state<GuardedT>
+
+	{
+	private:
+		// Guard release object impl type
+		using base_guarded = impl::guard_base_guarded<GuardedT>;
+
+		// Guard state impl type
+		using base_state = impl::guard_base_state<GuardedT>;
+
+	public:
+
+		/**
+		 * @brief Guard guarded type
+		*/
+		using guarded_type = GuardedT;
+
+		/**
+		 * @brief Checks if the guard is still alive
+		 * @return True if held, false otherwise
+		*/
+		constexpr bool good() const noexcept
+		{
+			return this->get_guard_state(this->get_guarded()) == guard_state::alive;
+		};
+
+		/**
+		 * @brief Checks if the guard is still alive
+		 * @return True if held, false otherwise
+		*/
+		constexpr explicit operator bool() const noexcept
+		{
+			return this->good();
+		};
+
+		/**
+		 * @brief Kills the guard without invoking the guarded object
+		*/
+		constexpr void release() noexcept
+		{
+			this->set_guard_state(this->get_guarded(), guard_state::dead);
+		};
+		
+		/**
+		 * @brief Invokes the guarded object if this guard is alive and sets state to dead
+		*/
+		constexpr void reset()
+		{
+			if (this->good())
+			{
+				this->invoke_guarded();
+				this->release();
+			};
+		};
+
+	private:
+
+		/**
+		 * @brief Calls release() and returns the prior guard state
+		 * @return Guard state
+		*/
+		JCLIB_NODISCARD("owning guard state value") constexpr guard_state extract() noexcept
+		{
+			const auto _out = this->get_guard_state();
+			this->release();
+			return _out;
+		};
+
+	protected:
+
+		/**
+		 * @brief Constructs the guarded with the given arguements and sets guard state
+		 * @brief _args... Guarded object constructor arguements
+		*/
+		template <typename... Ts, typename = jc::enable_if_t<jc::is_forwardable_to<guarded_type, Ts...>::value>>
+		constexpr explicit guard(guard_state _state, Ts&&... _args)
+			noexcept(noexcept(
+				guarded_type{ std::forward<Ts>(std::declval<Ts&&>())... }
+			))
+			: base_guarded{ std::forward<Ts>(_args)... }
+		{
+			this->set_guard_state(this->get_guarded(), _state);
+		};
+
+	public:
+
+		/**
+		 * @brief Default constructs the guarded and puts the guard into the held state
+		*/
+		constexpr guard() noexcept :
+			base_guarded{}
+		{
+			this->set_guard_state(this->get_guarded(), guard_state::alive);
+		};
+
+		/**
+		 * @brief Copy constructs the guarded from a given object and puts the guard into the held state
+		 * @brief _guarded Guarded object
+		*/
+		constexpr guard(const GuardedT& _guarded) noexcept :
+			guard{  guard_state::alive, _guarded }
+		{};
+
+		/**
+		 * @brief Move constructs the guarded from a given object and puts the guard into the held state
+		 * @brief _guarded Guarded object
+		*/
+		constexpr guard(GuardedT&& _guarded) noexcept :
+			guard{ guard_state::alive, std::move(_guarded) }
+		{};
+
+		constexpr guard(const guard& _other) = delete;
+		constexpr guard& operator=(const guard& _other) noexcept;
+
+		constexpr guard(guard&& _other) noexcept :
+			guard{ _other.extract(), std::move(_other.get_guarded()) }
+		{};
+		constexpr guard& operator=(guard&& _other) noexcept
+		{
+			this->reset();
+			this->get_guarded() = std::move(_other.get_guarded());
+			this->set_guard_state(_other.extract());
+			return *this;
+		};
+
+		~guard()
+		{
+			this->reset();
+		};
+
+	};
+
+
+
+#else
+
+	template <typename ReleaserT>
+	class guard
+	{
+	public:
+
+		/**
+		 * @brief Checks if the guard is still active / alive
+		 * @return True if alive, false otherwise
+		*/
+		constexpr bool held() const noexcept
+		{
+			return this->state_ == guard_state::alive;
+		};
+
+
+
+		/**
+		 * @brief Invokes the release function and sets the held state to null
+		 * @return
+		*/
+		constexpr void release()
+		{
+
+		};
+
+
+
+
+	protected:
+
+		constexpr explicit guard(guard_state _state) :
+			alive_{ _state }
+		{};
+
+	private:
+		guard_state state_;
+	};
+
+
+
+
+
+
 
 	template <typename OnRelease, typename = void>
 	struct guard;
@@ -100,6 +501,22 @@ namespace jc
 			};
 		};
 	};
+
+#endif
+
+	namespace impl
+	{
+		template <void(*OnRelease)()>
+		class guard_fwrap
+		{
+		public:
+			constexpr void release() noexcept
+			{
+				return OnRelease();
+			};
+		};
+	};
+
 
 	template <void(*OnRelease)()>
 	struct fguard : public guard<impl::guard_fwrap<OnRelease>>

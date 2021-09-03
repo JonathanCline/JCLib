@@ -7,8 +7,8 @@
 struct BoolLate
 {
 	static bool wasCleared;
-
-	void operator()()
+	
+	void reset()
 	{
 		this->wasCleared = true;
 	};
@@ -21,7 +21,7 @@ int main()
 		BoolLate::wasCleared = false;
 		{
 			jc::guard<BoolLate> _guard{};
-			if (!_guard.held() || !_guard)
+			if (!_guard.good() || !_guard)
 			{
 				return 1;
 			};
@@ -35,7 +35,7 @@ int main()
 	{
 		BoolLate::wasCleared = false;
 		jc::guard<BoolLate> _guard{};
-		_guard.release();
+		_guard.reset();
 		if (!BoolLate::wasCleared)
 		{
 			return 2;
@@ -46,7 +46,7 @@ int main()
 		BoolLate::wasCleared = false;
 		{
 			jc::guard<BoolLate> _guard{};
-			_guard.drop();
+			_guard.release();
 		};
 		if (BoolLate::wasCleared)
 		{
