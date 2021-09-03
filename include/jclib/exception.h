@@ -38,12 +38,22 @@ namespace jc
 	
 
 	// TODO : Reduce the likely hood of an exception thrown on jc::exception construction. Maybe have a static buffer for the message?
-
+	
 	/**
 	 * @brief Base exception type
 	*/
 	struct exception : public std::exception
 	{
+#if defined(_MSC_VER)
+	public:
+		using std::exception::exception;
+		using std::exception::operator=;
+#else
+	private:
+
+		// Set for MSVC's exception type allowing strings
+		constexpr static bool msvc_exception_v = jc::is_constructible<std::exception, const char*>::value;
+
 	public:
 
 		/**
@@ -55,19 +65,18 @@ namespace jc
 			return this->what_.c_str();
 		};
 
-		exception(const char* _str, size_t _len) noexcept :
-			std::exception{}, what_{ _str, _len }
-		{};
+
+
 		exception(const char* _str) noexcept :
-			exception(_str, strlen(_str))
+			std::exception{}, what_{ _str }
 		{};
-		
 		exception() noexcept :
 			std::exception{}
 		{};
 
 	private:
 		std::string what_;
+#endif
 	};
 
 };

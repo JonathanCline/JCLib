@@ -28,7 +28,7 @@ namespace jc
 	/**
 	 * @brief Exception thrown on attempted access on an invalid value
 	*/
-	struct bad_access_exception : public std::exception { using std::exception::exception; };
+	struct bad_access_exception : public jc::exception { using jc::exception::exception; };
 
 	/**
 	 * @brief Alternate tag type for function overload selection
