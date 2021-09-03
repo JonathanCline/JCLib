@@ -87,7 +87,7 @@ namespace jc
 			using argument_typelist = std::tuple<ArgTs...>;
 
 			
-			virtual JCLIB_NODISCARD("owning pointer") function_pointer_base* clone() const = 0;
+			JCLIB_NODISCARD("owning pointer") virtual function_pointer_base* clone() const = 0;
 			
 			
 			virtual return_type invoke(ArgTs... _a) const = 0;
