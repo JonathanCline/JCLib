@@ -311,7 +311,7 @@ namespace jc
 		 * @brief Calls release() and returns the prior guard state
 		 * @return Guard state
 		*/
-		constexpr JCLIB_NODISCARD("owning guard state value") guard_state extract() noexcept
+		JCLIB_NODISCARD("owning guard state value") constexpr guard_state extract() noexcept
 		{
 			const auto _out = this->get_guard_state();
 			this->release();
@@ -324,9 +324,7 @@ namespace jc
 		 * @brief Constructs the guarded with the given arguements and sets guard state
 		 * @brief _args... Guarded object constructor arguements
 		*/
-		template <typename... Ts, typename = jc::enable_if_t<jc::is_constructible<
-				guarded_type, decltype(std::forward<Ts>(std::declval<Ts&&>()))...
-			>::value>>
+		template <typename... Ts, typename = jc::enable_if_t<jc::is_forwardable_to<guarded_type, Ts...>::value>>
 		constexpr explicit guard(guard_state _state, Ts&&... _args)
 			noexcept(noexcept(
 				guarded_type{ std::forward<Ts>(std::declval<Ts&&>()) }
@@ -341,7 +339,6 @@ namespace jc
 		/**
 		 * @brief Default constructs the guarded and puts the guard into the held state
 		*/
-		template <typename = jc::enable_if_t<jc::is_default_constructible<GuardedT>::value>>
 		constexpr guard() noexcept :
 			guard{ guard_state::alive }
 		{};
