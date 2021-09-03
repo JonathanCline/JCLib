@@ -304,7 +304,7 @@ namespace jc
 			 * @brief Releases ownership of the owned function pointer and returns it
 			 * @return The owned function pointer as a pointer to the base (impl::function_pointer_base)
 			*/
-			JCLIB_CONSTEXPR JCLIB_NODISCARD("owning pointer") pointer extract() noexcept
+			JCLIB_NODISCARD("owning pointer") JCLIB_CONSTEXPR pointer extract() noexcept
 			{
 				const pointer _out = this->get();
 				this->release();
