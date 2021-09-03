@@ -1,4 +1,4 @@
-name: CMake
+name: gcc_debug
 
 on: [push]
 
