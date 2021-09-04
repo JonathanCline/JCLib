@@ -225,7 +225,7 @@ namespace jc
 			/**
 			 * @brief Guarded object
 			*/
-			GuardedT guarded_{};
+			GuardedT guarded_;
 		};
 
 	};
@@ -313,7 +313,7 @@ namespace jc
 		*/
 		JCLIB_NODISCARD("owning guard state value") constexpr guard_state extract() noexcept
 		{
-			const auto _out = this->get_guard_state();
+			const auto _out = this->get_guard_state(this->get_guarded());
 			this->release();
 			return _out;
 		};
@@ -337,15 +337,6 @@ namespace jc
 	public:
 
 		/**
-		 * @brief Default constructs the guarded and puts the guard into the held state
-		*/
-		constexpr guard() noexcept :
-			base_guarded{}
-		{
-			this->set_guard_state(this->get_guarded(), guard_state::alive);
-		};
-
-		/**
 		 * @brief Copy constructs the guarded from a given object and puts the guard into the held state
 		 * @brief _guarded Guarded object
 		*/
@@ -361,17 +352,32 @@ namespace jc
 			guard{ guard_state::alive, std::move(_guarded) }
 		{};
 
+
+		template <typename Enable = jc::enable_if_t<jc::is_default_constructible<GuardedT>::value>>
+		constexpr guard() noexcept :
+			base_guarded{}
+		{
+			this->set_guard_state(this->get_guarded(), guard_state::alive);
+		};
+
+
 		constexpr guard(const guard& _other) = delete;
 		constexpr guard& operator=(const guard& _other) noexcept;
 
 		constexpr guard(guard&& _other) noexcept :
-			guard{ _other.extract(), std::move(_other.get_guarded()) }
-		{};
+			guard{ _other.get_guard_state(_other.get_guarded()), std::move(_other.get_guarded()) }
+		{
+			_other.release();
+		};
 		constexpr guard& operator=(guard&& _other) noexcept
 		{
 			this->reset();
+			const auto _otherState = _other.get_guard_state(_other.get_guarded());
+
 			this->get_guarded() = std::move(_other.get_guarded());
-			this->set_guard_state(_other.extract());
+			this->set_guard_state(this->get_guarded(), _otherState);
+			_other.release();
+
 			return *this;
 		};
 
