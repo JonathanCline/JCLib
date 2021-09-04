@@ -340,25 +340,12 @@ namespace jc
 		 * @brief Copy constructs the guarded from a given object and puts the guard into the held state
 		 * @brief _guarded Guarded object
 		*/
-		constexpr guard(const GuardedT& _guarded) noexcept :
-			guard{  guard_state::alive, _guarded }
-		{};
-
-		/**
-		 * @brief Move constructs the guarded from a given object and puts the guard into the held state
-		 * @brief _guarded Guarded object
-		*/
-		constexpr guard(GuardedT&& _guarded) noexcept :
-			guard{ guard_state::alive, std::move(_guarded) }
+		constexpr guard(GuardedT _guarded = GuardedT{}) noexcept :
+			guard{  guard_state::alive, std::move(_guarded) }
 		{};
 
 
-		template <typename Enable = jc::enable_if_t<jc::is_default_constructible<GuardedT>::value>>
-		constexpr guard() noexcept :
-			base_guarded{}
-		{
-			this->set_guard_state(this->get_guarded(), guard_state::alive);
-		};
+
 
 
 		constexpr guard(const guard& _other) = delete;
