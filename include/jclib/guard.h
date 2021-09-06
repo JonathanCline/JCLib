@@ -54,19 +54,28 @@ namespace jc
 		{};
 
 
+
 		// Stateful guarded true condition. Requires that T has
 		//
-		//		const T.get_state() -> jc::guard_state
-		//		T.set_state(jc::guard_state)
+		//		const T.good() -> jc::guard_state or bool
+		//		T.release() -> void
 		//
 		template <typename T>
 		struct is_stateful_guarded<T, jc::void_t
 			<
-				// Must have a get_state() method returning a guard state convertible value
-				jc::enable_if_t<std::is_same<decltype(std::declval<const T>().get_state()), guard_state>::value>,
+				// Must have a good() method returning a guard state or bool convertible value
+				jc::enable_if_t
+				<
+					jc::is_any_of
+					<
+						decltype(std::declval<const T>().good()),
+						bool,
+						guard_state
+					>::value
+				>,
 
 				// Must have a set_state(jc::guard_state) method
-				decltype(std::declval<T>().set_state(std::declval<jc::guard_state>()))
+				decltype(std::declval<T>().release())
 			>>
 			: public jc::true_type
 		{};
@@ -153,7 +162,7 @@ namespace jc
 			*/
 			constexpr guard_state get_guard_state(const GuardedT& _guarded) const noexcept
 			{
-				return _guarded.get_state();
+				return (guard_state)_guarded.good();
 			};
 
 			/**
@@ -163,7 +172,10 @@ namespace jc
 			*/
 			constexpr void set_guard_state(GuardedT& _guarded, guard_state _state) noexcept
 			{
-				_guarded.set_state(_state);
+				if (_state == guard_state::dead)
+				{
+					_guarded.release();
+				};
 			};
 
 			constexpr guard_base_state() noexcept = default;
@@ -225,7 +237,7 @@ namespace jc
 			/**
 			 * @brief Guarded object
 			*/
-			GuardedT guarded_{};
+			GuardedT guarded_;
 		};
 
 	};
@@ -313,7 +325,7 @@ namespace jc
 		*/
 		JCLIB_NODISCARD("owning guard state value") constexpr guard_state extract() noexcept
 		{
-			const auto _out = this->get_guard_state();
+			const auto _out = this->get_guard_state(this->get_guarded());
 			this->release();
 			return _out;
 		};
@@ -337,41 +349,34 @@ namespace jc
 	public:
 
 		/**
-		 * @brief Default constructs the guarded and puts the guard into the held state
-		*/
-		constexpr guard() noexcept :
-			base_guarded{}
-		{
-			this->set_guard_state(this->get_guarded(), guard_state::alive);
-		};
-
-		/**
 		 * @brief Copy constructs the guarded from a given object and puts the guard into the held state
 		 * @brief _guarded Guarded object
 		*/
-		constexpr guard(const GuardedT& _guarded) noexcept :
-			guard{  guard_state::alive, _guarded }
+		constexpr guard(GuardedT _guarded = GuardedT{}) noexcept :
+			guard{  guard_state::alive, std::move(_guarded) }
 		{};
 
-		/**
-		 * @brief Move constructs the guarded from a given object and puts the guard into the held state
-		 * @brief _guarded Guarded object
-		*/
-		constexpr guard(GuardedT&& _guarded) noexcept :
-			guard{ guard_state::alive, std::move(_guarded) }
-		{};
+
+
+
 
 		constexpr guard(const guard& _other) = delete;
 		constexpr guard& operator=(const guard& _other) noexcept;
 
 		constexpr guard(guard&& _other) noexcept :
-			guard{ _other.extract(), std::move(_other.get_guarded()) }
-		{};
+			guard{ _other.get_guard_state(_other.get_guarded()), std::move(_other.get_guarded()) }
+		{
+			_other.release();
+		};
 		constexpr guard& operator=(guard&& _other) noexcept
 		{
 			this->reset();
+			const auto _otherState = _other.get_guard_state(_other.get_guarded());
+
 			this->get_guarded() = std::move(_other.get_guarded());
-			this->set_guard_state(_other.extract());
+			this->set_guard_state(this->get_guarded(), _otherState);
+			_other.release();
+
 			return *this;
 		};
 
