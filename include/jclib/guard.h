@@ -58,7 +58,7 @@ namespace jc
 		// Stateful guarded true condition. Requires that T has
 		//
 		//		const T.good() -> jc::guard_state or bool
-		//		T.set_state(jc::guard_state) -> void
+		//		T.release() -> void
 		//
 		template <typename T>
 		struct is_stateful_guarded<T, jc::void_t
@@ -75,7 +75,7 @@ namespace jc
 				>,
 
 				// Must have a set_state(jc::guard_state) method
-				decltype(std::declval<T>().set_state(std::declval<jc::guard_state>()))
+				decltype(std::declval<T>().release())
 			>>
 			: public jc::true_type
 		{};
@@ -172,7 +172,10 @@ namespace jc
 			*/
 			constexpr void set_guard_state(GuardedT& _guarded, guard_state _state) noexcept
 			{
-				_guarded.set_state(_state);
+				if (_state == guard_state::dead)
+				{
+					_guarded.release();
+				};
 			};
 
 			constexpr guard_base_state() noexcept = default;
