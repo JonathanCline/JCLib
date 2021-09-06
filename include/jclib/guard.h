@@ -54,16 +54,25 @@ namespace jc
 		{};
 
 
+
 		// Stateful guarded true condition. Requires that T has
 		//
-		//		const T.get_state() -> jc::guard_state
-		//		T.set_state(jc::guard_state)
+		//		const T.good() -> jc::guard_state or bool
+		//		T.set_state(jc::guard_state) -> void
 		//
 		template <typename T>
 		struct is_stateful_guarded<T, jc::void_t
 			<
-				// Must have a get_state() method returning a guard state convertible value
-				jc::enable_if_t<std::is_same<decltype(std::declval<const T>().get_state()), guard_state>::value>,
+				// Must have a good() method returning a guard state or bool convertible value
+				jc::enable_if_t
+				<
+					jc::is_any_of
+					<
+						decltype(std::declval<const T>().good()),
+						bool,
+						guard_state
+					>::value
+				>,
 
 				// Must have a set_state(jc::guard_state) method
 				decltype(std::declval<T>().set_state(std::declval<jc::guard_state>()))
@@ -153,7 +162,7 @@ namespace jc
 			*/
 			constexpr guard_state get_guard_state(const GuardedT& _guarded) const noexcept
 			{
-				return _guarded.get_state();
+				return (guard_state)_guarded.good();
 			};
 
 			/**

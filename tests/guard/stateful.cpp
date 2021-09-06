@@ -52,17 +52,14 @@ struct GuardedObject
 			};
 		};
 	};
-	jc::guard_state get_state() const
+
+	bool good() const
 	{
 		if (this->gstate)
 		{
 			this->gstate->get_state_called = true;
-			return jc::guard_state::alive;
-		}
-		else
-		{
-			return jc::guard_state::dead;
 		};
+		return (bool)this->gstate;
 	};
 
 
