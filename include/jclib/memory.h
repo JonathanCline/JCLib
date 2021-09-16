@@ -247,7 +247,7 @@ namespace jc
 		{
 			return rhs == lhs;
 		};
-
+		
 		constexpr bool operator!=(const borrow_ptr& rhs) const noexcept
 		{
 			return this->get() != rhs.get();
@@ -260,7 +260,7 @@ namespace jc
 		{
 			return rhs != lhs;
 		};
-
+		
 		constexpr bool operator>(const borrow_ptr& rhs) const noexcept
 		{
 			return this->get() > rhs.get();
@@ -273,6 +273,7 @@ namespace jc
 		{
 			return lhs > rhs.get();
 		};
+		
 		constexpr bool operator>=(const borrow_ptr& rhs) const noexcept
 		{
 			return this->get() >= rhs.get();
@@ -285,7 +286,7 @@ namespace jc
 		{
 			return lhs >= rhs.get();
 		};
-
+		
 		constexpr bool operator<(const borrow_ptr& rhs) const noexcept
 		{
 			return this->get() < rhs.get();
@@ -298,6 +299,7 @@ namespace jc
 		{
 			return lhs < rhs.get();
 		};
+		
 		constexpr bool operator<=(const borrow_ptr& rhs) const noexcept
 		{
 			return this->get() <= rhs.get();
@@ -312,7 +314,58 @@ namespace jc
 		};
 
 
+		/*
+		// Nullptr comparisons (may not be needed)
 
+		friend inline constexpr bool operator==(const borrow_ptr& lhs, nullptr_t rhs) noexcept
+		{
+			return lhs.get() == rhs;
+		};
+		friend inline constexpr bool operator==(nullptr_t lhs, const borrow_ptr& rhs) noexcept
+		{
+			return rhs == lhs;
+		};
+		friend inline constexpr bool operator!=(const borrow_ptr& lhs, nullptr_t rhs) noexcept
+		{
+			return lhs.get() != rhs;
+		};
+		friend inline constexpr bool operator!=(nullptr_t lhs, const borrow_ptr& rhs) noexcept
+		{
+			return rhs != lhs;
+		};
+		friend inline constexpr bool operator>(const borrow_ptr& lhs, nullptr_t rhs) noexcept
+		{
+			return lhs.get() > rhs;
+		};
+		friend inline constexpr bool operator>(nullptr_t lhs, const borrow_ptr& rhs) noexcept
+		{
+			return lhs > rhs.get();
+		};
+		friend inline constexpr bool operator>=(const borrow_ptr& lhs, nullptr_t rhs) noexcept
+		{
+			return lhs.get() >= rhs;
+		};
+		friend inline constexpr bool operator>=(nullptr_t lhs, const borrow_ptr& rhs) noexcept
+		{
+			return lhs >= rhs.get();
+		};
+		friend inline constexpr bool operator<(const borrow_ptr& lhs, nullptr_t rhs) noexcept
+		{
+			return lhs.get() < rhs;
+		};
+		friend inline constexpr bool operator<(nullptr_t lhs, const borrow_ptr& rhs) noexcept
+		{
+			return lhs < rhs.get();
+		};
+		friend inline constexpr bool operator<=(const borrow_ptr& lhs, nullptr_t rhs) noexcept
+		{
+			return lhs.get() <= rhs;
+		};
+		friend inline constexpr bool operator<=(nullptr_t lhs, const borrow_ptr& rhs) noexcept
+		{
+			return lhs <= rhs.get();
+		};
+		*/
 
 
 		/**
