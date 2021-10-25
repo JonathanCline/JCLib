@@ -166,7 +166,7 @@ namespace jc
 
 #if	JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T>
-	constexpr inline bool is_nullable_v = is_nullable_v<T>::value;
+	constexpr inline bool is_nullable_v = is_nullable<T>::value;
 #endif
 
 #if	JCLIB_FEATURE_CONCEPTS_V
