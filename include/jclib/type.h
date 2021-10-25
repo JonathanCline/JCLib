@@ -103,6 +103,134 @@ namespace jc
 	template <typename T>
 	using raft_type_t = typename raft_type<T>::type;
 
+
+
+
+
+	template <typename T>
+	struct null_ftor;
+
+	template <typename T>
+	struct null_ftor<T*>
+	{
+		constexpr static T* make_null() noexcept
+		{
+			return nullptr;
+		};
+		constexpr static bool is_null(T* const& _value) noexcept
+		{
+			return _value == nullptr;
+		};
+	};
+
+
+
+
+
+
+	template <typename T, typename Enable = void>
+	struct is_null_comparable : jc::false_type
+	{};
+
+	template <typename T>
+	struct is_null_comparable <T, 
+		jc::enable_if_t<jc::is_same<decltype(null_ftor<T>::is_null(std::declval<const T&>())), bool>::value>
+	> : jc::true_type
+	{};
+
+#if	JCLIB_FEATURE_INLINE_VARIABLES_V
+	template <typename T>
+	constexpr inline bool is_null_comparable_v = is_null_comparable<T>::value;
+#endif
+
+#if	JCLIB_FEATURE_CONCEPTS_V
+	template <typename T>
+	concept cx_null_comparable = is_null_comparable_v<T>;
+#endif
+
+
+
+	template <typename T, typename Enable = void>
+	struct is_nullable : jc::false_type
+	{};
+
+	template <typename T>
+	struct is_nullable<T,
+		jc::enable_if_t
+		<
+			jc::is_constructible<T, decltype(null_ftor<T>::make_null())>::value &&
+			is_null_comparable<T>::value
+		>
+	> : jc::true_type
+	{};
+
+#if	JCLIB_FEATURE_INLINE_VARIABLES_V
+	template <typename T>
+	constexpr inline bool is_nullable_v = is_nullable_v<T>::value;
+#endif
+
+#if	JCLIB_FEATURE_CONCEPTS_V
+	template <typename T>
+	concept cx_nullable = is_nullable_v<T>;
+#endif
+
+	struct null_t
+	{
+		template <typename T>
+		constexpr friend inline auto operator==(const T& lhs, null_t) noexcept ->
+			decltype(null_ftor<T>::is_null(lhs))
+		{
+			return null_ftor<T>::is_null(lhs);
+		};
+		template <typename T>
+		constexpr friend inline auto operator==(null_t, const T& rhs) noexcept ->
+			decltype(null_ftor<T>::is_null(rhs))
+		{
+			return null_ftor<T>::is_null(rhs);
+		};
+
+		template <typename T>
+		constexpr friend inline auto operator!=(const T& lhs, null_t) noexcept ->
+			decltype(!null_ftor<T>::is_null(lhs))
+		{
+			return !null_ftor<T>::is_null(lhs);
+		};
+		template <typename T>
+		constexpr friend inline auto operator!=(null_t, const T& rhs) noexcept ->
+			decltype(!null_ftor<T>::is_null(rhs))
+		{
+			return !null_ftor<T>::is_null(rhs);
+		};
+		
+		template <typename T, typename Enable = jc::enable_if_t<is_nullable<T>::value>>
+		constexpr operator T() const
+		{
+			return null_ftor<T>::make_null();
+		};
+
+		constexpr explicit null_t() noexcept = default;
+	};
+
+	constexpr extern null_t null{};
+
 };
+
+namespace jc
+{
+	template <>
+	struct null_ftor<std::nullptr_t>
+	{
+		constexpr static auto make_null() noexcept
+		{
+			return nullptr;
+		};
+		constexpr static bool is_null(std::nullptr_t) noexcept
+		{
+			return true;
+		};
+	};
+};
+
+
 
 #endif
