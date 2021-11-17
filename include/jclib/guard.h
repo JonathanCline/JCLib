@@ -39,8 +39,6 @@ namespace jc
 		dead = false
 	};
 
-#if true
-
 	namespace impl
 	{
 		/**
@@ -272,12 +270,19 @@ namespace jc
 		// Guard state impl type
 		using base_state = impl::guard_base_state<GuardedT>;
 
-	public:
-
+	protected:
+		
 		/**
 		 * @brief Guard guarded type
 		*/
 		using guarded_type = GuardedT;
+
+
+		// Expose guarded object accessor
+
+		using base_guarded::get_guarded;
+
+	public:
 
 		/**
 		 * @brief Checks if the guard is still alive
@@ -352,7 +357,7 @@ namespace jc
 		 * @brief Copy constructs the guarded from a given object and puts the guard into the held state
 		 * @brief _guarded Guarded object
 		*/
-		constexpr guard(GuardedT _guarded = GuardedT{}) noexcept :
+		constexpr explicit guard(GuardedT _guarded = GuardedT{}) noexcept :
 			guard{  guard_state::alive, std::move(_guarded) }
 		{};
 
@@ -361,7 +366,7 @@ namespace jc
 
 
 		constexpr guard(const guard& _other) = delete;
-		constexpr guard& operator=(const guard& _other) noexcept;
+		constexpr guard& operator=(const guard& _other) noexcept = default;
 
 		constexpr guard(guard&& _other) noexcept :
 			guard{ _other.get_guard_state(_other.get_guarded()), std::move(_other.get_guarded()) }
@@ -387,127 +392,6 @@ namespace jc
 
 	};
 
-
-
-#else
-
-	template <typename ReleaserT>
-	class guard
-	{
-	public:
-
-		/**
-		 * @brief Checks if the guard is still active / alive
-		 * @return True if alive, false otherwise
-		*/
-		constexpr bool held() const noexcept
-		{
-			return this->state_ == guard_state::alive;
-		};
-
-
-
-		/**
-		 * @brief Invokes the release function and sets the held state to null
-		 * @return
-		*/
-		constexpr void release()
-		{
-
-		};
-
-
-
-
-	protected:
-
-		constexpr explicit guard(guard_state _state) :
-			alive_{ _state }
-		{};
-
-	private:
-		guard_state state_;
-	};
-
-
-
-
-
-
-
-	template <typename OnRelease, typename = void>
-	struct guard;
-
-	template <typename OnRelease>
-	struct guard<OnRelease, enable_if_t<is_invocable<OnRelease>::value>>
-	{
-	private:
-		JCLIB_CONSTEXPR static auto on_release() noexcept { return OnRelease{}; };
-
-	public:
-		using guard_state = jc::guard_state;
-
-		JCLIB_CONSTEXPR bool held() const noexcept
-		{
-			return this->state_ == guard_state::held;
-		};
-		JCLIB_CONSTEXPR explicit operator bool() const noexcept
-		{
-			return this->held();
-		};
-
-		JCLIB_CONSTEXPR guard_state drop() noexcept
-		{
-			const auto _out = this->state_;
-			this->state_ = guard_state::released;
-			return _out;
-		};
-		JCLIB_CONSTEXPR void release() noexcept(noexcept(std::declval<OnRelease>()()))
-		{
-			if (this->held())
-			{
-				jc::invoke(this->on_release());
-				this->state_ = guard_state::released;
-			};
-		};
-
-		JCLIB_CONSTEXPR guard() noexcept = default;
-		
-		JCLIB_CONSTEXPR guard(const guard&) = delete;
-		JCLIB_CONSTEXPR guard& operator=(const guard&) = delete;
-
-		JCLIB_CONSTEXPR guard(guard&& other) noexcept :
-			state_{ other.drop() }
-		{};
-		JCLIB_CONSTEXPR guard& operator=(guard&& other) noexcept
-		{
-			this->release();
-			this->state_ = other.drop();
-			return *this;
-		};
-
-		~guard()
-		{
-			this->release();
-		};
-
-	private:
-		guard_state state_ = guard_state::held;
-	};
-
-	namespace impl
-	{
-		template <void(*OnRelease)()>
-		struct guard_fwrap
-		{
-			JCLIB_CONSTEXPR void operator()() const noexcept
-			{
-				return OnRelease();
-			};
-		};
-	};
-
-#endif
 
 	namespace impl
 	{
