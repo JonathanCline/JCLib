@@ -31,6 +31,9 @@
 */
 
 #define JCLIB_FEATURE_VALUE_INLINE_VARIABLES 201606L
+#if defined(__cpp_inline_variables)
+    #error "Feature testing value mismatch"
+#endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_INLINE_VARIABLES || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_INLINE_VARIABLES
     #define JCLIB_FEATURE_INLINE_VARIABLES
 #else
@@ -51,6 +54,9 @@
 */
 
 #define JCLIB_FEATURE_VALUE_CONCEPTS 201907L
+#if defined(__cpp_concepts)
+    #error "Feature testing value mismatch"
+#endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONCEPTS || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_CONCEPTS
     #define JCLIB_FEATURE_CONCEPTS
 #else
@@ -71,6 +77,9 @@
 */
 
 #define JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC 201907L
+#if defined(__cpp_lib_constexpr_dynamic_alloc)
+    #error "Feature testing value mismatch"
+#endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC
     #define JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
 #else
@@ -91,6 +100,9 @@
 */
 
 #define JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON 201907L
+#if defined(__cpp_lib_three_way_comparison)
+    #error "Feature testing value mismatch"
+#endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON
     #define JCLIB_FEATURE_THREE_WAY_COMPARISON
 #else
@@ -111,6 +123,9 @@
 */
 
 #define JCLIB_FEATURE_VALUE_CONSTEVAL 201811L
+#if defined(__cpp_conteval)
+    #error "Feature testing value mismatch"
+#endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEVAL || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_CONSTEVAL
     #define JCLIB_FEATURE_CONSTEVAL
 #else
@@ -131,6 +146,9 @@
 */
 
 #define JCLIB_FEATURE_VALUE_IF_CONSTEXPR 201606L
+#if defined(__cpp_if_constexpr)
+    #error "Feature testing value mismatch"
+#endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_IF_CONSTEXPR || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_IF_CONSTEXPR
     #define JCLIB_FEATURE_IF_CONSTEXPR
 #else
@@ -151,6 +169,9 @@
 */
 
 #define JCLIB_FEATURE_VALUE_CPP_CONSTEXPR_ALGORITHMS 201806L
+#if defined(__cpp_lib_constexpr_algorithms)
+    #error "Feature testing value mismatch"
+#endif
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CPP_CONSTEXPR_ALGORITHMS || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_CPP_CONSTEXPR_ALGORITHMS
     #define JCLIB_FEATURE_CPP_CONSTEXPR_ALGORITHMS
 #else
