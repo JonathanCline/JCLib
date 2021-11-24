@@ -12,9 +12,6 @@ local function make_feature_test_code(_name, _macro, _value)
 */
 
 #define {4} {3}
-#if defined({2})
-    #error "Feature testing value mismatch"
-#endif
 #if JCLIB_CPP >= {4} || __cpp_lib_constexpr_algorithms >= {4}
     #define {5}
 #else
