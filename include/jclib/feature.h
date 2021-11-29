@@ -205,5 +205,85 @@
     #define JCLIB_FEATURE_CPP_SPAN_V false
 #endif
 
+
+/*
+    Test for __cpp_noexcept_function_type
+*/
+
+#define JCLIB_FEATURE_VALUE_NOEXCEPT_FUNCTION_TYPE 201510L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_NOEXCEPT_FUNCTION_TYPE || __cpp_noexcept_function_type >= JCLIB_FEATURE_VALUE_NOEXCEPT_FUNCTION_TYPE
+    #define JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE
+#else
+    #ifdef JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE
+    #define JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE_V true
+#else
+    #define JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE_V false
+#endif
+
+
+/*
+    Test for __cpp_char8_t
+*/
+
+#define JCLIB_FEATURE_VALUE_CHAR8 201811L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CHAR8 || __cpp_char8_t >= JCLIB_FEATURE_VALUE_CHAR8
+    #define JCLIB_FEATURE_CHAR8
+#else
+    #ifdef JCLIB_FEATURE_CHAR8
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_CHAR8
+    #define JCLIB_FEATURE_CHAR8_V true
+#else
+    #define JCLIB_FEATURE_CHAR8_V false
+#endif
+
+
+/*
+    Test for __cpp_fold_expressions
+*/
+
+#define JCLIB_FEATURE_VALUE_FOLD_EXPRESSIONS 201603L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_FOLD_EXPRESSIONS || __cpp_fold_expressions >= JCLIB_FEATURE_VALUE_FOLD_EXPRESSIONS
+    #define JCLIB_FEATURE_FOLD_EXPRESSIONS
+#else
+    #ifdef JCLIB_FEATURE_FOLD_EXPRESSIONS
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_FOLD_EXPRESSIONS
+    #define JCLIB_FEATURE_FOLD_EXPRESSIONS_V true
+#else
+    #define JCLIB_FEATURE_FOLD_EXPRESSIONS_V false
+#endif
+
+
+/*
+    Test for __cpp_lib_bool_constant
+*/
+
+#define JCLIB_FEATURE_VALUE_BOOL_CONSTANT 201505L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_BOOL_CONSTANT || __cpp_lib_bool_constant >= JCLIB_FEATURE_VALUE_BOOL_CONSTANT
+    #define JCLIB_FEATURE_BOOL_CONSTANT
+#else
+    #ifdef JCLIB_FEATURE_BOOL_CONSTANT
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_BOOL_CONSTANT
+    #define JCLIB_FEATURE_BOOL_CONSTANT_V true
+#else
+    #define JCLIB_FEATURE_BOOL_CONSTANT_V false
+#endif
+
     
 #endif
