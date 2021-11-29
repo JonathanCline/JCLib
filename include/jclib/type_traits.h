@@ -1045,6 +1045,23 @@ namespace jc
 	{
 		return static_cast<std::underlying_type_t<EnumT>>(_val);
 	};
+
+	// C++11 has_virtual_destructor type trait
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::has_virtual_destructor);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_polymorphic);
+
+	template <typename BaseT, typename DerivedT, typename Enable = void>
+	struct is_polymorphic_base_of : jc::false_type {};
+	template <typename BaseT, typename DerivedT>
+	struct is_polymorphic_base_of<BaseT, DerivedT, jc::enable_if_t<
+		is_base_of<BaseT, DerivedT>::value&& is_convertible<DerivedT*, BaseT*>::value
+		>> : jc::true_type {};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	template <typename BaseT, typename DerivedT>
+	constexpr inline auto is_polymorphic_base_of_v = is_polymorphic_base_of<BaseT, DerivedT>::value;
+#endif
+
 };
 
 #endif

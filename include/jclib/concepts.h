@@ -22,9 +22,9 @@
 
 #include "jclib/config.h"
 #include "jclib/feature.h"
+#include "jclib/type_traits.h"
 
 #ifdef JCLIB_FEATURE_CONCEPTS
-#include "jclib/type_traits.h"
 
 #define _JCLIB_CONCEPTS_
 
@@ -47,7 +47,7 @@ namespace jc
 	*/
 
 	template< class T, class U >
-	concept cx_same_as = is_same_v<T, U>;
+	concept cx_same_as = is_same_v<T, U> && is_same_v<U, T>;
 
 	template <class From, class To>
 	concept cx_convertible_to = is_convertible_v<From, To>;
@@ -209,6 +209,23 @@ namespace jc
 		{ *_iter } -> std::convertible_to<U>;
 	};
 
+
+
+
+	template <typename T>
+	concept cx_has_virtual_destructor = has_virtual_destructor_v<T>;
+
+	template <typename T>
+	concept cx_polymorphic = is_polymorphic_v<T>;
+
+	template <typename DerivedT, typename BaseT>
+	concept cx_derived_from = is_base_of_v<BaseT, DerivedT>;
+
+	template <typename BaseT, typename DerivedT>
+	concept cx_base_of = is_base_of_v<BaseT, DerivedT>;
+	
+	template <typename DerivedT, typename BaseT>
+	concept cx_polymorphic_derived_from = is_polymorphic_base_of_v<BaseT, DerivedT>;
 };
 
 #endif
