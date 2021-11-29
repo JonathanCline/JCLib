@@ -7,6 +7,9 @@
 --    }
 --
 
+-- See :
+-- https://en.cppreference.com/w/User:D41D8CD98F/feature_testing_macros
+
 new(
     "INLINE_VARIABLES",
     "__cpp_inline_variables",
@@ -38,7 +41,17 @@ new(
     "201606L"
 )
 new(
+    "IF_CONSTEVAL",
+    "__cpp_if_consteval",
+    "202106L"
+)
+new(
     "CPP_CONSTEXPR_ALGORITHMS",
     "__cpp_lib_constexpr_algorithms",
     "201806L"
+)
+new(
+    "CPP_SPAN",
+    "__cpp_lib_span",
+    "202002L"
 )
