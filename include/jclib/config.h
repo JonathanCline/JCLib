@@ -236,6 +236,18 @@ namespace jc
 	#define JCLIB_RET_SFINAE_CXSWITCH(retType, ...) ::jc::enable_if_t<__VA_ARGS__, retType>
 #endif
 
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	// Adds a "using" directive to the current scope aliasing a value type trait. This will alias
+	// both the basic "typetrait_name" and the "typetrait_name_v" versions depending on if
+	// __cpp_inline_variables is marked as available.
+	#define JCLIB_USING_VALUE_TYPE_TRAIT(typetrait_name) using typetrait_name ; using typetrait_name##_v
+#else
+	// Adds a "using" directive to the current scope aliasing a value type trait. This will alias
+	// both the basic "typetrait_name" and the "typetrait_name_v" versions depending on if
+	// __cpp_inline_variables is marked as available.
+	#define JCLIB_USING_VALUE_TYPE_TRAIT(typetrait_name) using typetrait_name
+#endif
+
 namespace jc
 {
 	/**
