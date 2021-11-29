@@ -55,3 +55,23 @@ new(
     "__cpp_lib_span",
     "202002L"
 )
+new(
+    "NOEXCEPT_FUNCTION_TYPE",
+    "__cpp_noexcept_function_type",
+    "201510L"
+)
+new(
+    "CHAR8",
+    "__cpp_char8_t",
+    "201811L"
+)
+new(
+    "FOLD_EXPRESSIONS",
+    "__cpp_fold_expressions",
+    "201603L"
+)
+new(
+    "BOOL_CONSTANT",
+    "__cpp_lib_bool_constant",
+    "201505L"
+)
