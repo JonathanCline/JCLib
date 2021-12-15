@@ -204,6 +204,18 @@ namespace jc
 #endif
 
 
+// Define the noexcept helper only used if exceptions are enabled
+
+#if JCLIB_EXCEPTIONS_V
+	// Same as noexcept( cond ) but only evaluates the condition if jclib has exceptions enabled
+	#define JCLIB_NOEXCEPT_IF(cond) noexcept( cond )
+#else
+	// Same as noexcept( cond ) but only evaluates the condition if jclib has exceptions enabled
+	#define JCLIB_NOEXECPT_IF(cond) noexcept(true)
+#endif
+
+// Same as noexcept(false) if jclib has exceptions enabled, otherwise is just regular noexcept
+#define JCLIB_NOEXCEPT JCLIB_NOEXCEPT_IF(false)
 
 
 
