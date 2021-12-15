@@ -137,7 +137,9 @@ namespace jc
 
 		protected:
 
-			/* Union member access without run time checking */
+			/*
+				Union member access without run time checking
+			*/
 
 			constexpr value_type& unsafe_value() noexcept
 			{
@@ -196,16 +198,58 @@ namespace jc
 			};
 
 		public:
+
+			/**
+			 * @brief Checks if the value_type is the active member.
+			 * 
+			 * @return True if value_type is the active member, false otherwise.
+			*/
 			constexpr bool has_value() const noexcept
 			{
 				return this->has_value_;
 			};
+
+			/**
+			 * @brief Checks if the value_type is the active member.
+			 * 
+			 * Same as calling maybe::has_value().
+			 * 
+			 * @return True if value_type is the active member, false otherwise.
+			*/
 			constexpr explicit operator bool() const noexcept
 			{
 				return this->has_value();
 			};
 
-			constexpr value_type& value(nothrow_t) noexcept
+			/**
+			 * @brief Gets the held value, moving it out.
+			 * 
+			 * This is only called when invoking value() on a temporary.
+			 * Does not throw exceptions.
+			 * 
+			 * @param _nt No throw tag type.
+			 * 
+			 * @return Held value by move.
+			*/
+			constexpr value_type value(nothrow_t _nt) && noexcept
+			{
+				if (!this->has_value())
+				{
+					JCLIB_ABORT();
+				};
+				return std::move(this->unsafe_value());
+			};
+			
+			/**
+			 * @brief Gets a reference to the held value.
+			 * 
+			 * Does not throw exceptions.
+			 * 
+			 * @param _nt No throw tag type.
+			 * 
+			 * @return Reference to the held value.
+			*/
+			constexpr reference value(nothrow_t) & noexcept
 			{
 				if (!this->has_value())
 				{
@@ -213,7 +257,17 @@ namespace jc
 				};
 				return this->unsafe_value();
 			};
-			constexpr const value_type& value(nothrow_t) const noexcept
+					
+			/**
+			 * @brief Gets a reference to the held value.
+			 * 
+			 * Does not throw exceptions.
+			 * 
+			 * @param _nt No throw tag type.
+			 * 
+			 * @return Reference to the held value.
+			*/
+			constexpr const_reference value(nothrow_t) const & noexcept
 			{
 				if (!this->has_value())
 				{
@@ -222,29 +276,169 @@ namespace jc
 				return this->unsafe_value();
 			};
 
-			constexpr value_type& value() noexcept(!JCLIB_EXCEPTIONS_V)
+			/**
+			 * @brief Gets the held value, moving it out.
+			 *
+			 * This is only called when invoking value() on a temporary.
+			 * This will only throw if jclib's exception usage is enabled. 
+			 *
+			 * @return Held value by move.
+			 * 
+			 * @exception bad_access_exception Thrown if the value type is not the active member.
+			*/
+			constexpr value_type value() && JCLIB_NOEXCEPT
 			{
-#if JCLIB_EXCEPTIONS_V
 				if (!this->has_value())
 				{
-					throw bad_access_exception{ "value is not the active member" };
+					JCLIB_THROW(bad_access_exception("value is not the active member"));
 				};
-				return this->unsafe_value();
-#else
-				return this->value(nothrow);
-#endif
+				return std::move(this->unsafe_value());
 			};
-			constexpr const value_type& value() const noexcept(!JCLIB_EXCEPTIONS_V)
+
+			/**
+			 * @brief Gets a reference to the held value.
+			 *
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * 
+			 * @return Reference to the held value.
+			 * 
+			 * @exception bad_access_exception Thrown if the value type is not the active member.
+			*/
+			constexpr reference value() & JCLIB_NOEXCEPT
 			{
-#if JCLIB_EXCEPTIONS_V
 				if (!this->has_value())
 				{
-					throw bad_access_exception{ "value is not the active member" };
+					JCLIB_THROW(bad_access_exception("value is not the active member"));
 				};
 				return this->unsafe_value();
-#else
-				return this->value(nothrow);
-#endif
+			};
+
+			/**
+			 * @brief Gets a reference to the held value.
+			 *
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * 
+			 * @return Reference to the held value.
+			 * 
+			 * @exception bad_access_exception Thrown if the value type is not the active member.
+			*/
+			constexpr const_reference value() const & JCLIB_NOEXCEPT
+			{
+				if (!this->has_value())
+				{
+					JCLIB_THROW(bad_access_exception("value is not the active member"));
+				};
+				return this->unsafe_value();
+			};
+
+			/**
+			 * @brief Gets the held alternate value, moving it out.
+			 * 
+			 * This is only called when invoking alternate() on a temporary.
+			 * Does not throw exceptions.
+			 * 
+			 * @param _nt No throw tag type.
+			 * 
+			 * @return Held alternate value by move.
+			*/
+			constexpr alternate_type alternate(nothrow_t) && noexcept
+			{
+				if (this->has_value())
+				{
+					JCLIB_ABORT();
+				};
+				return std::move(this->unsafe_alternate());
+			};
+
+			/**
+			 * @brief Gets a reference to the held alternate value.
+			 * 
+			 * Does not throw exceptions.
+			 * 
+			 * @param _nt No throw tag type.
+			 * 
+			 * @return Reference to the held alternate value.
+			*/
+			constexpr alternate_type& alternate(nothrow_t) & noexcept
+			{
+				if (this->has_value())
+				{
+					JCLIB_ABORT();
+				};
+				return this->unsafe_alternate();
+			};
+
+			/**
+			 * @brief Gets a reference to the held alternate value.
+			 * 
+			 * Does not throw exceptions.
+			 * 
+			 * @param _nt No throw tag type.
+			 * 
+			 * @return Reference to the held alternate value.
+			*/
+			constexpr const alternate_type& alternate(nothrow_t) const & noexcept
+			{
+				if (this->has_value())
+				{
+					JCLIB_ABORT();
+				};
+				return this->unsafe_alternate();
+			};
+
+			/**
+			 * @brief Gets the held alternate value, moving it out.
+			 *
+			 * This is only called when invoking alternate() on a temporary.
+			 * This will only throw if jclib's exception usage is enabled. 
+			 *
+			 * @return Held alternate value by move.
+			 * 
+			 * @exception bad_access_exception Thrown if the alternate type is not the active member.
+			*/
+			constexpr alternate_type alternate() && JCLIB_NOEXCEPT
+			{
+				if (this->has_value())
+				{
+					JCLIB_THROW(bad_access_exception("alternate is not the active member"));
+				};
+				return std::move(this->unsafe_alternate());			
+			};
+
+			/**
+			 * @brief Gets a reference to the held alternate value.
+			 *
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * 
+			 * @return Reference to the held alternate value.
+			 * 
+			 * @exception bad_access_exception Thrown if the alternate type is not the active member.
+			*/
+			constexpr alternate_type& alternate() & JCLIB_NOEXCEPT
+			{
+				if (this->has_value())
+				{
+					JCLIB_THROW(bad_access_exception("alternate is not the active member"));
+				};
+				return this->unsafe_alternate();
+			};
+			
+			/**
+			 * @brief Gets a reference to the held alternate value.
+			 *
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * 
+			 * @return Reference to the held alternate value.
+			 * 
+			 * @exception bad_access_exception Thrown if the alternate type is not the active member.
+			*/
+			constexpr const alternate_type& alternate() const & JCLIB_NOEXCEPT
+			{
+				if (this->has_value())
+				{
+					JCLIB_THROW(bad_access_exception("alternate is not the active member"));
+				};
+				return this->unsafe_alternate();
 			};
 
 		protected:
@@ -303,65 +497,84 @@ namespace jc
 
 		public:
 		
-			constexpr value_type& operator*() noexcept(!JCLIB_EXCEPTIONS_V)
+			/**
+			 * @brief Gets the held value, moving it out.
+			 *
+			 * This is only called when invoking value() on a temporary.
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * Same as maybe::value().
+			 *
+			 * @return Held value by move.
+			 * 
+			 * @exception bad_access_exception Thrown if the value type is not the active member.
+			*/
+			constexpr value_type operator*() && JCLIB_NOEXCEPT
+			{
+				return static_cast<maybe_base&&>(*this).value();
+			};
+
+			/**
+			 * @brief Gets a reference to the held value.
+			 *
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * Same as maybe::value().
+			 *
+			 * @return Reference to the held value.
+			 * 
+			 * @exception bad_access_exception Thrown if the value type is not the active member.
+			*/
+			constexpr reference operator*() & JCLIB_NOEXCEPT
 			{
 				return this->value();
 			};
-			constexpr const value_type& operator*() const noexcept(!JCLIB_EXCEPTIONS_V)
+
+			/**
+			 * @brief Gets a reference to the held value.
+			 *
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * Same as maybe::value().
+			 *
+			 * @return Reference to the held value.
+			 * 
+			 * @exception bad_access_exception Thrown if the value type is not the active member.
+			*/
+			constexpr const_reference operator*() const & JCLIB_NOEXCEPT
 			{
 				return this->value();
 			};
-
-			constexpr value_type* operator->() noexcept(!JCLIB_EXCEPTIONS_V)
+			
+			/**
+			 * @brief Gets a pointer to the held value.
+			 *
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * Same as "&maybe::value()".
+			 *
+			 * @return Pointer to the held value.
+			 * 
+			 * @exception bad_access_exception Thrown if the value type is not the active member.
+			*/
+			constexpr pointer operator->() JCLIB_NOEXCEPT
 			{
 				return &this->value();
 			};
-			constexpr const value_type* operator->() const noexcept(!JCLIB_EXCEPTIONS_V)
+						
+			/**
+			 * @brief Gets a pointer to the held value.
+			 *
+			 * This will only throw if jclib's exception usage is enabled. 
+			 * Same as "&maybe::value()".
+			 *
+			 * @return Pointer to the held value.
+			 * 
+			 * @exception bad_access_exception Thrown if the value type is not the active member.
+			*/
+			constexpr const_pointer operator->() const JCLIB_NOEXCEPT
 			{
 				return &this->value();
 			};
 
-			constexpr alternate_type& alternate(nothrow_t) noexcept
-			{
-				if (this->has_value())
-				{
-					JCLIB_ABORT();
-				};
-				return this->unsafe_alternate();
-			};
-			constexpr const alternate_type& alternate(nothrow_t) const noexcept
-			{
-				if (this->has_value())
-				{
-					JCLIB_ABORT();
-				};
-				return this->unsafe_alternate();
-			};
 
-			constexpr alternate_type& alternate() noexcept(!JCLIB_EXCEPTIONS_V)
-			{
-#if JCLIB_EXCEPTIONS_V
-				if (this->has_value())
-				{
-					throw bad_access_exception{ "alternate is not the active member" };
-				};
-				return this->unsafe_alternate();
-#else
-				return this->alternate(nothrow);
-#endif
-			};
-			constexpr const alternate_type& alternate() const noexcept(!JCLIB_EXCEPTIONS_V)
-			{
-#if JCLIB_EXCEPTIONS_V
-				if (this->has_value())
-				{
-					throw bad_access_exception{ "alternate is not the active member" };
-				};
-				return this->unsafe_alternate();
-#else
-				return this->alternate(nothrow);
-#endif
-			};
+
 
 			constexpr maybe_base() = default;
 
