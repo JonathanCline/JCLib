@@ -59,8 +59,7 @@ endfunction()
 macro(JCLIB_ADD_TEST testName testSource)
 
 	# Make file path absolute
-	set(__jclibaddtest_realpath )
-	file(REAL_PATH ${testSource} __jclibaddtest_realpath)
+	set(__jclibaddtest_realpath ${testSource})
 
 	# Invoke function
 	JCLIB_ADD_TEST_FN(${testName} ${__jclibaddtest_realpath})

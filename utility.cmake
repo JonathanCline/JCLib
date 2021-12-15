@@ -1,86 +1,6 @@
-# Enables ADD_GIT_DEPENDENCY functionality
-option(ENABLE_GIT_DEPENDENCIES "Enables automatic cloning of dependencies that do not already exit" OFF)
-
-
-find_package(Git QUIET)
-
-
-
-
 #
-#	Adds a new dependency and automatically clones it if the target does not already exist.
+#	Common utility cmake functions and macros 
 #
-#	@param depPath Where to clone the repo into, must be an absolute path!
-#	@param depTarget Name of the target, this is used to check if the dependency already exists
-#	@param depRepo Path or URL to clone the repo from
-#	@param branchName? Name of the branch to clone, defaults to HEAD
-#
-function(ADD_GIT_DEPENDENCY_FN depPath depTarget depRepo)
-
-	# Ignore if target already exists
-	if (NOT TARGET ${depTarget})
-	 
-		# Only preform branch if git dependencies are allowed
-		if (ENABLE_GIT_DEPENDENCIES)
-		
-			set(gitResult )
-
-			# Use branch optional parameter if it was provided
-			if (ARGC GREATER 3)
-				execute_process(COMMAND
-					${GIT_EXECUTABLE} clone -b "${ARGV3}" ${depRepo} ${depPath}
-					RESULTS_VARIABLE gitResult
-					COMMAND_ERROR_IS_FATAL ANY)
-			else()
-				execute_process(COMMAND
-					${GIT_EXECUTABLE} clone ${depRepo} ${depPath}
-					RESULTS_VARIABLE gitResult
-					COMMAND_ERROR_IS_FATAL ANY)
-			endif()
-
-			# Check result
-			
-
-			# Add the cloned repo as a subdir if it has CMake support
-			if (EXISTS "${depPath}/CMakeLists.txt")
-				add_subdirectory("${depPath}")
-			
-				# Check that dependency target is now defined
-				if (NOT TARGET ${depTarget})
-					message(FATAL "Cloned dependency has a CMakeLists but the dependency target was not defined!")
-				endif()
-				
-			endif()
-
-		endif()
-
-	endif()
-endfunction()
-
-#
-#	Adds a new dependency and automatically clones it if the target does not already exist.
-#
-#	@param depPath Relative path to clone the repo into
-#	@param depTarget Name of the target, this is used to check if the dependency already exists
-#	@param depRepo Path or URL to clone the repo from
-#	@param branchName? Name of the branch to clone, defaults to HEAD
-#
-macro(ADD_GIT_DEPENDENCY depPath depTarget depRepo)
-
-	# Make file path absolute
-	set(__addgitdepedency_realpath )
-	file(REAL_PATH ${depPath} __addgitdepedency_realpath)
-	
-	# Determine invocation syntax
-	if (${ARGC} GREATER 3)
-		# Invoke with branchName parameter
-		ADD_GIT_DEPENDENCY_FN(${__addgitdepedency_realpath} ${depTarget} ${depRepo} ${ARGV3})
-	else()
-		# Invoke without branchName parameter
-		ADD_GIT_DEPENDENCY_FN(${__addgitdepedency_realpath} ${depTarget} ${depRepo})
-	endif()
-endmacro()
-
 
 #
 #	Adds a list of sources to a target, sourceList should be a list variable
@@ -108,10 +28,6 @@ macro(SUBDIRLIST result curdir)
 	set(${result} ${dirlist})
 endmacro()
 
-
-
-
-
 #
 #	Returns the child paths of a given directory
 #
@@ -121,8 +37,7 @@ endmacro()
 macro(GET_DIRECTORY_CONTENTS out_Result in_DirectoryPath)
 
 	# The evaluated absolute file path
-	set(__get_directory_contents_Path )
-	file(REAL_PATH ${in_DirectoryPath} __get_directory_contents_Path)
+	set(__get_directory_contents_Path ${in_DirectoryPath})
 
 	# Holds all child paths
 	set(__get_directory_contents_Children )
