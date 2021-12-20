@@ -421,6 +421,90 @@ namespace jc
 };
 
 
+/*
+	Range categorization.
+*/
+
+namespace jc
+{
+	namespace ranges
+	{
+		/**
+		 * @brief Type trait checks if a type is a contiguous range.
+		 * @tparam T Type to check.
+		 * @tparam Enable SFINAE specialization point.
+		*/
+		template <typename T, typename Enable = void>
+		struct is_contiguous_range : jc::false_type {};
+
+#if JCLIB_FEATURE_CONCEPTS_V
+		/**
+		 * @brief Concept defining a contiguous range.
+		*/
+		template <typename T>
+		concept contiguous_range = range<T> && requires(iterator_t<T> i)
+		{
+			i += 2;
+			i - i;
+		};
+
+		/**
+		 * @brief Type trait checks if a type is a contiguous range.
+		 * @tparam T Type to check.
+		 * @tparam Enable SFINAE specialization point.
+		*/
+		template <contiguous_range T>
+		struct is_contiguous_range<T> : jc::true_type {};
+#else
+
+		namespace range_impl
+		{
+			/// TODO: Add this type of function to the type_traits or iterator header.
+			template <typename T, typename Enable = void>
+			struct is_random_iterator : jc::false_type {};
+
+			// Extremely basic random iterator type trait
+			template <typename T>
+			struct is_random_iterator<T, jc::void_t<
+				decltype(std::declval<T>() += 2),
+				decltype(std::declval<T>() - std::declval<T>())
+			>> : jc::true_type {};
+		};
+
+		/**
+		 * @brief Type trait checks if a type is a contiguous range.
+		 * @tparam T Type to check.
+		*/
+		template <typename T>
+		struct is_contiguous_range<T, jc::enable_if_t<
+			is_range<T>::value && range_impl::is_random_iterator<iterator_t<T>>::value
+		>> : jc::true_type {};
+#endif
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+		/**
+		 * @brief Type trait checks if a type is a contiguous range.
+		 * @tparam T Type to check.
+		*/
+		template <typename T>
+		constexpr inline bool is_contiguous_range_v = is_contiguous_range<T>::value;
+#endif
+
+	};
+
+	// Add contigous range type traits to jc namespace
+
+	using ranges::is_contiguous_range;
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	using ranges::is_contiguous_range_v;
+#endif
+#if JCLIB_FEATURE_CONCEPTS_V
+	template <typename T>
+	concept cx_contiguous_range = ranges::contiguous_range<T>;
+#endif
+
+};
+
 
 /*
 	Core functions

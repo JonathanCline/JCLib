@@ -290,7 +290,7 @@
     Test for __cpp_lib_optional
 */
 
-#define JCLIB_FEATURE_VALUE_OPTIONAL 201606
+#define JCLIB_FEATURE_VALUE_OPTIONAL 201606L
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_OPTIONAL || __cpp_lib_optional >= JCLIB_FEATURE_VALUE_OPTIONAL
     #define JCLIB_FEATURE_OPTIONAL
 #else
@@ -303,6 +303,46 @@
     #define JCLIB_FEATURE_OPTIONAL_V true
 #else
     #define JCLIB_FEATURE_OPTIONAL_V false
+#endif
+
+
+/*
+    Test for __cpp_lib_span
+*/
+
+#define JCLIB_FEATURE_VALUE_SPAN 202002L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_SPAN || __cpp_lib_span >= JCLIB_FEATURE_VALUE_SPAN
+    #define JCLIB_FEATURE_SPAN
+#else
+    #ifdef JCLIB_FEATURE_SPAN
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_SPAN
+    #define JCLIB_FEATURE_SPAN_V true
+#else
+    #define JCLIB_FEATURE_SPAN_V false
+#endif
+
+
+/*
+    Test for __cpp_lib_byte
+*/
+
+#define JCLIB_FEATURE_VALUE_BYTE 201603L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_BYTE || __cpp_lib_byte >= JCLIB_FEATURE_VALUE_BYTE
+    #define JCLIB_FEATURE_BYTE
+#else
+    #ifdef JCLIB_FEATURE_BYTE
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_BYTE
+    #define JCLIB_FEATURE_BYTE_V true
+#else
+    #define JCLIB_FEATURE_BYTE_V false
 #endif
 
     
