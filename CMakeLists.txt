@@ -20,7 +20,7 @@ option(JCLIB_NO_EXCEPTIONS "Uses the nothrow versions by default for functions t
 #	jclib project declaration
 #
 project(jclib
-	VERSION 0.2.0
+	VERSION 0.3.0
 	DESCRIPTION "A collection of utilities and tools for c++"
 	HOMEPAGE_URL "https://github.com/JonathanCline/JCLib"
 	LANGUAGES CXX)
