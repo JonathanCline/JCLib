@@ -42,83 +42,237 @@ namespace jc
 
 	namespace impl
 	{
-		template <typename MaybeT>
-		struct maybe_part
+		/**
+		 * @brief The core union type for jc::maybe
+		 * @tparam ValueT Primary type.
+		 * @tparam AlternateT Alternate type.
+		 * @tparam Enable SFINAE specialization point.
+		*/
+		template <typename ValueT, typename AlternateT, typename Enable = void>
+		union maybe_union
 		{
-		public:
-			~maybe_part() = default;
-		protected:
-			constexpr inline auto* as_crtp() noexcept { return static_cast<MaybeT*>(this); };
-			constexpr inline const auto* as_crtp() const noexcept { return static_cast<const MaybeT*>(this); };
+			/**
+			 * @brief If this type is trivially destructible.
+			*/
+			constexpr static bool trivially_destructible_v = false;
+
+			template <typename _T>
+			constexpr maybe_union(_T&& _val) :
+				val{ std::forward<_T>(_val) }
+			{};
+			
+			template <typename _T>
+			constexpr maybe_union(alternate_t, _T&& _val) :
+				alt{ std::forward<_T>(_val) }
+			{};
+
+			constexpr maybe_union(const maybe_union&) = default;
+			constexpr maybe_union& operator=(const maybe_union&) = default;
+			constexpr maybe_union(maybe_union&&) noexcept = default;
+			constexpr maybe_union& operator=(maybe_union&&) noexcept = default;
+
+			~maybe_union() {};
+
+			ValueT val;
+			AlternateT alt;
+		};
+		
+		/**
+		 * @brief The core union type for jc::maybe
+		 * 
+		 * Trivially destructible specialization.
+		 * 
+		 * @tparam ValueT Primary type.
+		 * @tparam AlternateT Alternate type.
+		*/
+		template <typename ValueT, typename AlternateT>
+		union maybe_union<ValueT, AlternateT, jc::enable_if_t<jc::is_trivially_destructible<ValueT>::value && jc::is_trivially_destructible<AlternateT>::value>>
+		{
+			/**
+			 * @brief If this type is trivially destructible.
+			*/
+			constexpr static bool trivially_destructible_v = true;
+
+			template <typename _T>
+			constexpr maybe_union(_T&& _val) :
+				val{ std::forward<_T>(_val) }
+			{};
+			template <typename _T>
+			constexpr maybe_union(alternate_t, _T&& _val) :
+				alt{ std::forward<_T>(_val) }
+			{};
+
+			constexpr maybe_union(const maybe_union&) = default;
+			constexpr maybe_union& operator=(const maybe_union&) = default;
+			constexpr maybe_union(maybe_union&&) noexcept = default;
+			constexpr maybe_union& operator=(maybe_union&&) noexcept = default;
+
+			~maybe_union() = default;
+
+			ValueT val;
+			AlternateT alt;
 		};
 
-		template <typename MaybeT, typename T, typename AltT>
-		struct maybe_destructor_nontrivial : private maybe_part<MaybeT>
+
+		// TODO : Trivially copyable optimization
+		template <typename V, typename A>
+		constexpr inline maybe_union<V, A> copy_maybe_union(const maybe_union<V, A>& _src, bool _active)
 		{
-		protected:
-			constexpr inline void destroy_value() noexcept
+			if (_active)
 			{
-				jc::destroy_at(this->as_crtp()->unsafe_value());
+				return maybe_union<V, A>{ _src.val };
+			}
+			else
+			{
+				return maybe_union<V, A>{ jc::alternate, _src.alt };
 			};
+		};
 
-			constexpr inline void destroy_alternate() noexcept
+		// TODO : Trivially moveable optimization
+		template <typename V, typename A>
+		constexpr inline maybe_union<V, A> move_maybe_union(maybe_union<V, A>&& _src, bool _active)
+		{
+			if (_active)
 			{
-				jc::destroy_at(this->as_crtp()->unsafe_alternate());
+				return maybe_union<V, A>{ std::move(_src.val) };
+			}
+			else
+			{
+				return maybe_union<V, A>{ jc::alternate, std::move(_src.alt) };
 			};
+		};
 
-			constexpr inline void destroy()
+
+
+
+		/**
+		 * @brief Data type wrapping for jc::maybe.
+		 * @tparam UnionT Maybe union type.
+		 * @tparam Enable SFINAE specialization point.
+		*/
+		template <typename UnionT, typename Enable = void>
+		struct maybe_data
+		{
+		public:
+
+			/**
+			 * @brief Destroys the active union member.
+			*/
+			constexpr void destroy() noexcept
 			{
-				const auto _crtp = this->as_crtp();
-				if (_crtp->has_value())
+				if (this->has_value_)
 				{
-					this->destroy_value();
+					jc::destroy_at(this->union_.val);
 				}
 				else
 				{
-					this->destroy_alternate();
+					jc::destroy_at(this->union_.alt);
 				};
 			};
 
-		public:
-			~maybe_destructor_nontrivial() noexcept
+			template <typename _T>
+			constexpr maybe_data(_T&& _val) :
+				union_{ std::forward<_T>(_val) },
+				has_value_{ true }
+			{};
+			template <typename _T>
+			constexpr maybe_data(alternate_t, _T&& _val) :
+				union_{ jc::alternate, std::forward<_T>(_val) },
+				has_value_{ false }
+			{};
+
+
+			// Copy / Move construction using method indirection
+
+			constexpr maybe_data(const maybe_data& other) :
+				union_{ copy_maybe_union(other.union_, other.has_value_) },
+				has_value_{ other.has_value_ }
+			{};
+			constexpr maybe_data(maybe_data&& other) :
+				union_{ move_maybe_union(std::move(other.union_), other.has_value_) },
+				has_value_{ other.has_value_ }
+			{};
+
+
+			// add destructor as we consider non-trivial by default
+			~maybe_data()
 			{
 				this->destroy();
 			};
+
+			using union_type = UnionT;
+
+			/**
+			 * @brief The union with our members.
+			*/
+			union_type union_;
+
+			/**
+			 * @brief If the primary value type is active.
+			*/
+			bool has_value_;
 		};
 
-		template <typename MaybeT, typename T, typename AltT>
-		struct maybe_destructor_trivial : private maybe_part<MaybeT>
+		/**
+		 * @brief Data type wrapping for jc::maybe.
+		 * 
+		 * Implements trivially destructible.
+		 * 
+		 * @tparam UnionT Maybe union type.
+		*/
+		template <typename UnionT>
+		struct maybe_data<UnionT, jc::enable_if_t<UnionT::trivially_destructible_v>>
 		{
-		protected:
-			constexpr inline void destroy_value() noexcept
-			{
-				
-			};
-			constexpr inline void destroy_alternate() noexcept
-			{
-
-			};
-			constexpr inline void destroy()
-			{
-				
-			};
 		public:
-			~maybe_destructor_trivial() = default;
+
+			/**
+			 * @brief Destroys the active union member.
+			*/
+			constexpr void destroy() noexcept {};
+
+			template <typename _T>
+			constexpr maybe_data(_T&& _val) :
+				union_{ std::forward<_T>(_val) },
+				has_value_{ true }
+			{};
+			template <typename _T>
+			constexpr maybe_data(alternate_t, _T&& _val) :
+				union_{ jc::alternate, std::forward<_T>(_val) },
+				has_value_{ false }
+			{};
+
+			// Copy / Move construction using method indirection
+
+			constexpr maybe_data(const maybe_data& other) :
+				union_{ copy_maybe_union(other.union_, other.has_value_) },
+				has_value_{ other.has_value_ }
+			{};
+			constexpr maybe_data(maybe_data&& other) :
+				union_{ move_maybe_union(std::move(other.union_), other.has_value_) },
+				has_value_{ other.has_value_ }
+			{};
+
+			// Defaulted for triviality
+			~maybe_data() = default;
+
+			using union_type = UnionT;
+
+			/**
+			 * @brief The union with our members.
+			*/
+			union_type union_;
+
+			/**
+			 * @brief If the primary value type is active.
+			*/
+			bool has_value_;
 		};
 
-		template <typename MaybeT, typename T, typename AltT>
-		struct maybe_destructor
-		{
-			using type = std::conditional_t
-				<
-					jc::is_trivially_destructible<T>::value && jc::is_trivially_destructible<AltT>::value,
-					maybe_destructor_trivial<MaybeT, T, AltT>,
-					maybe_destructor_nontrivial<MaybeT, T, AltT>
-				>;
-		};
-		template <typename MaybeT, typename T, typename AltT>
-		using maybe_destructor_t = typename maybe_destructor<MaybeT, T, AltT>::type;
-
+		/**
+		 * @brief Base implementation for jc::maybe
+		 * @tparam T 
+		 * @tparam AltT 
+		*/
 		template <typename T, typename AltT>
 		struct maybe_base
 		{
@@ -134,6 +288,8 @@ namespace jc
 		private:
 			using this_type = maybe_base<value_type, alternate_type>;
 
+			// Data type wrapping
+			using data_type = maybe_data<maybe_union<value_type, alternate_type>>;
 
 		protected:
 
@@ -144,29 +300,29 @@ namespace jc
 			constexpr value_type& unsafe_value() noexcept
 			{
 				JCLIB_ASSERT(this->has_value());
-				return this->value_;
+				return this->data_.union_.val;
 			};
 			constexpr const value_type& unsafe_value() const noexcept
 			{
 				JCLIB_ASSERT(this->has_value());
-				return this->value_;
+				return this->data_.union_.val;
 			};
 			
 			constexpr alternate_type& unsafe_alternate() noexcept
 			{
 				JCLIB_ASSERT(!this->has_value());
-				return this->alt_;
+				return this->data_.union_.alt;
 			};
 			constexpr const alternate_type& unsafe_alternate() const noexcept
 			{
 				JCLIB_ASSERT(!this->has_value());
-				return this->alt_;
+				return this->data_.union_.alt;
 			};
 
-
+			// Dangerous !
 			constexpr void set_has_value(bool _to) noexcept
 			{
-				this->has_value_ = _to;
+				this->data_.has_value_ = _to;
 			};
 
 			constexpr inline void destroy_value()
@@ -187,14 +343,7 @@ namespace jc
 					noexcept(std::declval<maybe_base>().destroy_alternate())
 				)
 			{
-				if (this->has_value())
-				{
-					this->destroy_value();
-				}
-				else
-				{
-					this->destroy_alternate();
-				};
+				this->data_.destroy();
 			};
 
 		public:
@@ -206,7 +355,7 @@ namespace jc
 			*/
 			constexpr bool has_value() const noexcept
 			{
-				return this->has_value_;
+				return this->data_.has_value_;
 			};
 
 			/**
@@ -443,56 +592,44 @@ namespace jc
 
 		protected:
 
-			constexpr void set_value(const value_type& v) noexcept
-				(
-					noexcept(std::declval<value_type>() = std::declval<const value_type&>()) &&
-					noexcept(std::declval<maybe_base>().destroy_alternate())
-				)
+			// Sets the primary type as active and sets the bool
+			// Does not destroy the active
+			template <typename _T>
+			constexpr void no_destroy_set_value(_T&& _value)
 			{
-				if (!this->has_value())
-				{
-					this->destroy_alternate();
-				};
-				this->value_ = v;
 				this->set_has_value(true);
-			};
-			constexpr void set_value(value_type&& v) noexcept
-				(
-					noexcept(std::declval<maybe_base>().destroy_alternate())
-				)
-			{
-				if (!this->has_value())
-				{
-					this->destroy_alternate();
-				};
-				this->value_ = std::move(v);
-				this->set_has_value(true);
+				this->data_.union_.val = std::forward<_T>(_value);
 			};
 
-			constexpr void set_alternate(const alternate_type& a) noexcept
-				(
-					noexcept(std::declval<alternate_type>() = std::declval<const alternate_type&>()) &&
-					noexcept(std::declval<maybe_base>().destroy_value())
-				)
+			// Sets the alternate type as active and sets the bool
+			// Does not destroy the active
+			template <typename _T>
+			constexpr void no_destroy_set_alternate(_T&& _value)
 			{
-				if (this->has_value())
-				{
-					this->destroy_value();
-				};
-				this->alt_ = a;
 				this->set_has_value(false);
+				this->data_.union_.alt = std::forward<_T>(_value);
 			};
-			constexpr void set_alternate(alternate_type&& a) noexcept
-				(
-					noexcept(std::declval<maybe_base>().destroy_value())
-				)
+
+			// Sets the primary type as active and sets the bool
+			template <typename _T>
+			constexpr void set_value(_T&& _value) noexcept
+			{
+				if (!this->has_value())
+				{
+					this->destroy_alternate();
+				};
+				this->no_destroy_set_value(std::forward<_T>(_value));
+			};
+
+			// Sets the alternate type as active and sets the bool
+			template <typename _T>
+			constexpr void set_alternate(_T&& _value) noexcept
 			{
 				if (this->has_value())
 				{
 					this->destroy_value();
 				};
-				this->alt_ = std::move(a);
-				this->set_has_value(false);
+				this->no_destroy_set_alternate(std::forward<_T>(_value));
 			};
 
 		public:
@@ -580,104 +717,61 @@ namespace jc
 
 			constexpr explicit maybe_base(const value_type& _value)
 				noexcept(noexcept(value_type{ std::declval<const value_type&>() })) :
-				value_{ _value }, has_value_{ true }
+				data_{ _value }
 			{};
 			constexpr explicit maybe_base(value_type&& _value) noexcept :
-				value_{ std::move(_value) }, has_value_{ true }
+				data_{ std::move(_value) }
 			{};
 
 			constexpr explicit maybe_base(alternate_t, const alternate_type& _alt)
 				noexcept(noexcept(alternate_type{ std::declval<const alternate_type&>() })) :
-				alt_{ _alt }, has_value_{ false }
+				data_{ jc::alternate, _alt }
 			{};
 			constexpr explicit maybe_base(alternate_t, alternate_type&& _alt) noexcept :
-				alt_{ std::move(_alt) }, has_value_{ false }
+				data_{ jc::alternate, std::move(_alt)}
 			{};
 
-			constexpr maybe_base(const maybe_base& other)
-			{
-				if (other.has_value())
-				{
-					this->value_ = other.unsafe_value();
-					this->has_value_ = true;
-				}
-				else
-				{
-					this->alt_ = other.unsafe_alternate();
-					this->has_value_ = false;
-				};
-			};
+			constexpr maybe_base(const maybe_base& other) :
+				data_{ other.data_ }
+			{};
 			constexpr maybe_base& operator=(const maybe_base& other)
 			{
 				if (other.has_value())
 				{
-					if (!this->has_value())
-					{
-						this->destroy_alternate();
-					};
-					this->value_ = other.unsafe_value();
-					this->has_value_ = true;
+					this->set_value(other.unsafe_value());
 				}
 				else
 				{
-					if (this->has_value())
-					{
-						this->destroy_value();
-					};
-					this->alt_ = other.unsafe_alternate();
-					this->has_value_ = false;
+					this->set_alternate(other.unsafe_alternate());
 				};
 				return *this;
 			};
 
-			constexpr maybe_base(maybe_base&& other) noexcept
-			{
-				if (other.has_value())
-				{
-					this->value_ = std::move(other.unsafe_value());
-					this->has_value_ = true;
-				}
-				else
-				{
-					this->alt_ = std::move(other.unsafe_alternate());
-					this->has_value_ = false;
-				};
-			};
+			constexpr maybe_base(maybe_base&& other) noexcept :
+				data_{ std::move(other.data_) }
+			{};
 			constexpr maybe_base& operator=(maybe_base&& other) noexcept
 			{
 				if (other.has_value())
 				{
-					if (!this->has_value())
-					{
-						this->destroy_alternate();
-					};
-					this->value_ = std::move(other.unsafe_value());
-					this->has_value_ = true;
+					this->set_value(std::move(other.unsafe_value()));
 				}
 				else
 				{
-					if (this->has_value())
-					{
-						this->destroy_value();
-					};
-					this->alt_ = std::move(other.unsafe_alternate());
-					this->has_value_ = false;
+					this->set_alternate(std::move(other.unsafe_alternate()));
 				};
 				return *this;
 			};
 
-			~maybe_base() noexcept
-			{
-				this->destroy();
-			};
+			~maybe_base() = default;
 
 		private:
-			union
-			{
-				value_type value_;
-				alternate_type alt_;
-			};
-			bool has_value_;
+	
+			/**
+			 * @brief The underlying data object for the maybe
+			*/
+			data_type data_;
+
 		};
 
 	};
