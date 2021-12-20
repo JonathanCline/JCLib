@@ -78,5 +78,15 @@ new(
 new(
     "OPTIONAL",
     "__cpp_lib_optional",
-    "201606"
+    "201606L"
+)
+new(
+    "SPAN",
+    "__cpp_lib_span",
+    "202002L"
+)
+new(
+    "BYTE",
+    "__cpp_lib_byte",
+    "201603L"
 )

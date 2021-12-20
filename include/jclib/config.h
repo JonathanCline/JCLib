@@ -260,6 +260,10 @@ namespace jc
 	#define JCLIB_USING_VALUE_TYPE_TRAIT(typetrait_name) using typetrait_name
 #endif
 
+// Expands the arguements within angle brackets.
+// This is extremely useful for edge cases with using templates within macros.
+#define JCLIB_TARGS(...) < __VA_ARGS__ >
+
 namespace jc
 {
 	/**
