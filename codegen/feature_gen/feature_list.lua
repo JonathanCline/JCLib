@@ -75,3 +75,8 @@ new(
     "__cpp_lib_bool_constant",
     "201505L"
 )
+new(
+    "OPTIONAL",
+    "__cpp_lib_optional",
+    "201606"
+)
