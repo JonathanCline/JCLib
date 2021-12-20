@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.14)
 
 #
 #	Options related to which parts of the source get built
@@ -22,7 +22,8 @@ option(JCLIB_NO_EXCEPTIONS "Uses the nothrow versions by default for functions t
 project(jclib
 	VERSION 0.2.0
 	DESCRIPTION "A collection of utilities and tools for c++"
-	HOMEPAGE_URL "https://github.com/JonathanCline/JCLib")
+	HOMEPAGE_URL "https://github.com/JonathanCline/JCLib"
+	LANGUAGES CXX)
 
 
 add_library(${PROJECT_NAME} INTERFACE)
@@ -61,15 +62,14 @@ endif()
 
 include("utility.cmake")
 
+# Add test support library
+add_subdirectory("test_support")
 
 # Add test directory if testing is enabled
 if(JCLIB_BUILD_TESTS)
 	
 	# Look for CTest
 	include(CTest)
-
-	# Add test support library
-	add_subdirectory("test_support")
 
 	# Enable CTest(ing)
 	enable_testing()
