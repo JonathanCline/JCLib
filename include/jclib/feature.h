@@ -285,5 +285,25 @@
     #define JCLIB_FEATURE_BOOL_CONSTANT_V false
 #endif
 
+
+/*
+    Test for __cpp_lib_optional
+*/
+
+#define JCLIB_FEATURE_VALUE_OPTIONAL 201606
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_OPTIONAL || __cpp_lib_optional >= JCLIB_FEATURE_VALUE_OPTIONAL
+    #define JCLIB_FEATURE_OPTIONAL
+#else
+    #ifdef JCLIB_FEATURE_OPTIONAL
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_OPTIONAL
+    #define JCLIB_FEATURE_OPTIONAL_V true
+#else
+    #define JCLIB_FEATURE_OPTIONAL_V false
+#endif
+
     
 #endif
