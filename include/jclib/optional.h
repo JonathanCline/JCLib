@@ -15,22 +15,23 @@
 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "jclib/type.h"
 #include "jclib/config.h"
 #include "jclib/type_traits.h"
 #include "jclib/maybe.h"
 
 #include <memory>
 
-#ifdef __cpp_lib_optional
+#if JCLIB_FEATURE_OPTIONAL_V
 #include <optional>
-#endif
+#endif // JCLIB_FEATURE_OPTIONAL_V
 
 #define _JCLIB_OPTIONAL_
 
 namespace jc
 {
 
-#ifdef __cpp_lib_optional
+#if JCLIB_FEATURE_OPTIONAL_V
 	/**
 	 * @brief Value type held by an empty optional
 	*/
@@ -40,7 +41,9 @@ namespace jc
 	 * @brief Value held by an empty optional
 	*/
 	using std::nullopt;
+
 #else
+
 	/**
 	 * @brief Value type held by an empty optional
 	*/
@@ -50,7 +53,8 @@ namespace jc
 	 * @brief Value held by an empty optional
 	*/
 	constexpr static nullopt_t nullopt{};
-#endif
+
+#endif // JCLIB_FEATURE_OPTIONAL_V
 
 	/**
 	 * @brief Contains either the specified type or nullopt, should be nearly identical to std::optional
@@ -132,13 +136,68 @@ namespace jc
 			};
 		};
 
+		friend constexpr inline bool operator==(const optional& lhs, jc::null_t)
+		{
+			return !lhs.has_value();
+		};
+		friend constexpr inline bool operator==(const optional& lhs, jc::nullopt_t)
+		{
+			return !lhs.has_value();
+		};
+		friend constexpr inline bool operator==(jc::null_t, const optional& rhs)
+		{
+			return !rhs.has_value();
+		};
+		friend constexpr inline bool operator==(jc::nullopt_t, const optional& rhs)
+		{
+			return !rhs.has_value();
+		};
+
+		friend constexpr inline bool operator!=(const optional& lhs, jc::null_t)
+		{
+			return lhs.has_value();
+		};
+		friend constexpr inline bool operator!=(const optional& lhs, jc::nullopt_t)
+		{
+			return lhs.has_value();
+		};
+		friend constexpr inline bool operator!=(jc::null_t, const optional& rhs)
+		{
+			return rhs.has_value();
+		};
+		friend constexpr inline bool operator!=(jc::nullopt_t, const optional& rhs)
+		{
+			return rhs.has_value();
+		};
+
+
+
+
 		constexpr optional() noexcept :
 			parent_type{ jc::alternate, nullopt }
 		{};
-
+		
 		constexpr optional(jc::nullopt_t) noexcept :
 			parent_type{ jc::alternate, nullopt }
 		{};
+		// Calls reset()
+		constexpr optional& operator=(jc::nullopt_t)
+		{
+			this->reset();
+			return *this;
+		};
+
+		// Same as nullopt constructor
+		constexpr optional(jc::null_t) :
+			optional{ nullopt }
+		{};
+		
+		// Same as nullopt assignment
+		constexpr optional& operator=(jc::null_t)
+		{
+			this->reset();
+			return *this;
+		};
 
 		constexpr optional(const value_type& _value) noexcept :
 			parent_type{ _value }
