@@ -22,12 +22,13 @@
 #include <jclib/ranges.h>
 #include <jclib/feature.h>
 
+#include <array>
+#include <limits>
+
 #if JCLIB_FEATURE_SPAN_V
 // Include standard span if available
 #include <span>
 #endif
-
-#include <limits>
 
 #if JCLIB_FEATURE_BYTE_V
 // Include for std::byte if possible
@@ -127,11 +128,35 @@ namespace jc
 			template <typename RangeT, typename =
 				jc::enable_if_t<jc::is_contiguous_range<RangeT>::value>
 			>
-				constexpr span_base(RangeT& _range) noexcept :
+				constexpr span_base(RangeT&& _range) noexcept :
 				data_{ &*jc::begin(_range) }
 			{
 				JCLIB_ASSERT(jc::ranges::distance(_range) == Extent);
 			};
+			
+			/**
+			 * @brief Specialization of the range based constructor for std::array.
+			 * @param _arr C++ array.
+			*/
+			constexpr span_base(std::array<T, Extent>& _arr) noexcept :
+				data_{ _arr.data() }
+			{};
+
+			/**
+			 * @brief Specialization of the range based constructor for std::array.
+			 * @param _arr C++ array.
+			*/
+			constexpr span_base(const std::array<T, Extent>& _arr) noexcept :
+				data_{ _arr.data() }
+			{};
+
+			/**
+			 * @brief Specialization of the range based constructor for C-style array.
+			 * @param _arr C array.
+			*/
+			constexpr span_base(T(&_arr)[Extent]) noexcept :
+				data_{ _arr.data() }
+			{};
 
 		private:
 
@@ -212,6 +237,33 @@ namespace jc
 			>
 			constexpr span_base(RangeT& _range) noexcept :
 				data_{ &*jc::begin(_range) }, size_{ static_cast<size_t>(jc::ranges::distance(_range)) }
+			{};
+
+			/**
+			 * @brief Specialization of the range based constructor for std::array.
+			 * @param _arr C++ array.
+			*/
+			template <size_t N>
+			constexpr span_base(std::array<T, N>& _arr) noexcept :
+				data_{ _arr.data() }, size_{ N }
+			{};
+
+			/**
+			 * @brief Specialization of the range based constructor for std::array.
+			 * @param _arr C++ array.
+			*/
+			template <size_t N>
+			constexpr span_base(const std::array<T, N>& _arr) noexcept :
+				data_{ _arr.data() }, size_{ N }
+			{};
+
+			/**
+			 * @brief Specialization of the range based constructor for C-style array.
+			 * @param _arr C array.
+			*/
+			template <size_t N>
+			constexpr span_base(T(&_arr)[N]) noexcept :
+				data_{ _arr.data() }, size_{ N }
 			{};
 
 		private:
@@ -351,6 +403,8 @@ namespace jc
 			JCLIB_ASSERT(_offset + _count <= this->size());
 			return span{ this->data() + _offset, _count };
 		};
+
+
 
 
 		// Pull down constructors
