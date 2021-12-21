@@ -530,6 +530,16 @@ namespace jc
 			// Allow the container to call the constructor.
 			friend span;
 
+#if !JCLIB_DEBUG_ITERATORS_V
+			/**
+			 * @brief Constructs the iterator.
+			 * @param _at Where the iterator points to.
+			*/
+			constexpr iterator(pointer _at) noexcept :
+				at_{ _at }
+			{};
+#endif
+
 			/**
 			 * @brief Constructs the iterator with potentially used begin and end of range.
 			 * @param _at Where the iterator points to.
