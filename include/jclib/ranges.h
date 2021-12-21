@@ -162,7 +162,13 @@ namespace jc
 #endif
 	};
 
-#ifdef JCLIB_FEATURE_CONCEPTS
+	using ranges::is_range;
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	using ranges::is_range_v;
+#endif
+
+#if JCLIB_FEATURE_CONCEPTS_V
 	/**
 	 * @brief Fufilled by types with a range_ftor specialization that defines a valid begin and end function
 	*/
