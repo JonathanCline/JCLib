@@ -472,7 +472,7 @@ namespace jc
 			// Extremely basic random iterator type trait
 			template <typename T>
 			struct is_random_iterator<T, jc::void_t<
-				decltype(std::declval<T>() += 2),
+				decltype(std::declval<T&>() += 2),
 				decltype(std::declval<T>() - std::declval<T>())
 			>> : jc::true_type {};
 		};
