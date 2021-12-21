@@ -24,6 +24,7 @@
 
 #include <array>
 #include <limits>
+#include <iterator>
 
 #if JCLIB_FEATURE_SPAN_V
 // Include standard span if available
@@ -38,6 +39,14 @@
 // Lets do this
 
 #define _JCLIB_SPAN_
+
+
+
+// TODO: Move this into the config header
+#define JCLIB_DEBUG_ITERATORS_V JCLIB_DEBUG_V
+
+
+
 
 namespace jc
 {
@@ -77,7 +86,7 @@ namespace jc
 			*/
 			constexpr size_t size() const noexcept
 			{
-				return this->size_;
+				return Extent;
 			};
 
 			/**
@@ -308,6 +317,296 @@ namespace jc
 		 * @brief The type used to store the size of the span
 		*/
 		using size_type = size_t;
+
+		/**
+		 * @brief Iterator type for spans.
+		*/
+		struct iterator
+		{
+		public:
+
+			// Standard iterator aliases
+
+			using value_type = T;
+			using pointer = value_type*;
+			using reference = value_type&;
+			using difference_type = std::ptrdiff_t;
+
+			
+			// Handling for specifying the iterator category.
+			// Favor the contiguous iterator tag but random_access is a fine backup.
+
+#if JCLIB_FEATURE_CONCEPTS_V
+			using iterator_category = std::contiguous_iterator_tag;
+#else
+			using iterator_category = std::random_access_iterator_tag;
+#endif
+
+			// Make sure we specify iterator_concept if concepts are enabled.
+
+#if JCLIB_FEATURE_CONCEPTS_V
+			using iterator_concept = iterator_category;
+#endif
+
+#if JCLIB_FEATURE_CONCEPTS_V
+			// Why?
+			using element_type = value_type;
+#endif
+
+		private:
+
+			/**
+			 * @brief Checks if a pointer is pointing to a value within the span.
+			 *
+			 * This only does something when debugging iterators is enabled.
+			 * The given pointer must be within the range [_begin, _end).
+			 * 
+			 * Cannot be end!
+			 *
+			 * @param _at Pointer to check.
+			*/
+			constexpr void assert_valid_pointer(pointer _at) const noexcept
+			{
+#if JCLIB_DEBUG_ITERATORS_V
+				JCLIB_ASSERT(_at);
+				JCLIB_ASSERT(_at >= this->begin_);
+				JCLIB_ASSERT(_at < this->end_);
+#endif
+			};
+
+			/**
+			 * @brief Checks if a pointer is still within the span's range.
+			 * 
+			 * This only does something when debugging iterators is enabled.
+			 * The given pointer must be within the range [_begin, _end].
+			 * 
+			 * @param _at Pointer to check.
+			*/
+			constexpr void assert_within_range(pointer _at) const noexcept
+			{
+#if JCLIB_DEBUG_ITERATORS_V
+				JCLIB_ASSERT(_at);
+				JCLIB_ASSERT(_at >= this->begin_);
+				JCLIB_ASSERT(_at <= this->end_);
+#endif
+			};
+
+		public:
+
+			/**
+			 * @brief Accesses the value pointed to by this iterator.
+			 * @return Pointer to element pointed to.
+			*/
+			JCLIB_NODISCARD_E constexpr pointer operator->() const noexcept
+			{
+				this->assert_valid_pointer(this->at_);
+				return this->at_;
+			};
+
+			/**
+			 * @brief Accesses the value pointed to by this iterator.
+			 * @return Reference to element pointed to.
+			*/
+			JCLIB_NODISCARD_E constexpr reference operator*() const noexcept
+			{
+				this->assert_valid_pointer(this->at_);
+				return *this->at_;
+			};
+
+			/**
+			 * @brief Accesses a value at some offset to the value pointed to by this iterator.
+			 * @param _off Offset to accesss.
+			 * @return Reference to the value.
+			*/
+			JCLIB_NODISCARD_E constexpr reference operator[](const difference_type& _off) const noexcept
+			{
+				this->assert_valid_pointer(this->at_ + _off);
+				return *(this->at_ + _off);
+			};
+
+#pragma region COMPARISON_OPERATORS
+#if JCLIB_FEATURE_THREE_WAY_COMPARISON_V
+			friend constexpr auto operator<=>(const iterator& lhs, const iterator& rhs) noexcept
+			{
+				return lhs.at_ <=> rhs.at_;
+			};
+#endif
+			friend constexpr bool operator==(const iterator& lhs, const iterator& rhs) noexcept
+			{
+				return lhs.at_ == rhs.at_;
+			};
+			friend constexpr bool operator!=(const iterator& lhs, const iterator& rhs) noexcept
+			{
+				return lhs.at_ != rhs.at_;
+			};
+
+			friend constexpr bool operator>(const iterator& lhs, const iterator& rhs) noexcept
+			{
+				return lhs.at_ > rhs.at_;
+			};
+			friend constexpr bool operator<(const iterator& lhs, const iterator& rhs) noexcept
+			{
+				return lhs.at_ < rhs.at_;
+			};
+			friend constexpr bool operator>=(const iterator& lhs, const iterator& rhs) noexcept
+			{
+				return lhs.at_ >= rhs.at_;
+			};
+			friend constexpr bool operator<=(const iterator& lhs, const iterator& rhs) noexcept
+			{
+				return lhs.at_ <= rhs.at_;
+			};
+#pragma endregion
+
+#pragma region ARITHMATIC_OPERATORS
+			friend constexpr iterator& operator+=(iterator& lhs, const difference_type& rhs) noexcept
+			{
+				lhs.assert_within_range(lhs.at_ + rhs);
+				lhs.at_ += rhs;
+				return lhs;
+			};
+			friend constexpr iterator& operator-=(iterator& lhs, const difference_type& rhs) noexcept
+			{
+				lhs.assert_within_range(lhs.at_ - rhs);
+				lhs.at_ -= rhs;
+				return lhs;
+			};
+
+			friend constexpr iterator operator+(const iterator& lhs, const difference_type& rhs) noexcept
+			{
+				iterator _out{ lhs };
+				_out += rhs;
+				return _out;
+			};
+			friend constexpr iterator operator+(const difference_type& lhs, const iterator& rhs) noexcept
+			{
+				return rhs + lhs;
+			};
+			
+			friend constexpr iterator operator-(const iterator& lhs, const difference_type& rhs) noexcept
+			{
+				iterator _out{ lhs };
+				_out -= rhs;
+				return _out;
+			};
+
+			constexpr iterator& operator++() noexcept
+			{
+				return (*this) += 1;
+			};
+			constexpr iterator operator++(int) noexcept
+			{
+				const iterator _out = *this;
+				++(*this);
+				return _out;
+			};
+
+			constexpr iterator& operator--() noexcept
+			{
+				return (*this) -= 1;
+			};
+			constexpr iterator operator--(int) noexcept
+			{
+				const iterator _out = *this;
+				--(*this);
+				return _out;
+			};
+
+			friend constexpr difference_type operator-(const iterator& lhs, const iterator& rhs) noexcept
+			{
+				return lhs.at_ - rhs.at_;
+			};
+#pragma endregion
+
+
+
+			/**
+			 * @brief Null-construction, iterator will not be considered valid
+			*/
+			constexpr iterator() noexcept = default;
+
+		private:
+
+			// Allow the container to call the constructor.
+			friend span;
+
+			/**
+			 * @brief Constructs the iterator with potentially used begin and end of range.
+			 * @param _at Where the iterator points to.
+			 * @param _begin The beginning of the span.
+			 * @param _end The end of the span. (one past the last element).
+			*/
+			constexpr iterator(pointer _at, pointer _begin, pointer _end) noexcept :
+#if JCLIB_DEBUG_ITERATORS_V
+				at_{ _at }, begin_{ _begin }, end_{ _end }
+#else
+				at_{ _at }
+#endif
+			{
+#if JCLIB_DEBUG_ITERATORS_V
+				// These must pass for a construction to be valid
+				JCLIB_ASSERT(_begin != nullptr && _end != nullptr);
+				JCLIB_ASSERT(_begin < _end); // cannot be size 0
+				JCLIB_ASSERT(_at <= _end);
+				JCLIB_ASSERT(_at >= _begin);
+#endif
+			};
+
+		private:
+
+			/**
+			 * @brief The actual value this iterator points to.
+			*/
+			pointer at_ = nullptr;
+
+#if JCLIB_DEBUG_ITERATORS_V
+			// Debugging related bounds
+			pointer begin_ = nullptr;
+			pointer end_ = nullptr;
+#endif
+		};
+
+	private:
+
+		/**
+		 * @brief Helper for creating iterators.
+		 * 
+		 * When debugging iterators, creates the iterator with begin and end
+		 * of the span.
+		 * 
+		 * @param _at Where the iterator will point to.
+		 * @return Constructed span iterator.
+		*/
+		constexpr iterator make_iterator(pointer _at) const noexcept
+		{
+#if JCLIB_DEBUG_ITERATORS_V
+			return iterator{ _at, this->data(), this->data() + this->size() };
+#else
+			return iterator{ _at };
+#endif
+		};
+
+	public:
+
+		/**
+		 * @brief Gets an iterator to the first element in the span.
+		 * @return Span iterator.
+		*/
+		constexpr iterator begin() const noexcept
+		{
+			return this->make_iterator(this->data());
+		};
+
+		/**
+		 * @brief Gets an iterator to the first element in the span.
+		 * @return Span iterator.
+		*/
+		constexpr iterator end() const noexcept
+		{
+			return this->make_iterator(this->data() + this->size());
+		};
+
+
 
 		/**
 		 * @brief Checks if this is an empty span (size == 0)

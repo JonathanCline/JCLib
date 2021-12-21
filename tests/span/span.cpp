@@ -44,12 +44,76 @@ int subtest_construction()
 	PASS();
 };
 
+// tests iterator functionality
+int subtest_iterator()
+{
+	NEWTEST();
 
+	std::array<int, 4> _nums{ 0, 1, 2, 3 };
+	jc::span<int> _span{ _nums };
 
+	static_assert(jc::is_same<decltype(_span)::iterator, decltype(_span.begin())>::value, "span iterator type mismatch");
+	static_assert(jc::is_same<decltype(_span)::iterator, decltype(_span.end())>::value, "span iterator type mismatch");
 
+	{
+		const auto _diff = _span.end() - _span.begin();
+		ASSERT(_diff == _span.size(), "(end - begin) is not same size as span");
+		ASSERT(_span.begin() + _span.size() == _span.end(), "cannot recreate end iterator using begin and size");
+		ASSERT(_span.end() > _span.begin(), "begin is not before end");
+	};
 
+#if JCLIB_FEATURE_CONCEPTS_V
+	// Check iterator using standard library concepts
+	static_assert(std::forward_iterator<decltype(_span.begin())>);
+	static_assert(std::bidirectional_iterator<decltype(_span.begin())>);
+	static_assert(std::random_access_iterator<decltype(_span.begin())>);
+	static_assert(std::contiguous_iterator<decltype(_span.begin())>);
+#endif
 
+	{
+		size_t n = 0;
+		for (auto& v : _span)
+		{
+			ASSERT(_span[n] == v, "range based for over span value mismatch");
+			++n;
+		};
+	};
 
+	{
+		ASSERT(_span.begin()[2] == _span[2], "square bracket comparison does not match");
+	};
+
+	{
+		{
+			auto it = _span.begin();
+			auto a = ++it;
+			ASSERT(a == it, "pre-increment is invalid");
+			ASSERT(it != _span.begin(), "pre-increment did not modify the iterator");
+		};
+		{
+			auto it = _span.begin();
+			auto a = it++;
+			ASSERT(a == _span.begin(), "post-increment is invalid");
+			ASSERT(it != _span.begin(), "post-increment did not modify the iterator");
+		};
+	};
+
+	PASS();
+};
+
+// ensures functionality with jc::ranges
+int subtest_ranges()
+{
+	NEWTEST();
+
+	static_assert(jc::is_range<jc::span<int>>::value, "span is not contiguous range");
+	static_assert(jc::is_range<jc::span<int, 5>>::value, "span is not contiguous range");
+
+	static_assert(jc::is_contiguous_range<jc::span<int>>::value, "span is not contiguous range");
+	static_assert(jc::is_contiguous_range<jc::span<int, 5>>::value, "span is not contiguous range");
+
+	PASS();
+};
 
 
 
@@ -59,5 +123,7 @@ int main()
 {
 	NEWTEST();
 	SUBTEST(subtest_construction);
+	SUBTEST(subtest_iterator);
+	SUBTEST(subtest_ranges);
 	PASS();
 };
