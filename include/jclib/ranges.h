@@ -38,7 +38,7 @@ namespace jc
 		/**
 		 * @brief Customization point for begin and end function for various range types
 		 * @tparam T Range type
-		 * @tparam Enable CRTP specialization point
+		 * @tparam Enable SFINAE specialization point
 		*/
 		template <typename T, typename Enable = void>
 		struct range_ftor;
@@ -66,10 +66,20 @@ namespace jc
 		 * @tparam T STL-like container type name
 		*/
 		template <typename T>
-		struct range_ftor < T, void_t<
+		JCLIB_REQUIRES((requires(remove_reference_t<T>& _range)
+		{
+			_range.begin();
+			_range.end();
+		}
+		))
+		struct range_ftor<T
+#if !JCLIB_FEATURE_CONCEPTS_V
+			, void_t<
 			decltype(std::declval<remove_reference_t<T>>().begin()),
 			decltype(std::declval<remove_reference_t<T>>().end())
-			>>
+			>
+#endif
+		>
 		{
 			/**
 			 * @brief Returns an iterator to the beginning of the range
@@ -96,32 +106,33 @@ namespace jc
 		namespace impl
 		{
 			// Helper for getting the range ftor specialization type
-			template <typename T, typename Enable = void>
-			struct get_range_ftor;
-
 			template <typename T>
-			struct get_range_ftor<T, jc::void_t<decltype(range_ftor<jc::remove_reference_t<T>>{})>>
-			{
-				using type = range_ftor<T>;
-			};
-
-			template <typename T>
-			using get_range_ftor_t = typename get_range_ftor<T>::type;
+			using range_ftor_t = jc::ranges::range_ftor<jc::remove_reference_t<T>>;
 
 			// Is true type if range's ftor type has begin and end functions defined
 			template <typename T, typename Enable = void>
 			struct check_range_ftor : jc::false_type {};
 
+#if JCLIB_FEATURE_CONCEPTS_V
+			template <typename T>
+			requires requires (jc::remove_reference_t<T>& _range)
+			{
+				range_ftor_t<T>{}.begin(_range);
+				range_ftor_t<T>{}.end(_range);
+			}
+			struct check_range_ftor<T> : jc::true_type
+			{};
+#else
 			template <typename T>
 			struct check_range_ftor<T,
 				jc::void_t
 				<
-					decltype(std::declval<get_range_ftor_t<T>>().begin(std::declval<jc::remove_reference_t<T>&>())),
-					decltype(std::declval<get_range_ftor_t<T>>().end(std::declval<jc::remove_reference_t<T>&>()))
+					decltype(std::declval<range_ftor_t<T>>().begin(std::declval<jc::remove_reference_t<T>&>())),
+					decltype(std::declval<range_ftor_t<T>>().end(std::declval<jc::remove_reference_t<T>&>()))
 				>
 			> : jc::true_type
 			{};
-
+#endif
 		};
 
 		/**
@@ -130,18 +141,16 @@ namespace jc
 		 * @tparam Enable SFINAE specialization point
 		*/
 		template <typename T, typename Enable = void>
-		struct is_range : false_type {};
+		struct is_range : jc::false_type {};
 
 		/**
 		 * @brief Checks if a type has a range_ftor specialization that defines a valid begin and end function
 		 * @tparam T Type to test
 		*/
 		template <typename T>
-		struct is_range<T,
-			void_t<decltype(std::declval<range_ftor<jc::remove_reference_t<T>>>().begin(std::declval<jc::remove_reference_t<T>&>()))>
-		> : true_type {};
+		struct is_range<T, enable_if_t<impl::check_range_ftor<T>::value>> : jc::true_type {};
 
-#ifdef JCLIB_FEATURE_INLINE_VARIABLES
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 		/**
 		 * @brief True if a type has a range_ftor specialization that defines a valid begin and end function
 		 * @tparam T Type to test
@@ -151,13 +160,17 @@ namespace jc
 #endif
 
 
-#ifdef JCLIB_FEATURE_CONCEPTS
+#if JCLIB_FEATURE_CONCEPTS_V
 
 		/**
 		 * @brief Fufilled by types with a range_ftor specialization that defines a valid begin and end function
 		*/
 		template <typename T>
-		concept range = is_range_v<T>;
+		concept range = requires (jc::remove_reference_t<T>&_range)
+		{
+			impl::range_ftor_t<T>{}.begin(_range);
+			impl::range_ftor_t<T>{}.end(_range);
+		};
 
 #endif
 	};
