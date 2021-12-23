@@ -194,6 +194,7 @@ namespace jc
 		Other:
 		
 		 - difference_type[_t] -> Gets the type returned by subtracting two iterator_t<RangeT>(s) given a range RangeT
+		 - size_type[_t] -> Gets the size type for the container, this is expected to be returned for ".size()" functions.
 
 */
 
@@ -399,11 +400,52 @@ namespace jc
 		struct difference_type;
 
 		/**
-		 * @brief Gets the difference type of a range
-		 * @tparam RangeT Range type
+		 * @brief Gets the difference type of a range.
+		 * 
+		 * This is the "primary" specialization that uses the range's difference_type alias.
+		 * 
+		 * @tparam RangeT Range type.
 		*/
 		template <typename RangeT>
-		struct difference_type<RangeT, enable_if_t<is_range<RangeT>::value>>
+		struct difference_type<RangeT, void_t<typename RangeT::difference_type>>
+		{
+			using type = typename RangeT::difference_type;
+		};
+
+		namespace impl
+		{
+			// Type trait helper for detecting difference type alias
+			template <typename T, typename = void>
+			struct has_difference_type_alias :
+				jc::false_type
+			{};
+
+#if JCLIB_FEATURE_CONCEPTS_V
+			template <typename T>
+			requires requires { typename T::difference_type; }
+			struct has_difference_type_alias<T> : jc::true_type
+			{};
+#else
+			template <typename T>
+			struct has_difference_type_alias<T,
+				void_t<typename T::difference_type>
+			> : jc::true_type
+			{};
+#endif
+		};
+
+		/**
+		 * @brief Gets the difference type of a range.
+		 * 
+		 * This is the "backup" specialization that uses the iterator's difference_type.
+		 * 
+		 * @tparam RangeT Range type.
+		*/
+		template <typename RangeT>
+		struct difference_type<RangeT, enable_if_t<
+			is_range<RangeT>::value &&
+			!impl::has_difference_type_alias<RangeT>::value
+		>>
 		{
 			using type = jc::difference_type_t<jc::ranges::iterator_t<RangeT>>;
 		};
@@ -415,6 +457,72 @@ namespace jc
 		template <typename RangeT>
 		using difference_type_t = typename difference_type<RangeT>::type;
 
+		/**
+		 * @brief Type trait for getting the size type for a range.
+		 * @tparam RangeT Range type to get the size type of.
+		 * @tparam Enable SFINAE specialization point.
+		*/
+		template <typename RangeT, typename Enable = void>
+		struct size_type;
+
+		/**
+		 * @brief Type trait for getting the size type for a range.
+		 * 
+		 * This is the "primary" specialization for ranges with a size_type alias defined.
+		 * 
+		 * @tparam RangeT Range type to get the size type of.
+		*/
+		template <typename RangeT>
+		struct size_type<RangeT, void_t<typename RangeT::size_type>>
+		{
+			using type = typename RangeT::size_type;
+		};
+
+		namespace impl
+		{
+			// Type trait helper for detecting size_type alias
+			template <typename T, typename = void>
+			struct has_size_type_alias :
+				jc::false_type
+			{};
+
+#if JCLIB_FEATURE_CONCEPTS_V
+			template <typename T>
+			requires requires { typename T::size_type; }
+			struct has_size_type_alias<T> : jc::true_type
+			{};
+#else
+			template <typename T>
+			struct has_size_type_alias<T,
+				void_t<typename T::size_type>
+			> : jc::true_type
+			{};
+#endif
+		};
+
+		/**
+		 * @brief Type trait for getting the size type for a range.
+		 *
+		 * This is the "backup" specialization for ranges that do not have a size_type alias defined.
+		 * This will use the unsigned integer form of the difference_type for the range.
+		 * 
+		 * @tparam RangeT Range type to get the size type of.
+		*/
+		template <typename RangeT>
+		struct size_type<RangeT, enable_if_t<
+			is_range<RangeT>::value &&
+			!impl::has_size_type_alias<RangeT>::value
+		>>
+		{
+			using type = unsigned_equivalent_t<difference_type_t<RangeT>>;
+		};
+
+		/**
+		 * @brief Type trait for getting the size type for a range.
+		 * @tparam RangeT Range type to get the size type of.
+		*/
+		template <typename RangeT>
+		using size_type_t = typename size_type<RangeT>::type;
 
 	};
 
@@ -496,9 +604,10 @@ namespace jc
 			};
 
 			template <typename OutT, typename InT>
-			struct range_cast_impl<OutT, InT,
-				enable_if_t<!is_constructible<OutT, InT>::value>
-			>
+			struct range_cast_impl<OutT, InT, enable_if_t<
+				!is_constructible<OutT, InT>::value &&
+				is_constructible<OutT, iterator_t<InT>, iterator_t<InT>>::value
+			>>
 			{
 				using in_type = InT;
 				using out_type = OutT;
@@ -518,7 +627,8 @@ namespace jc
 		 * @return Casted range
 		*/
 		template <typename OutT, typename InT>
-		constexpr inline OutT range_cast(InT&& _range)
+		constexpr inline auto range_cast(InT&& _range) ->
+			decltype(impl::range_cast_impl<OutT, InT>{}(std::forward<InT>(_range)))
 		{
 			return impl::range_cast_impl<OutT, InT>{}(std::forward<InT>(_range));
 		};
