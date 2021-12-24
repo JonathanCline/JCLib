@@ -30,9 +30,9 @@ local function make_feature_test_code(_name, _macro, _value)
 end
 
 
--- Handle arguements
+-- Handle arguments
 if #_args == 0 then
-    print("no arguements provided! use --help to get usage")
+    print("no arguments provided! use --help to get usage")
 elseif _args[0] == "--help" then
     print([[usage
 <path/to/feature_list.lua> <path/to/output_file.h>
