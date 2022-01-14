@@ -385,74 +385,6 @@ namespace jc
 	};
 
 	/**
-	 * @brief Less than "<" comparison function object type
-	*/
-	struct less_t : operator_tag
-	{
-		template <typename T, typename U>
-		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
-			decltype(std::declval<T&&>() < std::declval<U&&>())
-		{
-			return lhs < rhs;
-		};
-	};
-
-	/**
-	 * @brief Less than "<" comparison function object
-	*/
-	constexpr static less_t less{};
-
-	/**
-	 * @brief Greater than ">" comparison function object type
-	*/
-	struct greater_t : operator_tag
-	{
-		template <typename T, typename U>
-		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
-			decltype(std::declval<T&&>() > std::declval<U&&>())
-		{
-			return lhs > rhs;
-		};
-	};
-
-	/**
-	 * @brief Greater than ">" comparison function object
-	*/
-	constexpr static greater_t greater{};
-
-	/**
-	 * @brief Equality "==" comparison function object
-	*/
-	struct equals_t : operator_tag
-	{
-		template <typename T, typename U>
-		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
-			decltype(std::declval<T&&>() == std::declval<U&&>())
-		{
-			return lhs == rhs;
-		};
-	};
-	constexpr static equals_t equals{};
-
-	/**
-	 * @brief Inequality "!=" comparison function object type
-	*/
-	struct unequals_t : operator_tag
-	{
-		template <typename T, typename U>
-		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
-			decltype(std::declval<T&&>() != std::declval<U&&>())
-		{
-			return lhs != rhs;
-		};
-	};
-
-	/**
-	 * @brief Inequality "!=" comparison function object
-	*/
-	constexpr static unequals_t unequals{};
-
-	/**
 	 * @brief Addition "+" arithmatic function object type
 	*/
 	struct plus_t : operator_tag
@@ -1092,6 +1024,159 @@ namespace jc
 };
 
 
+#pragma region COMPARISON_OPERATORS
+
+namespace jc
+{
+	namespace impl
+	{
+		/**
+		 * @brief Same as operator_tag but defines the child as transparent.
+		*/
+		struct comparison_operator_tag : public operator_tag
+		{
+			using is_transparent = void;
+		};
+	}
+
+	/**
+	 * @brief Less than "<" comparison function object type
+	*/
+	struct less_t : impl::comparison_operator_tag
+	{
+		template <typename T, typename U>
+		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
+			decltype(std::declval<T&&>() < std::declval<U&&>())
+		{
+			return lhs < rhs;
+		};
+	};
+
+	/**
+	 * @brief Less than "<" comparison function object
+	*/
+	constexpr extern less_t less{};
+
+	/**
+	 * @brief Less than or equal to "<=" comparison function object type
+	*/
+	struct less_equals_t : impl::comparison_operator_tag
+	{
+		template <typename T, typename U>
+		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
+			decltype(std::declval<T&&>() <= std::declval<U&&>())
+		{
+			return lhs <= rhs;
+		};
+	};
+
+	/**
+	 * @brief Less than or equal to "<=" comparison function object
+	*/
+	constexpr extern less_equals_t less_equal{};
+
+	/**
+	 * @brief Greater than ">" comparison function object type
+	*/
+	struct greater_t : impl::comparison_operator_tag
+	{
+		template <typename T, typename U>
+		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
+			decltype(std::declval<T&&>() > std::declval<U&&>())
+		{
+			return lhs > rhs;
+		};
+	};
+
+	/**
+	 * @brief Greater than ">" comparison function object
+	*/
+	constexpr extern greater_t greater{};
+
+	/**
+	 * @brief Greater than or equal to ">=" comparison function object type
+	*/
+	struct greater_equals_t : impl::comparison_operator_tag
+	{
+		template <typename T, typename U>
+		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
+			decltype(std::declval<T&&>() >= std::declval<U&&>())
+		{
+			return lhs >= rhs;
+		};
+	};
+
+	/**
+	 * @brief Greater than or equal to ">=" comparison function object
+	*/
+	constexpr extern greater_equals_t greater_equal{};
+
+	/**
+	 * @brief Equality "==" comparison function object type
+	*/
+	struct equals_t : impl::comparison_operator_tag
+	{
+		template <typename T, typename U>
+		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
+			decltype(std::declval<T&&>() == std::declval<U&&>())
+		{
+			return lhs == rhs;
+		};
+	};
+
+	/**
+	 * @brief Equality "==" comparison function object
+	*/
+	constexpr extern equals_t equals{};
+
+	/**
+	 * @brief Inequality "!=" comparison function object type
+	*/
+	struct unequals_t : impl::comparison_operator_tag
+	{
+		using is_transparent = void;
+
+		template <typename T, typename U>
+		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
+			decltype(std::declval<T&&>() != std::declval<U&&>())
+		{
+			return lhs != rhs;
+		};
+	};
+
+	/**
+	 * @brief Inequality "!=" comparison function object
+	*/
+	constexpr extern unequals_t unequals{};
+	
+#if JCLIB_FEATURE_THREE_WAY_COMPARISON_V
+
+	/**
+	 * @brief Three-way comparison "<=>" function object type
+	*/
+	struct compare_t : impl::comparison_operator_tag
+	{
+		using is_transparent = void;
+
+		template <typename T, typename U>
+		constexpr inline auto operator()(T&& lhs, U&& rhs) const noexcept ->
+			decltype(std::declval<T&&>() <=> std::declval<U&&>())
+		{
+			return lhs <=> rhs;
+		};
+	};
+
+	/**
+	 * @brief Three-way comparison "<=>" function object
+	*/
+	constexpr extern compare_t compare{};
+
+#endif
+
+};
+
+#pragma endregion COMPARISON_OPERATORS
+
 #pragma region BINARY_OPERATORS
 
 namespace jc
@@ -1177,7 +1262,6 @@ namespace jc
 #pragma endregion BINARY_OPERATORS
 
 
-
 /*
 	Member access operators and other value access operators
 */
@@ -1202,7 +1286,7 @@ namespace jc
 	/**
 	 * @brief Unary dereference operator - "*" function object type (ie. dereference(int*) -> int&)
 	*/
-	constexpr static dereference_t dereference{};
+	constexpr extern dereference_t dereference{};
 
 
 
@@ -1229,7 +1313,7 @@ namespace jc
 	/**
 	 * @brief Unary address_of operator - "&" function object (ie. address_of(int) -> int*)
 	*/
-	constexpr static address_of_t address_of{};
+	constexpr extern address_of_t address_of{};
 
 
 
@@ -1246,7 +1330,11 @@ namespace jc
 			return _obj.*_member;
 		};
 
-
+		template <typename ClassT, typename VarT>
+		constexpr auto operator()(VarT jc::remove_const_t<ClassT>::* _member) const
+		{
+			return *this & _member;
+		};
 
 		// Wildcard overloads for function probing
 		constexpr auto operator()(wildcard w) const
@@ -1262,11 +1350,41 @@ namespace jc
 	/**
 	 * @brief Class member variable access operator - "&" object
 	*/
-	constexpr static member_t member{};
+	constexpr extern member_t member{};
 
 };
 
 #pragma endregion ACCESSOR_OPERATORS
 
+/*
+	Standard library function operators
+*/
+#pragma region STD_OPERATORS
+
+namespace jc
+{
+	/**
+	 * @brief Standard library hash (std::hash) operator type.
+	*/
+	struct hash_t : operator_tag
+	{
+		using is_transparent = void;
+
+		template <typename T>
+		constexpr auto operator()(T&& _value) const ->
+			decltype(std::declval<std::hash<T>>()(_value))
+		{
+			return std::hash<T>{}(_value);
+		};
+	};
+	
+	/**
+	 * @brief Standard library hash (std::hash) operator.
+	*/
+	constexpr extern hash_t hash{};
+
+};
+
+#pragma endregion STD_OPERATORS
 
 #endif

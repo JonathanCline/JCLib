@@ -1,4 +1,5 @@
 #include <jclib/functional.h>
+#include <jclib-test.hpp>
 
 #include <vector>
 #include <numeric>
@@ -7,33 +8,6 @@
 #include <array>
 
 #include <iostream>
-
-#define FAIL_I(_code, _msg) \
-{	\
-	std::vector<std::string> _parts	\
-	{ "Failed test at '", std::to_string(__LINE__), "': ", _msg }; \
-	for(auto& v : _parts) { std::cout << v; }; std::cout << '\n';	 \
-	return _code; \
-}
-
-#define SUBTEST(_fn, ...) { const auto _res = _fn( __VA_ARGS__ ); if (_res != 0) { return _res; };  }
-
-inline int newtest()
-{
-	static int count = 0;
-	return ++count;
-};
-
-#define NEWTEST() const auto _testCode = ::newtest(); {}
-#define FAIL(_msg) FAIL_I(_testCode, _msg)
-#define PASS() { return 0; }
-
-#define TIMPL_FRONT(_first, ...) _first
-
-#define ASSERT(_condition, ...) if(!( _condition )) { FAIL(TIMPL_FRONT(__VA_ARGS__)); }
-
-
-
 
 // jc::plus test
 int test_op_plus()
@@ -839,7 +813,50 @@ int test_op_member()
 	PASS();
 };
 
+// Runs tests for comparison operator types.
+int test_comparison_operators()
+{
+	NEWTEST();
 
+	{
+		using op_t = jc::equals_t;
+		static_assert(jc::is_same<op_t::is_transparent, void>::value, "");
+	};
+
+	{
+		using op_t = jc::unequals_t;
+		static_assert(jc::is_same<op_t::is_transparent, void>::value, "");
+	};
+
+	{
+		using op_t = jc::less_t;
+		static_assert(jc::is_same<op_t::is_transparent, void>::value, "");
+	};
+
+	{
+		using op_t = jc::less_equals_t;
+		static_assert(jc::is_same<op_t::is_transparent, void>::value, "");
+	};
+
+	{
+		using op_t = jc::greater_t;
+		static_assert(jc::is_same<op_t::is_transparent, void>::value, "");
+	};
+
+	{
+		using op_t = jc::greater_equals_t;
+		static_assert(jc::is_same<op_t::is_transparent, void>::value, "");
+	};
+
+#if JCLIB_FEATURE_THREE_WAY_COMPARISON_V
+	{
+		using op_t = jc::compare_t;
+		static_assert(jc::is_same<op_t::is_transparent, void>::value, "");
+	};
+#endif
+
+	PASS();
+};
 
 // Runs the tests for the various operators defined by jclib/functional.h
 int test_operators()
