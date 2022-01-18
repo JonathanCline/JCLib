@@ -58,12 +58,12 @@ namespace jc
 
 			template <typename _T>
 			constexpr maybe_union(_T&& _val) :
-				val{ std::forward<_T>(_val) }
+				val(std::forward<_T>(_val))
 			{};
 			
 			template <typename _T>
 			constexpr maybe_union(alternate_t, _T&& _val) :
-				alt{ std::forward<_T>(_val) }
+				alt(std::forward<_T>(_val))
 			{};
 
 			constexpr maybe_union(const maybe_union&) = default;
@@ -95,11 +95,11 @@ namespace jc
 
 			template <typename _T>
 			constexpr maybe_union(_T&& _val) :
-				val{ std::forward<_T>(_val) }
+				val(std::forward<_T>(_val))
 			{};
 			template <typename _T>
 			constexpr maybe_union(alternate_t, _T&& _val) :
-				alt{ std::forward<_T>(_val) }
+				alt(std::forward<_T>(_val))
 			{};
 
 			constexpr maybe_union(const maybe_union&) = default;
