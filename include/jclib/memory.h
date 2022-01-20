@@ -19,6 +19,7 @@
 #include "jclib/type_traits.h"
 #include "jclib/concepts.h"
 #include "jclib/feature.h"
+#include "jclib/type.h"
 
 #include <memory>
 
@@ -374,14 +375,6 @@ namespace jc
 		constexpr borrow_ptr() noexcept = default;
 
 		/**
-		 * @brief Sets the held pointer to null
-		 * @param _ptr Null ptr tag object
-		*/
-		constexpr borrow_ptr(std::nullptr_t _ptr) noexcept :
-			ptr_{ nullptr }
-		{};
-
-		/**
 		 * @brief Sets the held pointer to a user-provided pointer
 		 * @param _ptr Pointer to hold
 		*/
@@ -401,11 +394,38 @@ namespace jc
 		};
 
 		/**
+		 * @brief Sets the held pointer to null
+		 * @param _ptr Null ptr tag object
+		*/
+		constexpr borrow_ptr(std::nullptr_t _ptr) noexcept :
+			ptr_{ nullptr }
+		{};
+
+		/**
 		 * @brief Releases the held pointer by setting it to null
 		 * @param _ptr Null pointer tag object
 		 * @return Reference to this object
 		*/
 		constexpr borrow_ptr& operator=(std::nullptr_t _ptr) noexcept
+		{
+			this->release();
+			return *this;
+		};
+
+		/**
+		 * @brief Sets the held pointer to null
+		 * @param nt Null value tag
+		*/
+		constexpr borrow_ptr(jc::null_t nt) noexcept :
+			ptr_{ nullptr }
+		{};
+
+		/**
+		 * @brief Releases the held pointer by setting it to null
+		 * @param nt Null value tag
+		 * @return Reference to this object
+		*/
+		constexpr borrow_ptr& operator=(jc::null_t nt) noexcept
 		{
 			this->release();
 			return *this;

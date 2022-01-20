@@ -91,16 +91,32 @@ namespace jc
 
 // [[nodiscard()]] attribute definition
 #ifndef JCLIB_NODISCARD
-#if __has_cpp_attribute(nodiscard) >= 201907L
-// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
-#define JCLIB_NODISCARD(reason) [[nodiscard(reason)]]
-#elif __has_cpp_attribute(nodiscard)
-// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
-#define JCLIB_NODISCARD(reason) [[nodiscard]]
-#else
-// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
-#define JCLIB_NODISCARD(reason)
-#endif
+
+	#if __has_cpp_attribute(nodiscard) >= 201907L
+
+		// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
+		#define JCLIB_NODISCARD(reason) [[nodiscard(reason)]]
+
+		// Same as JCLIB_NODISCARD() but doesn't require a reason to be specified
+		#define JCLIB_NODISCARD_E [[nodiscard]]
+
+	#elif __has_cpp_attribute(nodiscard)
+
+		// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
+		#define JCLIB_NODISCARD(reason) [[nodiscard]]
+
+		// Same as JCLIB_NODISCARD() but doesn't require a reason to be specified
+		#define JCLIB_NODISCARD_E [[nodiscard]]
+
+	#else
+	
+		// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
+		#define JCLIB_NODISCARD(reason)
+	
+		// Same as JCLIB_NODISCARD() but doesn't require a reason to be specified
+		#define JCLIB_NODISCARD_E
+
+	#endif
 #endif
 
 #ifndef JCLIB_EMPTY
@@ -259,6 +275,10 @@ namespace jc
 	// __cpp_inline_variables is marked as available.
 	#define JCLIB_USING_VALUE_TYPE_TRAIT(typetrait_name) using typetrait_name
 #endif
+
+// Expands the arguements within angle brackets.
+// This is extremely useful for edge cases with using templates within macros.
+#define JCLIB_TARGS(...) < __VA_ARGS__ >
 
 namespace jc
 {

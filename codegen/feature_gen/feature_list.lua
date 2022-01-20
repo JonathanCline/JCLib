@@ -21,6 +21,11 @@ new(
     "201907L"
 )
 new(
+    "CONCEPTS_LIB",
+    "__cpp_lib_concepts",
+    "202002L"
+)
+new(
     "CONSTEXPR_DYNAMIC_ALLOC",
     "__cpp_lib_constexpr_dynamic_alloc",
     "201907L"
@@ -78,5 +83,20 @@ new(
 new(
     "OPTIONAL",
     "__cpp_lib_optional",
-    "201606"
+    "201606L"
+)
+new(
+    "SPAN",
+    "__cpp_lib_span",
+    "202002L"
+)
+new(
+    "BYTE",
+    "__cpp_lib_byte",
+    "201603L"
+)
+new(
+    "FORMAT",
+    "__cpp_lib_format",
+    "201907L"
 )

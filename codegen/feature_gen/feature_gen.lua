@@ -1,38 +1,47 @@
-local format = require("format")
-
 local _args = { ... }
 
 local function make_feature_test_code(_name, _macro, _value)
     local _jclibFeatureValueMacroName = "JCLIB_FEATURE_VALUE_" .. _name
     local _jclibFeatureMacroName = "JCLIB_FEATURE_" .. _name
-    return format([[
 
+    local _tbComment = string.format([[
 /*
-    Test for {2}
+    Test for %s
 */
+]], _macro)
 
-#define {4} {3}
-#if JCLIB_CPP >= {4} || {2} >= {4}
-    #define {5}
+    local _tbDefineValue = "#define " .. _jclibFeatureValueMacroName .. " " .. _value
+    local _tbMacroTest = "#if JCLIB_CPP >= " .. _jclibFeatureValueMacroName .. " || " .. _macro .. " >= " .. _jclibFeatureValueMacroName
+    local _tbDefineMacro = "#define " .. _jclibFeatureMacroName
+    local _tbTestMacroDefined = "#ifdef " .. _jclibFeatureMacroName
+    local _tbDefineValueMacro = "#define " .. _jclibFeatureMacroName .. "_V"
+
+    return string.format([[
+
+%s
+%s
+%s
+    %s
 #else
-    #ifdef {5}
+    %s 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
 
-#ifdef {5}
-    #define {5}_V true
+%s
+    %s true
 #else
-    #define {5}_V false
+    %s false
 #endif
 
-]], _name, _macro, _value, _jclibFeatureValueMacroName, _jclibFeatureMacroName)
+]], _tbComment, _tbDefineValue, _tbMacroTest, _tbDefineMacro, _tbTestMacroDefined, _tbTestMacroDefined, _tbDefineValueMacro, _tbDefineValueMacro)
+
 end
 
 
--- Handle arguements
+-- Handle arguments
 if #_args == 0 then
-    print("no arguements provided! use --help to get usage")
+    print("no arguments provided! use --help to get usage")
 elseif _args[0] == "--help" then
     print([[usage
 <path/to/feature_list.lua> <path/to/output_file.h>
@@ -68,6 +77,8 @@ _outputFile:write([[// generated using codegen/feature_gen.lua
 	JCLib feature c++ testing encapsulation header. This exists partially because certain feature c++ testing macros
 	are imply different features available depending on their value.
 */
+
+#include <version>
 
 #define _JCLIB_FEATURE_
 
