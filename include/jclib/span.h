@@ -554,11 +554,18 @@ namespace jc
 #endif
 			{
 #if JCLIB_DEBUG_ITERATORS_V
-				// These must pass for a construction to be valid
-				JCLIB_ASSERT(_begin != nullptr && _end != nullptr);
-				JCLIB_ASSERT(_begin < _end); // cannot be size 0
-				JCLIB_ASSERT(_at <= _end);
-				JCLIB_ASSERT(_at >= _begin);
+				if (_at == nullptr)
+				{
+					JCLIB_ASSERT(!_at && !_begin && !_end);
+				}
+				else
+				{
+					// These must pass for a construction to be valid
+					JCLIB_ASSERT(_begin != nullptr && _end != nullptr);
+					JCLIB_ASSERT(_begin < _end); // cannot be size 0
+					JCLIB_ASSERT(_at <= _end);
+					JCLIB_ASSERT(_at >= _begin);
+				};
 #endif
 			};
 
