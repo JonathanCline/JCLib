@@ -162,7 +162,7 @@ namespace jc
 			 * @param _arr C array.
 			*/
 			constexpr span_base(T(&_arr)[Extent]) noexcept :
-				data_{ _arr.data() }
+				data_{ _arr }
 			{};
 
 		private:
@@ -268,7 +268,7 @@ namespace jc
 			*/
 			template <size_t N>
 			constexpr span_base(T(&_arr)[N]) noexcept :
-				data_{ _arr.data() }, size_{ N }
+				data_{ _arr }, size_{ N }
 			{};
 
 		private:
