@@ -113,12 +113,12 @@ namespace jc
 
 	namespace impl
 	{
-		template <typename Op, template <typename... ArgTs> typename T, typename... ArgTs, size_t... Idxs>
+		template <typename Op, template <typename... ArgTs> class T, typename... ArgTs, size_t... Idxs>
 		constexpr inline auto apply_impl(Op _op, const T<ArgTs...>& _args, std::index_sequence<Idxs...> _isq)
 		{
 			return jc::invoke(_op, std::get<Idxs>(_args)...);
 		};
-		template <typename Op, template <typename... ArgTs> typename T, typename... ArgTs, size_t... Idxs>
+		template <typename Op, template <typename... ArgTs> class T, typename... ArgTs, size_t... Idxs>
 		constexpr inline auto apply_impl(Op _op, T<ArgTs...>&& _args, std::index_sequence<Idxs...> _isq)
 		{
 			return jc::invoke(_op, std::move(std::get<Idxs>(_args))...);
@@ -126,7 +126,7 @@ namespace jc
 	};
 
 
-	template <typename Op, template <typename... ArgTs> typename T, typename... ArgTs>
+	template <typename Op, template <typename... ArgTs> class T, typename... ArgTs>
 	constexpr inline auto apply(Op _op, const T<ArgTs...>& _args) ->
 		decltype(jc::invoke(std::declval<Op>(), std::declval<ArgTs>()...))
 	{
@@ -134,7 +134,7 @@ namespace jc
 	};
 
 
-	template <typename Op, template <typename... ArgTs> typename T, typename... ArgTs>
+	template <typename Op, template <typename... ArgTs> class T, typename... ArgTs>
 	constexpr inline auto apply(Op _op, T<ArgTs...>&& _args) ->
 		decltype(jc::invoke(std::declval<Op>(), std::declval<ArgTs>()...))
 	{
@@ -1043,7 +1043,7 @@ namespace jc
 		*/
 
 
-		template <template <typename... Ts> typename T, typename... Ts>
+		template <template <typename... Ts> class T, typename... Ts>
 		struct repack_impl<T<Ts...>>
 		{
 			template <size_t... Idxs>
@@ -1058,7 +1058,7 @@ namespace jc
 			};
 		};
 
-		template <template <typename... Ts> typename T, typename... Ts>
+		template <template <typename... Ts> class T, typename... Ts>
 		struct repack_impl<const T<Ts...>>
 		{
 			template <size_t... Idxs>

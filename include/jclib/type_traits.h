@@ -146,7 +146,7 @@ namespace jc
 	template <typename T, typename U>
 	struct is_element_of;
 
-	template <typename T, template <typename... Ts> typename U, typename... Ts>
+	template <typename T, template <typename... Ts> class U, typename... Ts>
 	struct is_element_of<T, U<Ts...>> : bool_constant<is_any_of<T, Ts...>::value> {};
 
 #if JCLIB_FEATURE_INLINE_VARIABLES_V
@@ -441,7 +441,7 @@ namespace jc
 		template <typename RetT, typename T>
 		struct function_signature_impl;
 
-		template <typename RetT, template <typename... Ts> typename T, typename... Ts>
+		template <typename RetT, template <typename... Ts> class T, typename... Ts>
 		struct function_signature_impl<RetT, T<Ts...>>
 		{
 			using type = RetT(Ts...);
@@ -592,7 +592,7 @@ namespace jc
 		template <typename OpT, typename T, typename Enable = void>
 		struct invocable_with_arg_count_impl : jc::false_type {};
 
-		template <typename OpT, template <typename... Ts> typename TupT, typename... Ts>
+		template <typename OpT, template <typename... Ts> class TupT, typename... Ts>
 		struct invocable_with_arg_count_impl<OpT, TupT<Ts...>, void_t
 			<
 			decltype(std::declval<OpT>()(std::declval<Ts>()...))

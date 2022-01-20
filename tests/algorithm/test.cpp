@@ -365,6 +365,8 @@ int test_accumulate()
 	// Test C++ Array
 	{
 		auto& _data = cpp_array;
+
+#undef _IGNORE_TEST_RANGE_NAME_HERE
 #define _IGNORE_TEST_RANGE_NAME_HERE "cpp_array"
 
 		{
@@ -396,6 +398,8 @@ int test_accumulate()
 	// Test Const C++ Array
 	{
 		auto& _data = cpp_array_const;
+
+#undef _IGNORE_TEST_RANGE_NAME_HERE
 #define _IGNORE_TEST_RANGE_NAME_HERE "cpp_array_const"
 
 		{
