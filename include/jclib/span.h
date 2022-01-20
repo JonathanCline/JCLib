@@ -110,8 +110,7 @@ namespace jc
 			 * @param _begin Pointer to the beginning of the array. MUST NOT BE NULL.
 			 * @param _size Size of the array in elements.
 			*/
-			template <typename IterT>
-			JCLIB_REQUIRES((jc::is_iterator_to<IterT, T>::value))
+			template <typename IterT, typename = jc::enable_if_t<jc::is_convertible<jc::iterator_to_t<IterT>, T>::value>>
 			constexpr explicit span_base(IterT _begin, size_t _size) noexcept :
 				data_{ &*_begin }
 			{
@@ -123,8 +122,7 @@ namespace jc
 			 * @param _begin Pointer to the beginning of the array. MUST NOT BE NULL.
 			 * @param _size Size of the array in elements.
 			*/
-			template <typename IterT>
-			JCLIB_REQUIRES((jc::is_iterator_to<IterT, T>::value))
+			template <typename IterT, typename = jc::enable_if_t<jc::is_convertible<jc::iterator_to_t<IterT>, T>::value>>
 				constexpr explicit span_base(IterT _begin, IterT _end) noexcept :
 				span_base{ _begin, static_cast<size_t>(jc::distance(_begin, _end)) }
 			{};
@@ -219,8 +217,7 @@ namespace jc
 			 * @param _begin Pointer to the beginning of the array. MUST NOT BE NULL.
 			 * @param _size Size of the array in elements.
 			*/
-			template <typename IterT>
-			JCLIB_REQUIRES((jc::is_iterator_to<IterT, T>::value))
+			template <typename IterT, typename = jc::enable_if_t<jc::is_convertible<jc::iterator_to_t<IterT>, T>::value>>
 			constexpr span_base(IterT _begin, size_t _size) noexcept :
 				data_{ &*_begin }, size_{ _size }
 			{};
@@ -230,8 +227,7 @@ namespace jc
 			 * @param _begin Pointer to the beginning of the array. MUST NOT BE NULL.
 			 * @param _size Size of the array in elements.
 			*/
-			template <typename IterT>
-			JCLIB_REQUIRES((jc::is_iterator_to<IterT, T>::value))
+			template <typename IterT, typename = jc::enable_if_t<jc::is_convertible<jc::iterator_to_t<IterT>, T>::value>>
 			constexpr span_base(IterT _begin, IterT _end) noexcept :
 				span_base{ _begin, static_cast<size_t>(jc::distance(_begin, _end)) }
 			{};
