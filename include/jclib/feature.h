@@ -21,6 +21,8 @@
 	are imply different features available depending on their value.
 */
 
+#include <version>
+
 #define _JCLIB_FEATURE_
 
 #define JCLIB_CPP __cplusplus
@@ -34,7 +36,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_INLINE_VARIABLES || __cpp_inline_variables >= JCLIB_FEATURE_VALUE_INLINE_VARIABLES
     #define JCLIB_FEATURE_INLINE_VARIABLES
 #else
-    #ifdef JCLIB_FEATURE_INLINE_VARIABLES
+    #ifdef JCLIB_FEATURE_INLINE_VARIABLES 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -54,7 +56,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONCEPTS || __cpp_concepts >= JCLIB_FEATURE_VALUE_CONCEPTS
     #define JCLIB_FEATURE_CONCEPTS
 #else
-    #ifdef JCLIB_FEATURE_CONCEPTS
+    #ifdef JCLIB_FEATURE_CONCEPTS 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -74,7 +76,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC || __cpp_lib_constexpr_dynamic_alloc >= JCLIB_FEATURE_VALUE_CONSTEXPR_DYNAMIC_ALLOC
     #define JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
 #else
-    #ifdef JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
+    #ifdef JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -94,7 +96,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON || __cpp_lib_three_way_comparison >= JCLIB_FEATURE_VALUE_THREE_WAY_COMPARISON
     #define JCLIB_FEATURE_THREE_WAY_COMPARISON
 #else
-    #ifdef JCLIB_FEATURE_THREE_WAY_COMPARISON
+    #ifdef JCLIB_FEATURE_THREE_WAY_COMPARISON 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -114,7 +116,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONSTEVAL || __cpp_conteval >= JCLIB_FEATURE_VALUE_CONSTEVAL
     #define JCLIB_FEATURE_CONSTEVAL
 #else
-    #ifdef JCLIB_FEATURE_CONSTEVAL
+    #ifdef JCLIB_FEATURE_CONSTEVAL 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -134,7 +136,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_IF_CONSTEXPR || __cpp_if_constexpr >= JCLIB_FEATURE_VALUE_IF_CONSTEXPR
     #define JCLIB_FEATURE_IF_CONSTEXPR
 #else
-    #ifdef JCLIB_FEATURE_IF_CONSTEXPR
+    #ifdef JCLIB_FEATURE_IF_CONSTEXPR 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -154,7 +156,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_IF_CONSTEVAL || __cpp_if_consteval >= JCLIB_FEATURE_VALUE_IF_CONSTEVAL
     #define JCLIB_FEATURE_IF_CONSTEVAL
 #else
-    #ifdef JCLIB_FEATURE_IF_CONSTEVAL
+    #ifdef JCLIB_FEATURE_IF_CONSTEVAL 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -174,7 +176,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CPP_CONSTEXPR_ALGORITHMS || __cpp_lib_constexpr_algorithms >= JCLIB_FEATURE_VALUE_CPP_CONSTEXPR_ALGORITHMS
     #define JCLIB_FEATURE_CPP_CONSTEXPR_ALGORITHMS
 #else
-    #ifdef JCLIB_FEATURE_CPP_CONSTEXPR_ALGORITHMS
+    #ifdef JCLIB_FEATURE_CPP_CONSTEXPR_ALGORITHMS 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -194,7 +196,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CPP_SPAN || __cpp_lib_span >= JCLIB_FEATURE_VALUE_CPP_SPAN
     #define JCLIB_FEATURE_CPP_SPAN
 #else
-    #ifdef JCLIB_FEATURE_CPP_SPAN
+    #ifdef JCLIB_FEATURE_CPP_SPAN 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -214,7 +216,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_NOEXCEPT_FUNCTION_TYPE || __cpp_noexcept_function_type >= JCLIB_FEATURE_VALUE_NOEXCEPT_FUNCTION_TYPE
     #define JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE
 #else
-    #ifdef JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE
+    #ifdef JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -234,7 +236,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CHAR8 || __cpp_char8_t >= JCLIB_FEATURE_VALUE_CHAR8
     #define JCLIB_FEATURE_CHAR8
 #else
-    #ifdef JCLIB_FEATURE_CHAR8
+    #ifdef JCLIB_FEATURE_CHAR8 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -254,7 +256,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_FOLD_EXPRESSIONS || __cpp_fold_expressions >= JCLIB_FEATURE_VALUE_FOLD_EXPRESSIONS
     #define JCLIB_FEATURE_FOLD_EXPRESSIONS
 #else
-    #ifdef JCLIB_FEATURE_FOLD_EXPRESSIONS
+    #ifdef JCLIB_FEATURE_FOLD_EXPRESSIONS 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -274,7 +276,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_BOOL_CONSTANT || __cpp_lib_bool_constant >= JCLIB_FEATURE_VALUE_BOOL_CONSTANT
     #define JCLIB_FEATURE_BOOL_CONSTANT
 #else
-    #ifdef JCLIB_FEATURE_BOOL_CONSTANT
+    #ifdef JCLIB_FEATURE_BOOL_CONSTANT 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -294,7 +296,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_OPTIONAL || __cpp_lib_optional >= JCLIB_FEATURE_VALUE_OPTIONAL
     #define JCLIB_FEATURE_OPTIONAL
 #else
-    #ifdef JCLIB_FEATURE_OPTIONAL
+    #ifdef JCLIB_FEATURE_OPTIONAL 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -314,7 +316,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_SPAN || __cpp_lib_span >= JCLIB_FEATURE_VALUE_SPAN
     #define JCLIB_FEATURE_SPAN
 #else
-    #ifdef JCLIB_FEATURE_SPAN
+    #ifdef JCLIB_FEATURE_SPAN 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -334,7 +336,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_BYTE || __cpp_lib_byte >= JCLIB_FEATURE_VALUE_BYTE
     #define JCLIB_FEATURE_BYTE
 #else
-    #ifdef JCLIB_FEATURE_BYTE
+    #ifdef JCLIB_FEATURE_BYTE 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
