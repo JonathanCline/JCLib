@@ -39,7 +39,7 @@ local function make_feature_test_code(_name, _macro, _value)
 end
 
 
--- Handle arguements
+-- Handle arguments
 if #_args == 0 then
     print("no arguments provided! use --help to get usage")
 elseif _args[0] == "--help" then

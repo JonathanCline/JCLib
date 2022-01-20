@@ -713,7 +713,9 @@ namespace jc
 			JCLIB_ASSERT(_offset <= this->size());
 			JCLIB_ASSERT(_count <= this->size());
 			JCLIB_ASSERT(_offset + _count <= this->size());
-			return span{ this->data() + _offset, _count };
+
+			const auto _begin = this->begin() + _offset;
+			return span<value_type, dynamic_extent>(_begin, _begin + _count );
 		};
 
 
@@ -738,9 +740,9 @@ namespace jc
 	 * @return Span over the same data as const bytes.
 	*/
 	template <typename T, size_t Extent>
-	constexpr inline span<const std::byte, Extent * sizeof(T)> as_bytes(const span<T, Extent>& _span)
+	constexpr inline span<const std::byte, dynamic_extent> as_bytes(const span<T, Extent>& _span)
 	{
-		return span<const std::byte, Extent>
+		return span<const std::byte, dynamic_extent>
 		{
 			reinterpret_cast<const std::byte*>(_span.data()), _span.size_bytes()
 		};
