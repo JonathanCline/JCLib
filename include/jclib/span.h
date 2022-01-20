@@ -67,6 +67,13 @@ namespace jc
 
 #endif
 
+	/**
+	 * @brief View into a contiguous range.
+	 * @tparam T Type in the range.
+	 * @tparam Extent The size of the span, defaults to dynamic_extent (provided at runtime).
+	*/
+	template <typename T, size_t Extent = dynamic_extent>
+	struct span;
 
 	namespace impl
 	{
@@ -284,40 +291,17 @@ namespace jc
 			size_t size_;
 		};
 
-	};
-
-	/**
-	 * @brief View into a contiguous range.
-	 * @tparam T Type in the range.
-	 * @tparam Extent The size of the span, defaults to dynamic_extent (provided at runtime).
-	*/
-	template <typename T, size_t Extent = dynamic_extent>
-	struct span : public impl::span_base<T, Extent>
-	{
-	private:
-
 		/**
-		 * @brief Parent type implementing span's data members
+		 * @brief Type allowing span iterators to be constructed without exposing
+		 * span iterator's constructors in the public API.
 		*/
-		using parent_type = impl::span_base<T, Extent>;
-	
-	public:
-
-		// Standard container aliases
-
-		using value_type = T;
-		using pointer = value_type*;
-		using reference = value_type&;
-
-		/**
-		 * @brief The type used to store the size of the span
-		*/
-		using size_type = size_t;
+		struct span_iterator_access;
 
 		/**
 		 * @brief Iterator type for spans.
 		*/
-		struct iterator
+		template <typename T>
+		struct span_iterator
 		{
 		public:
 
@@ -328,7 +312,7 @@ namespace jc
 			using reference = value_type&;
 			using difference_type = std::ptrdiff_t;
 
-			
+
 			// Handling for specifying the iterator category.
 			// Favor the contiguous iterator tag but random_access is a fine backup.
 
@@ -356,7 +340,7 @@ namespace jc
 			 *
 			 * This only does something when debugging iterators is enabled.
 			 * The given pointer must be within the range [_begin, _end).
-			 * 
+			 *
 			 * Cannot be end!
 			 *
 			 * @param _at Pointer to check.
@@ -372,10 +356,10 @@ namespace jc
 
 			/**
 			 * @brief Checks if a pointer is still within the span's range.
-			 * 
+			 *
 			 * This only does something when debugging iterators is enabled.
 			 * The given pointer must be within the range [_begin, _end].
-			 * 
+			 *
 			 * @param _at Pointer to check.
 			*/
 			constexpr void assert_within_range(pointer _at) const noexcept
@@ -422,93 +406,93 @@ namespace jc
 
 #pragma region COMPARISON_OPERATORS
 #if JCLIB_FEATURE_THREE_WAY_COMPARISON_V
-			friend constexpr auto operator<=>(const iterator& lhs, const iterator& rhs) noexcept
+			friend constexpr auto operator<=>(const span_iterator& lhs, const span_iterator& rhs) noexcept
 			{
 				return lhs.at_ <=> rhs.at_;
 			};
 #endif
-			friend constexpr bool operator==(const iterator& lhs, const iterator& rhs) noexcept
+			friend constexpr bool operator==(const span_iterator& lhs, const span_iterator& rhs) noexcept
 			{
 				return lhs.at_ == rhs.at_;
 			};
-			friend constexpr bool operator!=(const iterator& lhs, const iterator& rhs) noexcept
+			friend constexpr bool operator!=(const span_iterator& lhs, const span_iterator& rhs) noexcept
 			{
 				return lhs.at_ != rhs.at_;
 			};
 
-			friend constexpr bool operator>(const iterator& lhs, const iterator& rhs) noexcept
+			friend constexpr bool operator>(const span_iterator& lhs, const span_iterator& rhs) noexcept
 			{
 				return lhs.at_ > rhs.at_;
 			};
-			friend constexpr bool operator<(const iterator& lhs, const iterator& rhs) noexcept
+			friend constexpr bool operator<(const span_iterator& lhs, const span_iterator& rhs) noexcept
 			{
 				return lhs.at_ < rhs.at_;
 			};
-			friend constexpr bool operator>=(const iterator& lhs, const iterator& rhs) noexcept
+			friend constexpr bool operator>=(const span_iterator& lhs, const span_iterator& rhs) noexcept
 			{
 				return lhs.at_ >= rhs.at_;
 			};
-			friend constexpr bool operator<=(const iterator& lhs, const iterator& rhs) noexcept
+			friend constexpr bool operator<=(const span_iterator& lhs, const span_iterator& rhs) noexcept
 			{
 				return lhs.at_ <= rhs.at_;
 			};
 #pragma endregion
 
 #pragma region ARITHMATIC_OPERATORS
-			friend constexpr iterator& operator+=(iterator& lhs, const difference_type& rhs) noexcept
+			friend constexpr span_iterator& operator+=(span_iterator& lhs, const difference_type& rhs) noexcept
 			{
 				lhs.assert_within_range(lhs.at_ + rhs);
 				lhs.at_ += rhs;
 				return lhs;
 			};
-			friend constexpr iterator& operator-=(iterator& lhs, const difference_type& rhs) noexcept
+			friend constexpr span_iterator& operator-=(span_iterator& lhs, const difference_type& rhs) noexcept
 			{
 				lhs.assert_within_range(lhs.at_ - rhs);
 				lhs.at_ -= rhs;
 				return lhs;
 			};
 
-			friend constexpr iterator operator+(const iterator& lhs, const difference_type& rhs) noexcept
+			friend constexpr span_iterator operator+(const span_iterator& lhs, const difference_type& rhs) noexcept
 			{
-				iterator _out{ lhs };
+				span_iterator _out{ lhs };
 				_out += rhs;
 				return _out;
 			};
-			friend constexpr iterator operator+(const difference_type& lhs, const iterator& rhs) noexcept
+			friend constexpr span_iterator operator+(const difference_type& lhs, const span_iterator& rhs) noexcept
 			{
 				return rhs + lhs;
 			};
-			
-			friend constexpr iterator operator-(const iterator& lhs, const difference_type& rhs) noexcept
+
+			friend constexpr span_iterator operator-(const span_iterator& lhs, const difference_type& rhs) noexcept
 			{
-				iterator _out{ lhs };
+				span_iterator _out{ lhs };
 				_out -= rhs;
 				return _out;
 			};
 
-			constexpr iterator& operator++() noexcept
+			constexpr span_iterator& operator++() noexcept
 			{
 				return (*this) += 1;
 			};
-			constexpr iterator operator++(int) noexcept
+			constexpr span_iterator operator++(int) noexcept
 			{
-				const iterator _out = *this;
+				const span_iterator _out = *this;
 				++(*this);
 				return _out;
 			};
 
-			constexpr iterator& operator--() noexcept
+			constexpr span_iterator& operator--() noexcept
 			{
 				return (*this) -= 1;
 			};
-			constexpr iterator operator--(int) noexcept
+			constexpr span_iterator operator--(int) noexcept
 			{
-				const iterator _out = *this;
+				const span_iterator _out = *this;
 				--(*this);
 				return _out;
 			};
 
-			friend constexpr difference_type operator-(const iterator& lhs, const iterator& rhs) noexcept
+			friend constexpr difference_type operator-(const span_iterator& lhs, const span_iterator& rhs) noexcept
 			{
 				return lhs.at_ - rhs.at_;
 			};
@@ -519,19 +503,19 @@ namespace jc
 			/**
 			 * @brief Null-construction, iterator will not be considered valid
 			*/
-			constexpr iterator() noexcept = default;
+			constexpr span_iterator() noexcept = default;
 
 		private:
 
 			// Allow the container to call the constructor.
-			friend span;
+			friend span_iterator_access;
 
 #if !JCLIB_DEBUG_ITERATORS_V
 			/**
 			 * @brief Constructs the iterator.
 			 * @param _at Where the iterator points to.
 			*/
-			constexpr iterator(pointer _at) noexcept :
+			constexpr span_iterator(pointer _at) noexcept :
 				at_{ _at }
 			{};
 #endif
@@ -542,7 +526,7 @@ namespace jc
 			 * @param _begin The beginning of the span.
 			 * @param _end The end of the span. (one past the last element).
 			*/
-			constexpr iterator(pointer _at, pointer _begin, pointer _end) noexcept :
+			constexpr span_iterator(pointer _at, pointer _begin, pointer _end) noexcept :
 #if JCLIB_DEBUG_ITERATORS_V
 				at_{ _at }, begin_{ _begin }, end_{ _end }
 #else
@@ -579,6 +563,85 @@ namespace jc
 #endif
 		};
 
+		/**
+		 * @brief Type allowing span iterators to be constructed without exposing
+		 * span iterator's constructors in the public API.
+		*/
+		struct span_iterator_access
+		{
+		protected:
+
+			/**
+			 * @brief Helper for creating iterators.
+			 *
+			 * When debugging iterators, creates the iterator with begin and end
+			 * of the span.
+			 *
+			 * @param _at Where the iterator will point to.
+			 * @return Constructed span iterator.
+			*/
+			template <typename T>
+			constexpr span_iterator<T> make_iterator(T* _at, T* _begin, T* _end) const noexcept
+			{
+#if JCLIB_DEBUG_ITERATORS_V
+				return span_iterator<T>{ _at, _begin, _end };
+#else
+				return span_iterator<T>{ _at };
+#endif
+			};
+
+#if !JCLIB_DEBUG_ITERATORS_V
+			/**
+			 * @brief Helper for creating iterators.
+			 * 
+			 * This overload is only compiled when not debugging iterators.
+			 *
+			 * @param _at Where the iterator will point to.
+			 * @return Constructed span iterator.
+			*/
+			template <typename T>
+			constexpr span_iterator<T> make_iterator(T* _at) const noexcept
+			{
+				return span_iterator<T>{ _at };
+			};
+#endif
+		};
+
+	};
+
+	/**
+	 * @brief View into a contiguous range.
+	 * @tparam T Type in the range.
+	 * @tparam Extent The size of the span, defaults to dynamic_extent (provided at runtime).
+	*/
+	template <typename T, size_t Extent>
+	struct span : public impl::span_base<T, Extent>, protected impl::span_iterator_access
+	{
+	private:
+
+		/**
+		 * @brief Parent type implementing span's data members
+		*/
+		using parent_type = impl::span_base<T, Extent>;
+	
+	public:
+
+		// Standard container aliases
+
+		using value_type = T;
+		using pointer = value_type*;
+		using reference = value_type&;
+
+		/**
+		 * @brief The type used to store the size of the span
+		*/
+		using size_type = size_t;
+
+		/**
+		 * @brief Iterator type alias for this span type.
+		*/
+		using iterator = impl::span_iterator<value_type>;
+
 	private:
 
 		/**
@@ -593,9 +656,9 @@ namespace jc
 		constexpr iterator make_iterator(pointer _at) const noexcept
 		{
 #if JCLIB_DEBUG_ITERATORS_V
-			return iterator{ _at, this->data(), this->data() + this->size() };
+			return impl::span_iterator_access::make_iterator(_at, this->data(), this->data() + this->size());
 #else
-			return iterator{ _at };
+			return impl::span_iterator_access::make_iterator(_at);
 #endif
 		};
 
@@ -770,6 +833,25 @@ namespace jc
 #endif
 
 
+};
+
+namespace std
+{
+	template <typename T>
+	struct iterator_traits<::jc::impl::span_iterator<T>>
+	{
+	private:
+		using type = ::jc::impl::span_iterator<T>;
+	public:
+		using difference_type = typename type::difference_type;
+		using value_type = typename type::value_type;
+		using pointer = typename type::pointer;
+		using reference = typename type::reference;
+		using iterator_category = typename type::iterator_category;
+#if JCLIB_FEATURE_CONCEPTS_V
+		using iterator_concept = typename type::iterator_concept;
+#endif
+	};
 };
 
 #endif
