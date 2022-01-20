@@ -164,7 +164,7 @@ namespace jc
 			 * @param _arr C array.
 			*/
 			constexpr span_base(T(&_arr)[Extent]) noexcept :
-				data_{ _arr.data() }
+				data_{ _arr }
 			{};
 
 		private:
@@ -219,8 +219,7 @@ namespace jc
 			 * @param _begin Pointer to the beginning of the array. MUST NOT BE NULL.
 			 * @param _size Size of the array in elements.
 			*/
-			template <typename IterT>
-			JCLIB_REQUIRES((jc::is_iterator_to<IterT, T>::value))
+			template <typename IterT, typename = jc::enable_if_t<jc::is_convertible<jc::iterator_to_t<IterT>, T>::value>>
 			constexpr span_base(IterT _begin, size_t _size) noexcept :
 				data_{ &*_begin }, size_{ _size }
 			{};
@@ -230,8 +229,7 @@ namespace jc
 			 * @param _begin Pointer to the beginning of the array. MUST NOT BE NULL.
 			 * @param _size Size of the array in elements.
 			*/
-			template <typename IterT>
-			JCLIB_REQUIRES((jc::is_iterator_to<IterT, T>::value))
+			template <typename IterT, typename = jc::enable_if_t<jc::is_convertible<jc::iterator_to_t<IterT>, T>::value>>
 			constexpr span_base(IterT _begin, IterT _end) noexcept :
 				span_base{ _begin, static_cast<size_t>(jc::distance(_begin, _end)) }
 			{};
@@ -242,7 +240,7 @@ namespace jc
 			 * @param _range Range to view.
 			*/
 			template <typename RangeT, typename =
-				jc::enable_if_t<jc::is_contiguous_range<RangeT>::value>
+				jc::enable_if_t<jc::is_contiguous_range<RangeT>::value && !jc::is_pointer<RangeT>::value>
 			>
 			constexpr span_base(RangeT& _range) noexcept :
 				data_{ &*jc::begin(_range) }, size_{ static_cast<size_t>(jc::ranges::distance(_range)) }
@@ -271,8 +269,8 @@ namespace jc
 			 * @param _arr C array.
 			*/
 			template <size_t N>
-			constexpr span_base(T(&_arr)[N]) noexcept :
-				data_{ _arr.data() }, size_{ N }
+			constexpr explicit span_base(T(&_arr)[N]) noexcept :
+				data_{ _arr }, size_{ N }
 			{};
 
 		private:
@@ -431,13 +429,13 @@ namespace jc
 				return lhs.at_ <=> rhs.at_;
 			};
 #endif
-			friend constexpr bool operator==(const iterator& lhs, const iterator& rhs) noexcept
+			constexpr bool operator==(const iterator& rhs) const noexcept
 			{
-				return lhs.at_ == rhs.at_;
+				return this->at_ == rhs.at_;
 			};
-			friend constexpr bool operator!=(const iterator& lhs, const iterator& rhs) noexcept
+			constexpr bool operator!=(const iterator& rhs) const noexcept
 			{
-				return lhs.at_ != rhs.at_;
+				return this->at_ != rhs.at_;
 			};
 
 			friend constexpr bool operator>(const iterator& lhs, const iterator& rhs) noexcept
@@ -554,11 +552,18 @@ namespace jc
 #endif
 			{
 #if JCLIB_DEBUG_ITERATORS_V
-				// These must pass for a construction to be valid
-				JCLIB_ASSERT(_begin != nullptr && _end != nullptr);
-				JCLIB_ASSERT(_begin < _end); // cannot be size 0
-				JCLIB_ASSERT(_at <= _end);
-				JCLIB_ASSERT(_at >= _begin);
+				if (_at == nullptr)
+				{
+					JCLIB_ASSERT(!_at && !_begin && !_end);
+				}
+				else
+				{
+					// These must pass for a construction to be valid
+					JCLIB_ASSERT(_begin != nullptr && _end != nullptr);
+					JCLIB_ASSERT(_begin < _end); // cannot be size 0
+					JCLIB_ASSERT(_at <= _end);
+					JCLIB_ASSERT(_at >= _begin);
+				};
 #endif
 			};
 
@@ -681,10 +686,10 @@ namespace jc
 		 * @param _count Number of elements to get.
 		 * @return Span with first elements.
 		*/
-		constexpr span first(size_type _count) const
+		constexpr span<value_type, dynamic_extent> first(size_type _count) const
 		{
 			JCLIB_ASSERT(_count <= this->size());
-			return span{ this->data(), _count };
+			return span<value_type, dynamic_extent>{ this->begin(), this->begin() + _count };
 		};
 
 		/**
@@ -692,11 +697,11 @@ namespace jc
 		 * @param _count Number of elements to get.
 		 * @return Span with last elements.
 		*/
-		constexpr span last(size_type _count) const
+		constexpr span<value_type, dynamic_extent> last(size_type _count) const
 		{
 			JCLIB_ASSERT(_count <= this->size());
-			const auto _begin = this->data() + _count;
-			return span{ _begin, this->size() - _count };
+			const iterator _begin = this->begin() + (this->size() - _count);
+			return span<value_type, dynamic_extent>( _begin, this->end() );
 		};
 
 		/**
@@ -705,12 +710,14 @@ namespace jc
 		 * @param _count Number of elements for the subspan.
 		 * @return Subspan into this span.
 		*/
-		constexpr span subspan(size_type _offset, size_type _count) const
+		constexpr span<value_type, dynamic_extent> subspan(size_type _offset, size_type _count) const
 		{
 			JCLIB_ASSERT(_offset <= this->size());
 			JCLIB_ASSERT(_count <= this->size());
 			JCLIB_ASSERT(_offset + _count <= this->size());
-			return span{ this->data() + _offset, _count };
+
+			const auto _begin = this->begin() + _offset;
+			return span<value_type, dynamic_extent>(_begin, _begin + _count );
 		};
 
 
@@ -735,9 +742,9 @@ namespace jc
 	 * @return Span over the same data as const bytes.
 	*/
 	template <typename T, size_t Extent>
-	constexpr inline span<const std::byte, Extent * sizeof(T)> as_bytes(const span<T, Extent>& _span)
+	constexpr inline span<const std::byte, dynamic_extent> as_bytes(const span<T, Extent>& _span)
 	{
-		return span<const std::byte, Extent>
+		return span<const std::byte, dynamic_extent>
 		{
 			reinterpret_cast<const std::byte*>(_span.data()), _span.size_bytes()
 		};
