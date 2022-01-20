@@ -49,8 +49,10 @@ int subtest_iterator()
 {
 	NEWTEST();
 
+	using span_type = jc::span<int>;
+
 	std::array<int, 4> _nums{ 0, 1, 2, 3 };
-	jc::span<int> _span{ _nums };
+	span_type _span{ _nums };
 
 	static_assert(jc::is_same<decltype(_span)::iterator, decltype(_span.begin())>::value, "span iterator type mismatch");
 	static_assert(jc::is_same<decltype(_span)::iterator, decltype(_span.end())>::value, "span iterator type mismatch");
@@ -62,13 +64,20 @@ int subtest_iterator()
 		ASSERT(_span.end() > _span.begin(), "begin is not before end");
 	};
 
+
+	{
+		using iterator = decltype(_span.begin());
+
 #if JCLIB_FEATURE_CONCEPTS_V
-	// Check iterator using standard library concepts
-	static_assert(std::forward_iterator<decltype(_span.begin())>);
-	static_assert(std::bidirectional_iterator<decltype(_span.begin())>);
-	static_assert(std::random_access_iterator<decltype(_span.begin())>);
-	static_assert(std::contiguous_iterator<decltype(_span.begin())>);
+		// Check iterator using standard library concepts
+		static_assert(std::indirectly_readable<iterator>);
+		static_assert(std::input_iterator<iterator>);
+		static_assert(std::forward_iterator<iterator>);
+		static_assert(std::bidirectional_iterator<iterator>);
+		static_assert(std::random_access_iterator<iterator>);
+		static_assert(std::contiguous_iterator<iterator>);
 #endif
+	}
 
 	{
 		size_t n = 0;
