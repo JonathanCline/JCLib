@@ -1269,4 +1269,41 @@ namespace jc
 #pragma endregion ACCESSOR_OPERATORS
 
 
+
+/*
+	Standard library functionality related operators
+*/
+#pragma region STD_OPERATORS
+
+namespace jc
+{
+
+
+	/**
+	 * @brief Hash operator type using std::hash for the actual implementation.
+	*/
+	struct hash_t : jc::operator_tag
+	{
+		template <typename T>
+		constexpr auto operator()(T&& _value) const
+			noexcept(noexcept(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(_value)))) ->
+			decltype(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(_value)))
+		{
+			return std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(_value));
+		};
+		constexpr auto operator()(jc::wildcard _wc) const
+		{
+			return _wc;
+		};
+	};
+
+	/**
+	 * @brief Hash operator using std::hash for the actual implementation.
+	*/
+	constexpr extern hash_t hash{};
+
+};
+
+#pragma endregion STD_OPERATORS
+
 #endif
