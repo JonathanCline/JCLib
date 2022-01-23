@@ -163,9 +163,9 @@ namespace jc
 // Convenience macro for c++20 requires clauses
 #ifndef JCLIB_REQUIRES
 #if JCLIB_FEATURE_CONCEPTS_V
-#define JCLIB_REQUIRES(x) requires (x)
+#define JCLIB_REQUIRES(...) requires ( __VA_ARGS__ )
 #else
-#define JCLIB_REQUIRES(x)
+#define JCLIB_REQUIRES(...)
 #endif
 #endif
 
@@ -253,6 +253,25 @@ namespace jc
 	#define JCLIB_DEBUG_V false
 #endif
 
+// JCLIB_ENABLE_IF_CXSWITCH
+#if JCLIB_FEATURE_CONCEPTS_V
+	// Uses enable_if_t if concepts are not available - for use with enable_if SFINAE
+	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
+	// 
+	// This is the same as JCLIB_RET_SFINAE_CXSWITCH but JCLIB_RET_SFINAE_CXSWITCH implies
+	// that it is only for return type SFINAE even though it isn't.
+	//
+	#define JCLIB_ENABLE_IF_CXSWITCH(retType, ...) retType
+#else
+	// Uses enable_if_t if concepts are not available - for use with enable_if SFINAE
+	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
+	// 
+	// This is the same as JCLIB_RET_SFINAE_CXSWITCH but JCLIB_RET_SFINAE_CXSWITCH implies
+	// that it is only for return type SFINAE even though it isn't.
+	//
+	#define JCLIB_ENABLE_IF_CXSWITCH(retType, ...) ::jc::enable_if_t<(__VA_ARGS__), retType>
+#endif
+
 // Make return type sfinae enable_if concepts switch
 #if JCLIB_FEATURE_CONCEPTS_V
 	// Uses enable_if_t if concepts are not available - for use with function return type enable_if SFINAE
@@ -263,6 +282,7 @@ namespace jc
 	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
 	#define JCLIB_RET_SFINAE_CXSWITCH(retType, ...) ::jc::enable_if_t<__VA_ARGS__, retType>
 #endif
+
 
 #if JCLIB_FEATURE_INLINE_VARIABLES_V
 	// Adds a "using" directive to the current scope aliasing a value type trait. This will alias
