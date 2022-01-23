@@ -1277,6 +1277,29 @@ namespace jc
 
 namespace jc
 {
+	/**
+	 * @brief Adds an "is_transparent" tag to an operator by inheriting from it.
+	 * @tparam T Operator type to add tag too.
+	 * @param Enable SFINAE specialization point.
+	*/
+	template <typename T, typename Enable = void>
+	struct transparent;
+
+	/**
+	 * @brief Adds an "is_transparent" tag to an operator by inheriting from it.
+	 * @tparam T Operator type to add tag too.
+	*/
+	template <typename T> JCLIB_REQUIRES(jc::cx_operator<T>)
+	struct transparent<T, jc::enable_if_t<jc::is_operator<T>::value>> : public T
+	{
+		/**
+		 * @brief Marks the type as transparent mostly for use with std::unordered_map
+		*/
+		using is_transparent = void;
+
+		// Allow the parent's constructor
+		using T::T;
+	};
 
 
 	/**
