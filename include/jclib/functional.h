@@ -1290,7 +1290,7 @@ namespace jc
 	 * @tparam T Operator type to add tag too.
 	*/
 	template <typename T> JCLIB_REQUIRES(jc::cx_operator<T>)
-	struct transparent<T, jc::enable_if_t<jc::is_operator<T>::value>> : public T
+	struct transparent<T, JCLIB_ENABLE_IF_CXSWITCH(void, jc::is_operator<T>::value)> : public T
 	{
 		/**
 		 * @brief Marks the type as transparent mostly for use with std::unordered_map
@@ -1309,11 +1309,12 @@ namespace jc
 	{
 		template <typename T>
 		constexpr auto operator()(T&& _value) const
-			noexcept(noexcept(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(_value)))) ->
-			decltype(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(_value)))
+			noexcept(noexcept(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(std::declval<T&&>())))) ->
+			decltype(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(std::declval<T&&>())))
 		{
 			return std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(_value));
 		};
+
 		constexpr auto operator()(jc::wildcard _wc) const
 		{
 			return _wc;
