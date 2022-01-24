@@ -10,7 +10,7 @@ SCRIPT_DIRECTORY_PATH=${SCRIPT_PATH%/*.sh}
 # Determine path to luaenv shell script
 LUAENV_PATH=$SCRIPT_DIRECTORY_PATH/lua/luaenv.sh
 
-# The arguements passed to the lua env script
+# The arguments passed to the lua env script
 LUAENV_ARGS=""
 ARGPARSE_REGEX="[^ ]+ [^ ]+"
 for arg in "$@"; do
