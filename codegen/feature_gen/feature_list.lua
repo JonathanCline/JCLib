@@ -100,3 +100,8 @@ new(
     "__cpp_lib_format",
     "201907L"
 )
+new(
+    "STRING_VIEW",
+    "__cpp_lib_string_view",
+    "201606L"
+)

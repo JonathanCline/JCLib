@@ -69,6 +69,26 @@
 
 
 /*
+    Test for __cpp_lib_concepts
+*/
+
+#define JCLIB_FEATURE_VALUE_CONCEPTS_LIB 202002L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_CONCEPTS_LIB || __cpp_lib_concepts >= JCLIB_FEATURE_VALUE_CONCEPTS_LIB
+    #define JCLIB_FEATURE_CONCEPTS_LIB
+#else
+    #ifdef JCLIB_FEATURE_CONCEPTS_LIB 
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_CONCEPTS_LIB
+    #define JCLIB_FEATURE_CONCEPTS_LIB_V true
+#else
+    #define JCLIB_FEATURE_CONCEPTS_LIB_V false
+#endif
+
+
+/*
     Test for __cpp_lib_constexpr_dynamic_alloc
 */
 
@@ -316,7 +336,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_SPAN || __cpp_lib_span >= JCLIB_FEATURE_VALUE_SPAN
     #define JCLIB_FEATURE_SPAN
 #else
-    #ifdef JCLIB_FEATURE_SPAN
+    #ifdef JCLIB_FEATURE_SPAN 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -336,7 +356,7 @@
 #if JCLIB_CPP >= JCLIB_FEATURE_VALUE_BYTE || __cpp_lib_byte >= JCLIB_FEATURE_VALUE_BYTE
     #define JCLIB_FEATURE_BYTE
 #else
-    #ifdef JCLIB_FEATURE_BYTE
+    #ifdef JCLIB_FEATURE_BYTE 
         #error "Feature testing macro was defined when it shouldn't be"
     #endif
 #endif
@@ -345,6 +365,46 @@
     #define JCLIB_FEATURE_BYTE_V true
 #else
     #define JCLIB_FEATURE_BYTE_V false
+#endif
+
+
+/*
+    Test for __cpp_lib_format
+*/
+
+#define JCLIB_FEATURE_VALUE_FORMAT 201907L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_FORMAT || __cpp_lib_format >= JCLIB_FEATURE_VALUE_FORMAT
+    #define JCLIB_FEATURE_FORMAT
+#else
+    #ifdef JCLIB_FEATURE_FORMAT 
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_FORMAT
+    #define JCLIB_FEATURE_FORMAT_V true
+#else
+    #define JCLIB_FEATURE_FORMAT_V false
+#endif
+
+
+/*
+    Test for __cpp_lib_string_view
+*/
+
+#define JCLIB_FEATURE_VALUE_STRING_VIEW 201606L
+#if JCLIB_CPP >= JCLIB_FEATURE_VALUE_STRING_VIEW || __cpp_lib_string_view >= JCLIB_FEATURE_VALUE_STRING_VIEW
+    #define JCLIB_FEATURE_STRING_VIEW
+#else
+    #ifdef JCLIB_FEATURE_STRING_VIEW 
+        #error "Feature testing macro was defined when it shouldn't be"
+    #endif
+#endif
+
+#ifdef JCLIB_FEATURE_STRING_VIEW
+    #define JCLIB_FEATURE_STRING_VIEW_V true
+#else
+    #define JCLIB_FEATURE_STRING_VIEW_V false
 #endif
 
     
