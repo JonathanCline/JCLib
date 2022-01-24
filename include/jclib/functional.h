@@ -21,6 +21,12 @@
 #include <tuple>
 #include <functional>
 
+#if JCLIB_FEATURE_STRING_VIEW_V
+	#include <string_view>
+#else
+	#include <string>
+#endif
+
 #define _JCLIB_FUNCTIONAL_
 
 namespace jc
@@ -1308,17 +1314,64 @@ namespace jc
 	struct hash_t : jc::operator_tag
 	{
 		template <typename T>
-		constexpr auto operator()(T&& _value) const
-			noexcept(noexcept(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(std::declval<T&&>())))) ->
-			decltype(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(std::declval<T&&>())))
+		constexpr auto operator()(const T& _value) const
+			noexcept(noexcept(std::hash<T>{}(std::declval<const T&>()))) ->
+			decltype(std::hash<T>{}(std::declval<const T&>()))
 		{
-			return std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(_value));
+			return std::hash<T>{}(_value);
 		};
 
-		constexpr auto operator()(jc::wildcard _wc) const
+		template <size_t N>
+		constexpr size_t operator()(const char(&_value)[N]) const noexcept
 		{
-			return _wc;
+#if JCLIB_FEATURE_STRING_VIEW_V
+			return std::hash<std::string_view>{}(std::string_view{ _value, N });
+#else
+			return std::hash<std::string>{}(std::string{ _value, N });
+#endif
 		};
+
+		template <size_t N>
+		constexpr size_t operator()(const wchar_t(&_value)[N]) const noexcept
+		{
+#if JCLIB_FEATURE_STRING_VIEW_V
+			return std::hash<std::wstring_view>{}(std::wstring_view{ _value, N });
+#else
+			return std::hash<std::wstring>{}(std::wstring{ _value, N });
+#endif
+		};
+		
+		template <size_t N>
+		constexpr size_t operator()(const char16_t(&_value)[N]) const noexcept
+		{
+#if JCLIB_FEATURE_STRING_VIEW_V
+			return std::hash<std::u16string_view>{}(std::u16string_view{ _value, N });
+#else
+			return std::hash<std::u16string>{}(std::u16string{ _value, N });
+#endif
+		};
+		
+		template <size_t N>
+		constexpr size_t operator()(const char32_t(&_value)[N]) const noexcept
+		{
+#if JCLIB_FEATURE_STRING_VIEW_V
+			return std::hash<std::u32string_view>{}(std::u32string_view{ _value, N });
+#else
+			return std::hash<std::u32string>{}(std::u32string{ _value, N });
+#endif
+		};
+
+#if JCLIB_FEATURE_CHAR8_V
+		template <size_t N>
+		constexpr size_t operator()(const char8_t(&_value)[N]) const noexcept
+		{
+#if JCLIB_FEATURE_STRING_VIEW_V
+			return std::hash<std::u8string_view>{}(std::u8string_view{ _value, N });
+#else
+			return std::hash<std::u8string>{}(std::u8string{ _value, N });
+#endif
+		};
+#endif
 	};
 
 	/**
@@ -1326,6 +1379,19 @@ namespace jc
 	*/
 	constexpr extern hash_t hash{};
 
+};
+
+// Required to prevent issues with jc::wildcard operator argument probing.
+namespace std
+{
+	template <>
+	struct hash<jc::wildcard>
+	{
+		constexpr const size_t operator()(const jc::wildcard& wc) const noexcept
+		{
+			return 0;
+		};
+	};
 };
 
 #pragma endregion STD_OPERATORS
