@@ -19,6 +19,7 @@
 #include "jclib/type_traits.h"
 
 #include <tuple>
+#include <functional>
 
 #define _JCLIB_FUNCTIONAL_
 
@@ -1300,7 +1301,6 @@ namespace jc
 		// Allow the parent's constructor
 		using T::T;
 	};
-
 
 	/**
 	 * @brief Hash operator type using std::hash for the actual implementation.
