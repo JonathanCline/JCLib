@@ -19,6 +19,7 @@
 #include "jclib/type_traits.h"
 
 #include <tuple>
+#include <functional>
 
 #define _JCLIB_FUNCTIONAL_
 
@@ -1268,5 +1269,65 @@ namespace jc
 
 #pragma endregion ACCESSOR_OPERATORS
 
+
+
+/*
+	Standard library functionality related operators
+*/
+#pragma region STD_OPERATORS
+
+namespace jc
+{
+	/**
+	 * @brief Adds an "is_transparent" tag to an operator by inheriting from it.
+	 * @tparam T Operator type to add tag too.
+	 * @param Enable SFINAE specialization point.
+	*/
+	template <typename T, typename Enable = void>
+	struct transparent;
+
+	/**
+	 * @brief Adds an "is_transparent" tag to an operator by inheriting from it.
+	 * @tparam T Operator type to add tag too.
+	*/
+	template <typename T> JCLIB_REQUIRES(jc::cx_operator<T>)
+	struct transparent<T, JCLIB_ENABLE_IF_CXSWITCH(void, jc::is_operator<T>::value)> : public T
+	{
+		/**
+		 * @brief Marks the type as transparent mostly for use with std::unordered_map
+		*/
+		using is_transparent = void;
+
+		// Allow the parent's constructor
+		using T::T;
+	};
+
+	/**
+	 * @brief Hash operator type using std::hash for the actual implementation.
+	*/
+	struct hash_t : jc::operator_tag
+	{
+		template <typename T>
+		constexpr auto operator()(T&& _value) const
+			noexcept(noexcept(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(std::declval<T&&>())))) ->
+			decltype(std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(std::declval<T&&>())))
+		{
+			return std::hash<jc::remove_cvref_t<T>>{}(std::forward<T>(_value));
+		};
+
+		constexpr auto operator()(jc::wildcard _wc) const
+		{
+			return _wc;
+		};
+	};
+
+	/**
+	 * @brief Hash operator using std::hash for the actual implementation.
+	*/
+	constexpr extern hash_t hash{};
+
+};
+
+#pragma endregion STD_OPERATORS
 
 #endif
