@@ -1377,7 +1377,7 @@ namespace jc
 	/**
 	 * @brief Hash operator using std::hash for the actual implementation.
 	*/
-	constexpr extern hash_t hash{};
+	constexpr static hash_t hash{};
 
 };
 

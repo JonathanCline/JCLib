@@ -211,7 +211,7 @@ namespace jc
 		constexpr explicit null_t() noexcept = default;
 	};
 
-	constexpr extern null_t null{};
+	constexpr static null_t null{};
 
 };
 
