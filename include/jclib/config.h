@@ -305,7 +305,7 @@ namespace jc
 	/**
 	 * @brief True if exceptions are enabled, false otherwise
 	*/
-	constexpr extern bool exceptions_v = JCLIB_EXCEPTIONS_V;
+	constexpr static bool exceptions_v = JCLIB_EXCEPTIONS_V;
 };
 
 #endif
