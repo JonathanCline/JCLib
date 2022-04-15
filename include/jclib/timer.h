@@ -103,7 +103,7 @@ namespace jc
 		JCLIB_CONSTEXPR duration elapsed() const noexcept
 		{
 			const time_point _now = this->now();
-			return _now - this->tmstart_;
+			return std::chrono::duration_cast<duration>(_now - this->tmstart_);
 		};
 
 		/**

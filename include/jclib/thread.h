@@ -73,7 +73,7 @@ namespace jc
 	/**
 	 * @brief Tag type value for invoking non-locking function overloads
 	*/
-	constexpr extern nolock_t nolock{};
+	constexpr nolock_t nolock{};
 
 };
 
