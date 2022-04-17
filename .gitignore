@@ -6,3 +6,6 @@ CMakeSettings.json
 
 doc/doxy/
 config/include
+
+# Generic
+_*/
