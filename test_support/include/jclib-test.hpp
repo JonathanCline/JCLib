@@ -34,7 +34,7 @@
 #define FAIL_I(_code, _msg) \
 {	\
 	std::vector<std::string> _parts	\
-	{ "Failed test at '", std::to_string(__LINE__), "': ", _msg }; \
+	{ "Failed test at '", std::to_string(__LINE__), "' (", __FUNCTION__ ,"): ", _msg }; \
 	for(auto& v : _parts) { std::cout << v; }; std::cout << '\n';	 \
 	return _code; \
 }
