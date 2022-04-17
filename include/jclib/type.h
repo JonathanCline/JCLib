@@ -110,14 +110,20 @@ namespace jc
 	template <typename T>
 	struct null_ftor;
 
+	/**
+	 * @brief Define pointers as nullable types
+	 * @tparam T Type being pointed to.
+	*/
 	template <typename T>
 	struct null_ftor<T*>
 	{
-		constexpr static T* make_null() noexcept
+		using type = T*;
+
+		constexpr static type make_null() noexcept
 		{
 			return nullptr;
 		};
-		constexpr static bool is_null(T* const& _value) noexcept
+		constexpr static bool is_null(const type& _value) noexcept
 		{
 			return _value == nullptr;
 		};
