@@ -24,6 +24,9 @@ int subtest_pointer_type()
 	{
 		ASSERT((p != jc::null) == true, "Valid pointer was considered null!");
 		ASSERT((p == jc::null) == false, "Valid pointer was considered null!");
+		ASSERT((&a != jc::null) == true, "Valid pointer temporary was considered null!");
+		ASSERT((&a != jc::null) == true, "Valid pointer temporary was considered null!");
+
 		ASSERT((np == jc::null) == true, "Null pointer was NOT considered null by jc::null!");
 		ASSERT((np != jc::null) == false, "Null pointer was NOT considered null by jc::null!");
 
