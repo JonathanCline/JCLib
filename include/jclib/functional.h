@@ -1253,7 +1253,13 @@ namespace jc
 			return _obj.*_member;
 		};
 
-
+		template <typename ClassT, typename VarT>
+		constexpr auto operator()(VarT ClassT::* _member) const
+		{
+			// TODO : Upgrade this to use a dedicated struct return rather than
+			// abusing argument binding like this
+			return (*this) & _member;
+		};
 
 		// Wildcard overloads for function probing
 		constexpr auto operator()(wildcard w) const
