@@ -20,6 +20,8 @@
 */
 
 #include "jclib/config.h"
+#include "jclib/feature.h"
+
 
 #define _JCLIB_TYPE_TRAITS_
 
@@ -31,7 +33,7 @@
 namespace jc
 {
 
-#ifdef __cpp_lib_bool_constant
+#if JCLIB_FEATURE_BOOL_CONSTANT_V
 	using std::bool_constant;
 	using std::true_type;
 	using std::false_type;
@@ -56,8 +58,8 @@ namespace jc
 		Type comparison
 	*/
 
-	using std::is_same;
-	using std::is_convertible;
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_same);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_convertible);
 
 
 
@@ -78,7 +80,7 @@ namespace jc
 
 	template<typename B1, typename... Bn>
 	struct disjunction<B1, Bn...> :
-#ifdef __cpp_fold_expressions
+#if JCLIB_FEATURE_FOLD_EXPRESSIONS_V
 		jc::bool_constant<bool(B1::value) || (bool(Bn::value) || ...)>
 #else
 		std::conditional_t<bool(B1::value), B1, jc::disjunction<Bn...>>
@@ -100,7 +102,7 @@ namespace jc
 
 	template<typename B1, typename... Bn>
 	struct conjunction<B1, Bn...> :
-#ifdef __cpp_fold_expressions
+#if JCLIB_FEATURE_FOLD_EXPRESSIONS_V
 		jc::bool_constant<bool(B1::value) && (bool(Bn::value) && ...)>
 #else
 		std::conditional_t<bool(B1::value), jc::conjunction<Bn...>, B1>
@@ -118,43 +120,36 @@ namespace jc
 		jc::bool_constant<!bool(B::value)>
 	{};
 
-
-
-#ifdef __cpp_inline_variables
-	using std::is_same_v;
-	using std::is_convertible_v;
-
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename... Bs>
 	constexpr inline auto conjunction_v = conjunction<Bs...>::value;
-
 	template <typename... Bs>
 	constexpr inline auto disjunction_v = disjunction<Bs...>::value;
-
 	template <typename B>
 	constexpr inline auto negation_v = negation<B>::value;
 #endif
 
 	template <typename T, typename... Ts>
 	struct is_any_of :
-#ifdef __cpp_fold_expressions
+#if JCLIB_FEATURE_FOLD_EXPRESSIONS_V
 		bool_constant<(std::is_same_v<T, Ts> || ...)>
 #else
 		disjunction<std::is_same<T, Ts>...>
 #endif
 	{};
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T, typename... Ts>
-	JCLIB_CONSTEXPR inline bool is_any_of_v = is_any_of<T, Ts...>::value;
+	constexpr inline auto is_any_of_v = is_any_of<T, Ts...>::value;
 #endif
 
 	template <typename T, typename U>
 	struct is_element_of;
 
-	template <typename T, template <typename... Ts> typename U, typename... Ts>
+	template <typename T, template <typename... Ts> class U, typename... Ts>
 	struct is_element_of<T, U<Ts...>> : bool_constant<is_any_of<T, Ts...>::value> {};
 
-#if __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T, typename U>
 	constexpr inline auto is_element_of_v = is_element_of<T, U>::value;
 #endif
@@ -175,7 +170,7 @@ namespace jc
 		<
 			char,
 			wchar_t,
-#ifdef __cpp_char8_t
+#if JCLIB_FEATURE_CHAR8_V
 			char8_t,
 #endif
 			char16_t,
@@ -191,134 +186,451 @@ namespace jc
 		public bool_constant<is_element_of<T, impl::character_typelist>::value>
 	{};
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T>
-	JCLIB_CONSTEXPR inline bool is_character_v = is_character<T>::value;
+	constexpr inline bool is_character_v = is_character<T>::value;
 #endif
 
 	/*
 		Basic type catagory
 	*/
 
-	using std::is_fundamental;
-	using std::is_integral;
-	using std::is_arithmetic;
-	using std::is_floating_point;
-	using std::is_signed;
-	using std::is_unsigned;
-	using std::is_pointer;
-
-#ifdef __cpp_inline_variables
-	using std::is_fundamental_v;
-	using std::is_integral_v;
-	using std::is_arithmetic_v;
-	using std::is_floating_point_v;
-	using std::is_signed_v;
-	using std::is_unsigned_v;
-	using std::is_pointer_v;
-#endif
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_fundamental);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_integral);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_arithmetic);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_floating_point);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_signed);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_unsigned);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_pointer);
 
 	template <typename T>
 	struct is_integer : public bool_constant<is_integral<T>::value && std::numeric_limits<T>::is_integer>
 	{};
 	
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T>
-	JCLIB_CONSTEXPR inline bool is_integer_v = is_integer<T>::value;
+	constexpr inline bool is_integer_v = is_integer<T>::value;
 #endif
 
 	/*
 		Constructor / Assignment related
 	*/
 
-	using std::is_constructible;
-	using std::is_copy_constructible;
-	using std::is_copy_assignable;
-	using std::is_move_constructible;
-	using std::is_move_assignable;
-	using std::is_default_constructible;
-	using std::is_assignable;
-
-#ifdef __cpp_inline_variables
-	using std::is_constructible_v;
-	using std::is_copy_constructible_v;
-	using std::is_copy_assignable_v;
-	using std::is_move_constructible_v;
-	using std::is_move_assignable_v;
-	using std::is_default_constructible_v;
-	using std::is_assignable_v;
-#endif
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_copy_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_copy_assignable);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_move_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_move_assignable);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_default_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_assignable);
 
 
 	/*
 		Trivial type
 	*/
 
-	using std::is_trivially_default_constructible;
-	using std::is_trivially_copy_constructible;
-	using std::is_trivially_copy_assignable;
-	using std::is_trivially_copyable;
-	using std::is_trivially_move_constructible;
-	using std::is_trivially_move_assignable;
-	using std::is_trivially_destructible;
-
-#ifdef __cpp_inline_variables
-	using std::is_trivially_default_constructible_v;
-	using std::is_trivially_copy_constructible_v;
-	using std::is_trivially_copy_assignable_v;
-	using std::is_trivially_copyable_v;
-	using std::is_trivially_move_constructible_v;
-	using std::is_trivially_move_assignable_v;
-	using std::is_trivially_destructible_v;
-#endif
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_default_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_copy_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_copy_assignable);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_copyable);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_move_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_move_assignable);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_destructible);
 
 	template <typename T>
 	struct is_trivially_moveable : public bool_constant<
 		is_trivially_move_assignable<T>::value && is_trivially_move_constructible<T>::value
 	> {};
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T>
-	JCLIB_CONSTEXPR inline bool is_trivially_moveable_v = is_trivially_moveable<T>::value;
+	constexpr inline bool is_trivially_moveable_v = is_trivially_moveable<T>::value;
 #endif
 
-	using std::is_trivially_assignable;
-	using std::is_trivially_constructible;
-	using std::is_trivially_default_constructible;
-	using std::is_trivial;
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_assignable);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivially_default_constructible);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_trivial);
 
-#ifdef __cpp_inline_variables
-	using std::is_trivially_assignable_v;
-	using std::is_trivially_constructible_v;
-	using std::is_trivially_default_constructible_v;
-	using std::is_trivial_v;
+
+
+
+#if JCLIB_FEATURE_CONCEPTS_V
+	namespace impl
+	{
+		template <typename From, typename To>
+		concept cx_is_forwardable_to_impl = requires (From&& _from)
+		{
+			To{ std::forward<From>(_from) };
+		};
+	};
 #endif
 
-	template <typename From, typename To>
-	struct is_forwardable_to : public bool_constant<is_constructible<From, std::remove_reference_t<To>>::value> {};
 
-#ifdef __cpp_inline_variables
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
 	template <typename From, typename To>
-	JCLIB_CONSTEXPR inline bool is_forwardable_to_v = is_forwardable_to<From, To>::value;
+	struct is_forwardable_to : public bool_constant <
+#if JCLIB_FEATURE_CONCEPTS_V
+			impl::cx_is_forwardable_to_impl<From, To>
+#else
+			is_constructible<decltype(std::forward<From>(std::declval<From&&>())), To>::value
+#endif
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	constexpr inline bool is_forwardable_to_v = is_forwardable_to<From, To>::value;
 #endif
 	
+
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value and would be noexcept
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	struct is_noexcept_forwardable_to : public
+		bool_constant
+		<
+			is_forwardable_to<From, To>::value &&
+			noexcept(noexcept(To{ std::forward<From>(std::declval<From&&>()) }))
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	/**
+	 * @brief Tests if a type can be constructed from a forwarded value and would be noexcept
+	 * @tparam From Type being forwarded
+	 * @tparam To Type being constructed
+	*/
+	template <typename From, typename To>
+	constexpr inline bool is_noexcept_forwardable_to_v = is_noexcept_forwardable_to<From, To>::value;
+#endif
+
+
 
 	/*
 		Misc. Type Traits
 	*/
 
-	using std::is_base_of;
-	using std::is_abstract;
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_base_of);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_abstract);
 
-#ifdef JCLIB_FEATURE_INLINE_VARIABLES
-	using std::is_base_of_v;
-	using std::is_abstract_v;
-#endif
+
+
+
+
 
 
 	/*
 		Function related
 	*/
+
+	namespace impl
+	{
+		struct noexcept_function_tag {};
+		struct const_function_tag {};
+
+
+		/**
+		 * @brief Determines function properties based on specialization selection
+		 * @tparam OpT Function or other invocable type
+		*/
+		template <typename OpT>
+		struct function_traits_impl;
+
+
+		// function signature type
+		template <typename ReturnT, typename... Ts>
+		struct function_traits_impl<ReturnT(Ts...)>
+		{
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+		// free function type
+		template <typename ReturnT, typename... Ts>
+		struct function_traits_impl<ReturnT(*)(Ts...)>
+		{
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+#if JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE_V
+		// noexcept free function type
+		template <typename ReturnT, typename... Ts>
+		struct function_traits_impl<ReturnT(*)(Ts...) noexcept> : noexcept_function_tag
+		{
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+#endif
+
+		// member function type
+		template <typename ReturnT, typename ClassT, typename... Ts>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...)>
+		{
+			using class_type = ClassT;
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+#if JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE_V
+		// noexcept member function type
+		template <typename ReturnT, typename ClassT, typename... Ts>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) noexcept> : noexcept_function_tag
+		{
+			using class_type = ClassT;
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+#endif
+
+		// const member function type
+		template <typename ReturnT, typename ClassT, typename... Ts>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) const> : const_function_tag
+		{
+			using class_type = const ClassT;
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+
+#if JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE_V
+		// const noexcept member function type
+		template <typename ReturnT, typename ClassT, typename... Ts>
+		struct function_traits_impl<ReturnT(ClassT::*)(Ts...) const noexcept> : const_function_tag, noexcept_function_tag
+		{
+			using class_type = const ClassT;
+			using return_type = ReturnT;
+			using arguement_typelist = std::tuple<Ts...>;
+		};
+#endif
+	};
+
+
+	template <typename OpT, typename Enable = void>
+	struct function_arguements;
+
+	template <typename OpT>
+	struct function_arguements<OpT,
+		void_t<typename impl::function_traits_impl<OpT>::arguement_typelist>
+	>
+	{
+		using type = typename impl::function_traits_impl<OpT>::arguement_typelist;
+	};
+
+	template <typename OpT>
+	using function_arguements_t = typename function_arguements<OpT>::type;
+
+
+
+
+
+	namespace impl
+	{
+		template <typename RetT, typename T>
+		struct function_signature_impl;
+
+		template <typename RetT, template <typename... Ts> class T, typename... Ts>
+		struct function_signature_impl<RetT, T<Ts...>>
+		{
+			using type = RetT(Ts...);
+		};
+	};
+
+	template <typename OpT, typename Enable = void>
+	struct function_signature;
+
+	template <typename OpT>
+	struct function_signature<OpT, void_t
+		<
+			typename impl::function_traits_impl<OpT>::return_type,
+			typename impl::function_traits_impl<OpT>::arguement_typelist
+		>>
+	{
+		using type = typename impl::function_signature_impl
+			<
+				typename impl::function_traits_impl<OpT>::return_type,
+				typename impl::function_traits_impl<OpT>::arguement_typelist
+			>::type;
+	};
+
+	template <typename OpT>
+	using function_signature_t = typename function_signature<OpT>::type;
+
+
+
+
+
+
+	template <typename OpT, typename Enable = void>
+	struct function_arguement_count;
+
+	template <typename OpT>
+	struct function_arguement_count<OpT,
+		jc::void_t<typename impl::function_traits_impl<OpT>::arguement_typelist>
+	> :
+		public std::integral_constant
+		<
+			size_t,
+			std::tuple_size<typename impl::function_traits_impl<OpT>::arguement_typelist>::value
+		>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	template <typename OpT>
+	constexpr inline auto function_arguement_count_v = function_arguement_count<OpT>::value;
+#endif
+
+
+
+	namespace impl
+	{
+		/**
+		 * @brief Type used to fake any value
+		*/
+		struct wildcard
+		{
+			constexpr auto operator==(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator!=(wildcard rhs) const noexcept { return true; };
+
+			constexpr auto operator>(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator<(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator>=(wildcard rhs) const noexcept { return true; };
+			constexpr auto operator<=(wildcard rhs) const noexcept { return true; };
+
+			constexpr auto operator+(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator-(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator*(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator/(wildcard rhs) const noexcept { return *this; };
+
+			constexpr auto& operator+=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator-=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator*=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator/=(wildcard rhs) noexcept { return *this; };
+
+			constexpr auto& operator++() noexcept { return *this; };
+			constexpr auto operator++(int) noexcept { return *this; };
+
+			constexpr auto& operator--() noexcept { return *this; };
+			constexpr auto operator--(int) noexcept { return *this; };
+
+			constexpr auto operator~() const noexcept { return *this; };
+			constexpr auto operator!() const noexcept { return *this; };
+			constexpr auto operator-() const noexcept { return *this; };
+
+			constexpr auto operator&(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator|(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator^(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator&=(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator|=(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator^=(wildcard rhs) const noexcept { return *this; };
+
+			constexpr auto operator>>(wildcard rhs) const noexcept { return *this; };
+			constexpr auto operator<<(wildcard rhs) const noexcept { return *this; };
+			constexpr auto& operator>>=(wildcard rhs) noexcept { return *this; };
+			constexpr auto& operator<<=(wildcard rhs) noexcept { return *this; };
+
+			constexpr auto operator*() noexcept { return *this; };
+			constexpr auto operator*() const noexcept { return *this; };
+			constexpr auto operator->() noexcept { return *this; };
+			constexpr auto operator->() const noexcept { return *this; };
+
+			constexpr auto operator%(wildcard rhs) const noexcept { return *this; };
+
+
+
+			template <typename T>
+			constexpr operator T& () const noexcept;
+
+			template <typename T>
+			constexpr operator T && () const noexcept;
+
+
+			constexpr wildcard() = delete;
+		};
+
+
+		// Used to turn pack expansion into the wildcard type
+		template <size_t N>
+		struct wildcard_pos_void
+		{
+			using type = wildcard;
+		};
+
+
+		// Turns an index sequence into a wildcard tuple
+		template <typename T>
+		struct make_wildcard_tuple_impl;
+
+		template <size_t... Ns>
+		struct make_wildcard_tuple_impl<std::index_sequence<Ns...>>
+		{
+			// pack expansion abuse
+			using type = std::tuple<typename wildcard_pos_void<Ns>::type...>;
+		};
+
+
+		template <size_t N>
+		using make_wildcard_tuple_t = typename make_wildcard_tuple_impl<std::make_index_sequence<N>>::type;
+
+
+
+		
+
+
+		template <typename OpT, typename T, typename Enable = void>
+		struct invocable_with_arg_count_impl : jc::false_type {};
+
+		template <typename OpT, template <typename... Ts> class TupT, typename... Ts>
+		struct invocable_with_arg_count_impl<OpT, TupT<Ts...>, void_t
+			<
+			decltype(std::declval<OpT>()(std::declval<Ts>()...))
+			>> : jc::true_type
+		{};
+	};
+
+	/**
+	 * @brief Wildcard type used for function trait probing (ie. jc::is_invocable_with_count)
+	*/
+	using wildcard = jc::impl::wildcard;
+
+
+	/**
+	 * @brief Tests if a type is invocable given 'N' number of arguements
+	 * @tparam OpT Type to test
+	 * @tparam N Number of arguements
+	*/
+	template <typename OpT, size_t N>
+	struct is_invocable_with_count :
+		public impl::invocable_with_arg_count_impl<OpT, impl::make_wildcard_tuple_t<N>>
+	{};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+
+	/**
+	 * @brief Tests if a type is invocable given 'N' number of arguements
+	 * @tparam OpT Type to test
+	 * @tparam N Number of arguements
+	*/
+	template <typename OpT, size_t N>
+	constexpr inline auto is_invocable_with_count_v = is_invocable_with_count<OpT, N>::value;
+
+#endif
+
+
+
+
 
 	namespace impl
 	{
@@ -331,6 +643,7 @@ namespace jc
 			void_t<decltype(std::declval<Op>()(std::declval<ArgTs>()...))>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<ArgTs...>;
 			using return_type = decltype(std::declval<Op>()(std::declval<ArgTs>()...));
 		};
 
@@ -340,6 +653,7 @@ namespace jc
 			void_t<decltype(std::declval<Op>()())>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<void>;
 			using return_type = decltype(std::declval<Op>()());
 		};
 
@@ -351,6 +665,7 @@ namespace jc
 				)>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<ArgTs...>;
 			using return_type = ReturnT;
 		};
 
@@ -360,6 +675,7 @@ namespace jc
 			void_t<decltype((*std::declval<ReturnT(*)()>())())>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<void>;
 			using return_type = ReturnT;
 		};
 
@@ -371,6 +687,7 @@ namespace jc
 				)>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<ArgTs...>;
 			using return_type = ReturnT;
 		};
 
@@ -380,6 +697,7 @@ namespace jc
 			void_t<decltype((std::declval<ClassT*>()->*std::declval<ReturnT(ClassT::*)()>())())>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<void>;
 			using return_type = ReturnT;
 		};
 
@@ -391,6 +709,7 @@ namespace jc
 				)>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<ArgTs...>;
 			using return_type = ReturnT;
 		};
 
@@ -402,17 +721,29 @@ namespace jc
 				)>
 		> : true_type
 		{
+			using arguement_typelist = std::tuple<void>;
 			using return_type = ReturnT;
 		};
 	};
 
+	/**
+	 * @brief Is true is if Op is invocable given a list of arguements (backport of C++17 std::is_invocable)
+	 * @tparam Op Function or other callable type to check
+	 * @tparam ...Ts Arguement types
+	*/
 	template <typename Op, typename... Ts>
 	using is_invocable = impl::invocable_impl<Op, std::tuple<Ts...>>;
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename Op, typename... Ts>
-	JCLIB_CONSTEXPR inline bool is_invocable_v = is_invocable<Op, Ts...>::value;
+	constexpr inline bool is_invocable_v = is_invocable<Op, Ts...>::value;
 #endif
+
+
+
+
+
+
 
 	namespace impl
 	{
@@ -443,11 +774,8 @@ namespace jc
 
 
 
-	using std::is_function;
-
-#ifdef __cpp_inline_variables
-	using std::is_function_v;
-#endif
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_function);
+	
 
 	template <typename T, typename = void>
 	struct is_function_pointer : public false_type {};
@@ -458,9 +786,9 @@ namespace jc
 	template <typename RetT, typename ScopeT, typename... Args>
 	struct is_function_pointer<RetT(ScopeT::*)(Args...), void> : public true_type {};
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T>
-	JCLIB_CONSTEXPR static bool is_function_pointer_v = is_function_pointer<T>::value;
+	constexpr static bool is_function_pointer_v = is_function_pointer<T>::value;
 #endif
 
 
@@ -468,10 +796,7 @@ namespace jc
 		Member function pointer
 	*/
 
-	using std::is_member_function_pointer;
-#ifdef __cpp_inline_variables
-	using std::is_member_function_pointer_v;
-#endif
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_member_function_pointer);
 
 
 	/*
@@ -481,12 +806,12 @@ namespace jc
 	template <typename T>
 	struct is_free_function_pointer : bool_constant<is_function_pointer<T>::value && !is_member_function_pointer<T>::value> {};
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T>
-	JCLIB_CONSTEXPR static bool is_free_function_pointer_v = is_free_function_pointer<T>::value;
+	constexpr static bool is_free_function_pointer_v = is_free_function_pointer<T>::value;
 #endif
 
-#ifdef __cpp_noexcept_function_type
+#if JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE_V
 	template <typename T>
 	struct is_noexcept_function : false_type {};
 	template <typename RetT, typename... Vals>
@@ -496,7 +821,7 @@ namespace jc
 	struct is_noexcept_function : false_type {};
 #endif
 
-#ifdef __cpp_noexcept_function_type
+#if JCLIB_FEATURE_NOEXCEPT_FUNCTION_TYPE_V
 	template <typename T>
 	struct add_noexcept;
 
@@ -524,9 +849,9 @@ namespace jc
 
 #endif
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename T>
-	JCLIB_CONSTEXPR static bool is_noexcept_function_v = is_noexcept_function<T>::value;
+	constexpr static bool is_noexcept_function_v = is_noexcept_function<T>::value;
 #endif
 
 
@@ -546,7 +871,7 @@ namespace jc
 	*/
 	template <typename IterT> JCLIB_REQUIRES(requires (IterT a) { *a; } )
 	struct iterator_to<IterT,
-#ifdef __cpp_concepts
+#if JCLIB_FEATURE_CONCEPTS_V
 		void
 #else
 		jc::void_t<decltype(*std::declval<IterT>())>
@@ -556,7 +881,7 @@ namespace jc
 		using type = std::remove_reference_t<decltype(*std::declval<IterT>())>;
 	};
 	template <typename IterT>
-#ifdef __cpp_concepts
+#if JCLIB_FEATURE_CONCEPTS_V
 	requires requires () { iterator_to<IterT>{}; }
 #endif
 	using iterator_to_t = typename iterator_to<IterT>::type;
@@ -568,17 +893,17 @@ namespace jc
 	struct is_iterator_to : false_type {};
 
 	template <typename IterT, typename T>
-#ifdef __cpp_concepts
+#if JCLIB_FEATURE_CONCEPTS_V
 	requires requires () { is_iterator_to<IterT, T>{}; }
 #endif
 	struct is_iterator_to<IterT, T, jc::enable_if_t<is_same<T, iterator_to_t<IterT>>::value, int>> : true_type {};
 
-#ifdef __cpp_inline_variables
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
 	template <typename IterT, typename T>
-#ifdef __cpp_concepts
+#if JCLIB_FEATURE_CONCEPTS_V
 	requires requires () { is_iterator_to<IterT, T>{}; }
 #endif
-	JCLIB_CONSTEXPR static bool is_iterator_to_v = is_iterator_to<IterT, T>::value;
+	constexpr inline bool is_iterator_to_v = is_iterator_to<IterT, T>::value;
 #endif
 
 	using std::remove_reference;
@@ -720,6 +1045,23 @@ namespace jc
 	{
 		return static_cast<std::underlying_type_t<EnumT>>(_val);
 	};
+
+	// C++11 has_virtual_destructor type trait
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::has_virtual_destructor);
+	JCLIB_USING_VALUE_TYPE_TRAIT(std::is_polymorphic);
+
+	template <typename BaseT, typename DerivedT, typename Enable = void>
+	struct is_polymorphic_base_of : jc::false_type {};
+	template <typename BaseT, typename DerivedT>
+	struct is_polymorphic_base_of<BaseT, DerivedT, jc::enable_if_t<
+		is_base_of<BaseT, DerivedT>::value&& is_convertible<DerivedT*, BaseT*>::value
+		>> : jc::true_type {};
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	template <typename BaseT, typename DerivedT>
+	constexpr inline auto is_polymorphic_base_of_v = is_polymorphic_base_of<BaseT, DerivedT>::value;
+#endif
+
 };
 
 #endif

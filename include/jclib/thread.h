@@ -59,6 +59,22 @@ namespace jc
 		std::this_thread::sleep_until(_timepoint);
 	};
 
+
+
+	/**
+	 * @brief Tag type for providing non-locking function overloads
+	*/
+	struct nolock_t
+	{
+		// Explicit to prevent accidental construction
+		constexpr explicit nolock_t() noexcept = default;
+	};
+
+	/**
+	 * @brief Tag type value for invoking non-locking function overloads
+	*/
+	constexpr nolock_t nolock{};
+
 };
 
 #endif 

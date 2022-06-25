@@ -1,10 +1,10 @@
-name: CMake
+name: gcc_release
 
 on: [push]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Debug
+  BUILD_TYPE: Release
 
 jobs:
   build:
@@ -17,9 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
   
-    - name: Checkout submodules
-      uses: textbook/git-checkout-submodule-action@2.1.1
-      
     - name: Update Gcc and G++
       shell: bash
       run:   |

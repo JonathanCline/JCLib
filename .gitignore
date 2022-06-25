@@ -1,6 +1,11 @@
 .vs/
+.vscode/
 out/
-.github/
+
 CMakeSettings.json
 
+doc/doxy/
 config/include
+
+# Generic
+_*/

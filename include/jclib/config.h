@@ -17,6 +17,9 @@
 
 #include <jclib/config/version.h>
 
+// Include the C++ feature testing header
+#include <jclib/feature.h>
+
 #define _JCLIB_CONFIG_
 
 #ifdef __cpp_constexpr
@@ -88,16 +91,32 @@ namespace jc
 
 // [[nodiscard()]] attribute definition
 #ifndef JCLIB_NODISCARD
-#if __has_cpp_attribute(nodiscard) >= 201907L
-// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
-#define JCLIB_NODISCARD(reason) [[nodiscard(reason)]]
-#elif __has_cpp_attribute(nodiscard)
-// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
-#define JCLIB_NODISCARD(reason) [[nodiscard]]
-#else
-// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
-#define JCLIB_NODISCARD()
-#endif
+
+	#if __has_cpp_attribute(nodiscard) >= 201907L
+
+		// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
+		#define JCLIB_NODISCARD(reason) [[nodiscard(reason)]]
+
+		// Same as JCLIB_NODISCARD() but doesn't require a reason to be specified
+		#define JCLIB_NODISCARD_E [[nodiscard]]
+
+	#elif __has_cpp_attribute(nodiscard)
+
+		// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
+		#define JCLIB_NODISCARD(reason) [[nodiscard]]
+
+		// Same as JCLIB_NODISCARD() but doesn't require a reason to be specified
+		#define JCLIB_NODISCARD_E [[nodiscard]]
+
+	#else
+	
+		// Marks a value to warn on immediate discard, effectively requiring it to be at least stored into a temporary
+		#define JCLIB_NODISCARD(reason)
+	
+		// Same as JCLIB_NODISCARD() but doesn't require a reason to be specified
+		#define JCLIB_NODISCARD_E
+
+	#endif
 #endif
 
 #ifndef JCLIB_EMPTY
@@ -143,10 +162,10 @@ namespace jc
 
 // Convenience macro for c++20 requires clauses
 #ifndef JCLIB_REQUIRES
-#ifdef __cpp_concepts
-#define JCLIB_REQUIRES(x) requires (x)
+#if JCLIB_FEATURE_CONCEPTS_V
+#define JCLIB_REQUIRES(...) requires ( __VA_ARGS__ )
 #else
-#define JCLIB_REQUIRES(x)
+#define JCLIB_REQUIRES(...)
 #endif
 #endif
 
@@ -201,6 +220,18 @@ namespace jc
 #endif
 
 
+// Define the noexcept helper only used if exceptions are enabled
+
+#if JCLIB_EXCEPTIONS_V
+	// Same as noexcept( cond ) but only evaluates the condition if jclib has exceptions enabled
+	#define JCLIB_NOEXCEPT_IF(cond) noexcept( cond )
+#else
+	// Same as noexcept( cond ) but only evaluates the condition if jclib has exceptions enabled
+	#define JCLIB_NOEXECPT_IF(cond) noexcept(true)
+#endif
+
+// Same as noexcept(false) if jclib has exceptions enabled, otherwise is just regular noexcept
+#define JCLIB_NOEXCEPT JCLIB_NOEXCEPT_IF(false)
 
 
 
@@ -222,14 +253,59 @@ namespace jc
 	#define JCLIB_DEBUG_V false
 #endif
 
+// JCLIB_ENABLE_IF_CXSWITCH
+#if JCLIB_FEATURE_CONCEPTS_V
+	// Uses enable_if_t if concepts are not available - for use with enable_if SFINAE
+	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
+	// 
+	// This is the same as JCLIB_RET_SFINAE_CXSWITCH but JCLIB_RET_SFINAE_CXSWITCH implies
+	// that it is only for return type SFINAE even though it isn't.
+	//
+	#define JCLIB_ENABLE_IF_CXSWITCH(retType, ...) retType
+#else
+	// Uses enable_if_t if concepts are not available - for use with enable_if SFINAE
+	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
+	// 
+	// This is the same as JCLIB_RET_SFINAE_CXSWITCH but JCLIB_RET_SFINAE_CXSWITCH implies
+	// that it is only for return type SFINAE even though it isn't.
+	//
+	#define JCLIB_ENABLE_IF_CXSWITCH(retType, ...) ::jc::enable_if_t<(__VA_ARGS__), retType>
+#endif
 
+// Make return type sfinae enable_if concepts switch
+#if JCLIB_FEATURE_CONCEPTS_V
+	// Uses enable_if_t if concepts are not available - for use with function return type enable_if SFINAE
+	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
+	#define JCLIB_RET_SFINAE_CXSWITCH(retType, ...) retType
+#else
+	// Uses enable_if_t if concepts are not available - for use with function return type enable_if SFINAE
+	// This is a bit of a cryptic macro so avoid it unless you know what it is doing
+	#define JCLIB_RET_SFINAE_CXSWITCH(retType, ...) ::jc::enable_if_t<__VA_ARGS__, retType>
+#endif
+
+
+#if JCLIB_FEATURE_INLINE_VARIABLES_V
+	// Adds a "using" directive to the current scope aliasing a value type trait. This will alias
+	// both the basic "typetrait_name" and the "typetrait_name_v" versions depending on if
+	// __cpp_inline_variables is marked as available.
+	#define JCLIB_USING_VALUE_TYPE_TRAIT(typetrait_name) using typetrait_name ; using typetrait_name##_v
+#else
+	// Adds a "using" directive to the current scope aliasing a value type trait. This will alias
+	// both the basic "typetrait_name" and the "typetrait_name_v" versions depending on if
+	// __cpp_inline_variables is marked as available.
+	#define JCLIB_USING_VALUE_TYPE_TRAIT(typetrait_name) using typetrait_name
+#endif
+
+// Expands the arguements within angle brackets.
+// This is extremely useful for edge cases with using templates within macros.
+#define JCLIB_TARGS(...) < __VA_ARGS__ >
 
 namespace jc
 {
 	/**
 	 * @brief True if exceptions are enabled, false otherwise
 	*/
-	constexpr extern bool exceptions_v = JCLIB_EXCEPTIONS_V;
+	constexpr static bool exceptions_v = JCLIB_EXCEPTIONS_V;
 };
 
 #endif
