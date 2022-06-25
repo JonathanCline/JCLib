@@ -36,7 +36,7 @@ namespace jc
 	 * @tparam T Object type
 	 * @param _ref Object to call destructor on
 	*/
-	template <typename T> JCLIB_REQUIRES( requires (T& a) { a.~T(); } )
+	template <typename T> JCLIB_REQUIRES(std::is_destructible_v<T>)
 	JCLIB_CONSTEXPR inline void destroy_at(T& _ref)
 		noexcept(noexcept(std::declval<T&>().~T()))
 	{
@@ -48,7 +48,7 @@ namespace jc
 	 * @tparam T Object type
 	 * @param _ref Object to call destructor on
 	*/
-	template <typename T> JCLIB_REQUIRES(requires (T* a) { destroy_at(*a); })
+	template <typename T> JCLIB_REQUIRES(requires (T* a) { jc::destroy_at(*a); })
 	JCLIB_CONSTEXPR inline void destroy_at(T* _ptr)
 		noexcept(noexcept(jc::destroy_at(*std::declval<T*>())))
 	{
