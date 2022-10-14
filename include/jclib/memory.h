@@ -440,6 +440,14 @@ namespace jc
 
 	};
 
+	// borrow_ptr
+	// borrow_ref
+	// 
+	// unique_ptr
+	// unique_ref
+	// shared_ptr
+	// shared_ref
+
 	/**
 	 * @brief Same as a borrow_ptr but may never be null
 	 * @tparam T Type to point to
