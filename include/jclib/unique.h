@@ -82,7 +82,7 @@ namespace jc
 		 * @brief Releases ownership of the held value, returning its original value to the caller.
 		 * @return The (now no longer) owned value.
 		*/
-		constexpr JCLIB_NODISCARD("Owning and potentially non-null instance of `value_type`") value_type release()
+		JCLIB_NODISCARD("Owning and potentially non-null instance of `value_type`") constexpr value_type release()
 		{
 			// Move owned value to a temporary.
 			auto o = std::move(this->value_);
