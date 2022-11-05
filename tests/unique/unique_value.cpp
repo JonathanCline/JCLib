@@ -85,16 +85,6 @@ int subtest_null()
 		ASSERT(!uv.good(), "unique_value release() should set its held value to null");
 	};
 
-	// Test the destructor sets the unique_value to null.
-	{
-		const auto v = 2;
-		auto uv = uval((int)v);
-		ASSERT(uv.good(), "failed test precondition");
-
-		uv.~uval();
-		ASSERT(!uv.good(), "unique_value destructor should set its held value to null");
-	};
-
 	PASS();
 };
 
