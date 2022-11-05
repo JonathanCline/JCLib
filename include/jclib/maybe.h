@@ -597,8 +597,16 @@ namespace jc
 			template <typename _T>
 			constexpr void no_destroy_set_value(_T&& _value)
 			{
-				this->set_has_value(true);
-				this->data_.union_.val = std::forward<_T>(_value);
+				// Make sure we construct the object if it is uninitialized, DO NOT ASSIGN
+				if (!this->has_value())
+				{
+					new (&this->data_.union_.val) value_type(std::forward<_T>(_value));
+					this->set_has_value(true);
+				}
+				else
+				{
+					this->data_.union_.val = std::forward<_T>(_value);
+				};
 			};
 
 			// Sets the alternate type as active and sets the bool
@@ -606,8 +614,16 @@ namespace jc
 			template <typename _T>
 			constexpr void no_destroy_set_alternate(_T&& _value)
 			{
-				this->set_has_value(false);
-				this->data_.union_.alt = std::forward<_T>(_value);
+				// Make sure we construct the object if it is uninitialized, DO NOT ASSIGN
+				if (this->has_value())
+				{
+					new (&this->data_.union_.alt) alternate_type(std::forward<_T>(_value));
+					this->set_has_value(false);
+				}
+				else
+				{
+					this->data_.union_.alt = std::forward<_T>(_value);
+				};
 			};
 
 			// Sets the primary type as active and sets the bool
@@ -736,13 +752,16 @@ namespace jc
 			{};
 			constexpr maybe_base& operator=(const maybe_base& other)
 			{
-				if (other.has_value())
+				if (&other != this)
 				{
-					this->set_value(other.unsafe_value());
-				}
-				else
-				{
-					this->set_alternate(other.unsafe_alternate());
+					if (other.has_value())
+					{
+						this->set_value(other.unsafe_value());
+					}
+					else
+					{
+						this->set_alternate(other.unsafe_alternate());
+					};
 				};
 				return *this;
 			};
@@ -752,13 +771,18 @@ namespace jc
 			{};
 			constexpr maybe_base& operator=(maybe_base&& other) noexcept
 			{
-				if (other.has_value())
+				const auto q = &other;
+				const auto t = this;
+				if (q != t)
 				{
-					this->set_value(std::move(other.unsafe_value()));
-				}
-				else
-				{
-					this->set_alternate(std::move(other.unsafe_alternate()));
+					if (other.has_value())
+					{
+						this->set_value(std::move(other.unsafe_value()));
+					}
+					else
+					{
+						this->set_alternate(std::move(other.unsafe_alternate()));
+					};
 				};
 				return *this;
 			};

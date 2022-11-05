@@ -308,4 +308,14 @@ namespace jc
 	constexpr static bool exceptions_v = JCLIB_EXCEPTIONS_V;
 };
 
+#ifdef JCLIB_FEATURE_CONSTEXPR_DYNAMIC_ALLOC
+	// Evaluates to "constexpr" if constexpr destructors are available for the target C++ version.
+	// Otherwise this evaluates to nothing and is ignored.
+	#define JCLIB_DESTRUCTOR_CONSTEXPR constexpr
+#else
+	// Evaluates to "constexpr" if constexpr destructors are available for the target C++ version.
+	// Otherwise this evaluates to nothing and is ignored.
+	#define JCLIB_DESTRUCTOR_CONSTEXPR 
+#endif
+
 #endif

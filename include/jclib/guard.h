@@ -395,23 +395,23 @@ namespace jc
 
 	namespace impl
 	{
-		template <void(*OnRelease)()>
+		template <void(*OnReset)()>
 		class guard_fwrap
 		{
 		public:
-			constexpr void release() noexcept
+			constexpr void reset() noexcept
 			{
-				return OnRelease();
+				return OnReset();
 			};
 		};
 	};
 
 
-	template <void(*OnRelease)()>
-	struct fguard : public guard<impl::guard_fwrap<OnRelease>>
+	template <void(*OnReset)()>
+	struct fguard : public guard<impl::guard_fwrap<OnReset>>
 	{
 	private:
-		using parent_type = guard<impl::guard_fwrap<OnRelease>>;
+		using parent_type = guard<impl::guard_fwrap<OnReset>>;
 	public:
 		using parent_type::parent_type;
 		using parent_type::operator=;
