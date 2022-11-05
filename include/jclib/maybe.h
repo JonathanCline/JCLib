@@ -600,7 +600,7 @@ namespace jc
 				// Make sure we construct the object if it is uninitialized, DO NOT ASSIGN
 				if (!this->has_value())
 				{
-					std::construct_at(&this->data_.union_.val, std::forward<_T>(_value));
+					new (&this->data_.union_.val) T(std::forward<_T>(_value));
 					this->set_has_value(true);
 				}
 				else
