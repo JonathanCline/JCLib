@@ -35,8 +35,45 @@ namespace jc
 {
 #ifdef JCLIB_FEATURE_CONCEPTS
 
-#endif
+	/**
+	 * @brief Concept that is fufilled by types that are a valid `TraitsT` parameter for the `unique_value` type.
+	 * 
+	 * The `T` parameter is type the `unique_value` type is managing. The `TraitsT` type is
+	 * expected to implement functionality for this type.
+	 * 
+	 * `T` MUST NOT be `const`
+	 * `T` MUST fufill the concept `jc::cx_object` (same as `std::is_object`)
+	 * `T` MUST fufill the concept `std::movable`
+	 * `T` MUST fufill the concept `std::destructible`
+	 * 
+	 * `TraitsT` MUST NOT be `const`
+	 * `TraitsT` MUST fufill the concept `jc::cx_object` (same as `std::is_object`)
+	 * 
+	 * Requires defined public type alias(es) with the following forms:
+	 *		`value_type = T`
+	 * 
+	 * Requires public static member functions with the following forms:
+	 *		`null() -> T`
+	 *		`reset(T&&) -> void`
+	 *		`good(const T&) -> bool`
+	*/
+	template <typename TraitsT, typename T>
+	concept cx_unique_value_traits =
+		std::movable<T> &&
+		jc::cx_object<T> &&
+		jc::cx_mutable<T> &&
+		std::destructible<T> &&
+		jc::cx_object<TraitsT> &&
+		jc::cx_mutable<TraitsT> &&
+		std::same_as<typename TraitsT::value_type, T> &&
+		requires(const T& cv, T& v)
+	{
+		{ TraitsT::null() } -> std::same_as<T>;
+		{ TraitsT::good(cv) } -> std::same_as<bool>;
+		{ TraitsT::reset(std::move(v)) } -> std::same_as<void>;
+	};
 
+#endif
 
 	/**
 	 * @brief Generic owning handle to a uniquely owned value (think `unique_ptr` but can be used for non-pointer types).
@@ -45,7 +82,7 @@ namespace jc
 	 * @tparam TraitsT The traits type implementing functionality for manipulating the owned value type `T`. See the example
 	 * at the bottom of the file for more information (TODO: Add example to proper docs). 
 	*/
-	template <typename T, typename TraitsT>
+	template <typename T, typename TraitsT> JCLIB_REQUIRES(cx_unique_value_traits<TraitsT, T>)
 	struct unique_value
 	{
 	public:
@@ -67,6 +104,11 @@ namespace jc
 		 * @brief If not null, runs the cleanup function and sets to null; otherwise, this does nothing.
 		*/
 		constexpr void reset()
+			noexcept(
+				noexcept(std::declval<unique_value>().release()) &&
+				noexcept(traits_type::good(std::declval<const value_type&>())) &&
+				noexcept(traits_type::reset(std::declval<value_type&&>()))
+			)
 		{
 			// Grab ownership of the owned value from ourselves.
 			auto _value = this->release();
@@ -83,6 +125,10 @@ namespace jc
 		 * @return The (now no longer) owned value.
 		*/
 		JCLIB_NODISCARD("Owning and potentially non-null instance of `value_type`") constexpr value_type release()
+			noexcept(
+				noexcept(traits_type::null()) &&
+				noexcept(value_type(std::declval<value_type&&>()))
+			)
 		{
 			// Move owned value to a temporary.
 			auto o = std::move(this->value_);
@@ -140,7 +186,7 @@ namespace jc
 		 * @param _value The value to obtain ownership of, may be null.
 		*/
 		constexpr explicit unique_value(value_type&& _value)
-			noexcept(noexcept(value_type(std::move(std::declval<value_type&&>())))) :
+			noexcept(noexcept(value_type(std::declval<value_type&&>()))) :
 			value_(std::move(_value))
 		{};
 
