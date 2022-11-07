@@ -57,7 +57,7 @@ namespace jc
 	 *		`reset(T&&) -> void`
 	 *		`good(const T&) -> bool`
 	*/
-	template <typename TraitsT, typename T>
+	template <typename TraitsT, typename T = typename TraitsT::value_type>
 	concept cx_unique_value_traits =
 		std::movable<T> &&
 		jc::cx_object<T> &&
