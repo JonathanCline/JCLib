@@ -37,7 +37,6 @@ namespace jc
 
 #endif
 
-
 	/**
 	 * @brief Generic owning handle to a uniquely owned value (think `unique_ptr` but can be used for non-pointer types).
 	 * 
@@ -67,6 +66,11 @@ namespace jc
 		 * @brief If not null, runs the cleanup function and sets to null; otherwise, this does nothing.
 		*/
 		constexpr void reset()
+			noexcept(
+				noexcept(std::declval<unique_value>().release()) &&
+				noexcept(traits_type::good(std::declval<const value_type&>())) &&
+				noexcept(traits_type::reset(std::declval<value_type&&>()))
+			)
 		{
 			// Grab ownership of the owned value from ourselves.
 			auto _value = this->release();
@@ -83,6 +87,10 @@ namespace jc
 		 * @return The (now no longer) owned value.
 		*/
 		JCLIB_NODISCARD("Owning and potentially non-null instance of `value_type`") constexpr value_type release()
+			noexcept(
+				noexcept(traits_type::null()) &&
+				noexcept(value_type(std::declval<value_type&&>()))
+			)
 		{
 			// Move owned value to a temporary.
 			auto o = std::move(this->value_);
@@ -140,7 +148,7 @@ namespace jc
 		 * @param _value The value to obtain ownership of, may be null.
 		*/
 		constexpr explicit unique_value(value_type&& _value)
-			noexcept(noexcept(value_type(std::move(std::declval<value_type&&>())))) :
+			noexcept(noexcept(value_type(std::declval<value_type&&>()))) :
 			value_(std::move(_value))
 		{};
 
