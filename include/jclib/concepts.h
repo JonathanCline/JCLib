@@ -41,6 +41,55 @@ namespace jc
 
 
 
+	/*
+		Basic type concepts
+	*/
+
+	/**
+	 * @brief Fufilled by types that are marked as `const`.
+	*/
+	template <typename T>
+	concept cx_const = std::is_const_v<T>;
+
+	/**
+	 * @brief Fufilled by types that are NOT marked as `const`.
+	*/
+	template <typename T>
+	concept cx_mutable = !jc::cx_const<T>;
+
+	/**
+	 * @brief Fufilled by l-value reference types.
+	 * 
+	 * Example: `T&`, `const T&`
+	*/
+	template <typename T>
+	concept cx_lvalue_reference = std::is_lvalue_reference_v<T>;
+
+	/**
+	 * @brief Fufilled by r-value reference types.
+	 *
+	 * Example: `T&&`
+	*/
+	template <typename T>
+	concept cx_rvalue_reference = std::is_rvalue_reference_v<T>;
+
+	/**
+	 * @brief Fufilled by l-value OR r-value reference types.
+	 *
+	 * Example: `T&&`, `T&`, `const T&`
+	*/
+	template <typename T>
+	concept cx_reference = std::is_reference_v<T>;
+
+	/**
+	 * @brief Fufilled by types that are not a function, a reference, or void.
+	 *
+	 * Example: `int`, `const int*`
+	*/
+	template <typename T>
+	concept cx_object = std::is_object_v<T>;
+
+
 
 	/*
 		Type comparison
