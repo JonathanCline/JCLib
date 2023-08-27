@@ -273,7 +273,14 @@ namespace jc
 	 *
 	 * Inherit from this to easily make a type non-copyable.
 	*/
-	struct no_copy : no_copy_construct, no_copy_assign {};
+	struct no_copy
+	{
+		constexpr no_copy() noexcept = default;
+		constexpr no_copy(const no_copy&) noexcept = delete;
+		constexpr no_copy& operator=(const no_copy&) noexcept = delete;
+		constexpr no_copy(no_copy&&) noexcept = default;
+		constexpr no_copy& operator=(no_copy&&) noexcept = default;
+	};
 
 	/**
 	 * @brief Type that has its move constructor deleted.
