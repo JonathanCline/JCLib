@@ -288,6 +288,20 @@ namespace jc
 		constexpr no_move_construct(no_move_construct&&) noexcept = delete;
 		constexpr no_move_construct& operator=(no_move_construct&&) noexcept = default;
 	};
+
+	/**
+	 * @brief Type that has its move assignment operator deleted.
+	 *
+	 * Inherit from this to easily delete the move assignment operator.
+	*/
+	struct no_move_assign
+	{
+		constexpr no_move_assign() noexcept = default;
+		constexpr no_move_assign(const no_move_assign&) noexcept = default;
+		constexpr no_move_assign& operator=(const no_move_assign&) noexcept = default;
+		constexpr no_move_assign(no_move_assign&&) noexcept = default;
+		constexpr no_move_assign& operator=(no_move_assign&&) noexcept = delete;
+	};
 }
 
 #endif
