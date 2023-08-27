@@ -323,6 +323,20 @@ namespace jc
 		constexpr no_move(no_move&&) noexcept = delete;
 		constexpr no_move& operator=(no_move&&) noexcept = delete;
 	};
+
+	/**
+	 * @brief Type that has its move/copy constructors and assigment operators deleted.
+	 *
+	 * Inherit from this to easily make a type non-movable and non-copyable.
+	*/
+	struct no_copy_or_move
+	{
+		constexpr no_copy_or_move() noexcept = default;
+		constexpr no_copy_or_move(const no_copy_or_move&) noexcept = delete;
+		constexpr no_copy_or_move& operator=(const no_copy_or_move&) noexcept = delete;
+		constexpr no_copy_or_move(no_copy_or_move&&) noexcept = delete;
+		constexpr no_copy_or_move& operator=(no_copy_or_move&&) noexcept = delete;
+	};
 }
 
 #endif
