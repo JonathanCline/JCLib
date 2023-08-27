@@ -253,6 +253,20 @@ namespace jc
 		constexpr no_copy_construct(no_copy_construct&&) noexcept = default;
 		constexpr no_copy_construct& operator=(no_copy_construct&&) noexcept = default;
 	};
+
+	/**
+	 * @brief Type that has its copy assignment operator deleted.
+	 *
+	 * Inherit from this to easily delete the copy assignment operator.
+	*/
+	struct no_copy_assign
+	{
+		constexpr no_copy_assign() noexcept = default;
+		constexpr no_copy_assign(const no_copy_assign&) noexcept = default;
+		constexpr no_copy_assign& operator=(const no_copy_assign&) noexcept = delete;
+		constexpr no_copy_assign(no_copy_assign&&) noexcept = default;
+		constexpr no_copy_assign& operator=(no_copy_assign&&) noexcept = default;
+	};
 }
 
 #endif
