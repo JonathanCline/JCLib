@@ -306,9 +306,16 @@ namespace jc
 	/**
 	 * @brief Type that has its move constructor and move assignment operator deleted.
 	 *
-	 * Inherit from this to easily make a type non-moveable.
+	 * Inherit from this to easily make a type non-movable.
 	*/
-	struct no_move : no_move_construct, no_move_assign {};
+	struct no_move
+	{
+		constexpr no_move() noexcept = default;
+		constexpr no_move(const no_move&) noexcept = default;
+		constexpr no_move& operator=(const no_move&) noexcept = default;
+		constexpr no_move(no_move&&) noexcept = delete;
+		constexpr no_move& operator=(no_move&&) noexcept = delete;
+	};
 }
 
 #endif

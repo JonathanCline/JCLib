@@ -98,7 +98,7 @@ static_assert(jc::is_default_constructible<jc::no_move>::value == true,	"jc::no_
 static_assert(jc::is_copy_constructible<jc::no_move>::value == true,	"jc::no_move should be copy constructible");
 static_assert(jc::is_copy_assignable<jc::no_move>::value == true,		"jc::no_move should be copy assignable");
 static_assert(jc::is_move_constructible<jc::no_move>::value == false,	"jc::no_move should not be move constructible");
-static_assert(jc::is_move_assignable<jc::no_move>::value == false,		"jc::no_move should be move assignable");
+static_assert(jc::is_move_assignable<jc::no_move>::value == false,		"jc::no_move should not be move assignable");
 
 int main()
 {
