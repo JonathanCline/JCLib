@@ -238,5 +238,21 @@ namespace jc
 };
 
 
+namespace jc
+{
+	/**
+	 * @brief Type that has its copy constructor deleted.
+	 * 
+	 * Inherit from this to easily delete the copy constructor.
+	*/
+	struct no_copy_construct
+	{
+		constexpr no_copy_construct() noexcept = default;
+		constexpr no_copy_construct(const no_copy_construct&) noexcept = delete;
+		constexpr no_copy_construct& operator=(const no_copy_construct&) noexcept = default;
+		constexpr no_copy_construct(no_copy_construct&&) noexcept = default;
+		constexpr no_copy_construct& operator=(no_copy_construct&&) noexcept = default;
+	};
+}
 
 #endif

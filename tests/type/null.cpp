@@ -58,6 +58,12 @@ int subtest_pointer()
 	PASS();
 };
 
+// Test no_copy_construct
+static_assert(jc::is_default_constructible<jc::no_copy_construct>::value == true,	"jc::no_copy_construct should be default constructible");
+static_assert(jc::is_copy_constructible<jc::no_copy_construct>::value == false,		"jc::no_copy_construct should not be copy constructible");
+static_assert(jc::is_copy_assignable<jc::no_copy_construct>::value == true,			"jc::no_copy_construct should be copy assignable");
+static_assert(jc::is_move_constructible<jc::no_copy_construct>::value == true,		"jc::no_copy_construct should be move constructible");
+static_assert(jc::is_move_assignable<jc::no_copy_construct>::value == true,			"jc::no_copy_construct should be move assignable");
 
 int main()
 {
