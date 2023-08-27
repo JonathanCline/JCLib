@@ -238,5 +238,105 @@ namespace jc
 };
 
 
+namespace jc
+{
+	/**
+	 * @brief Type that has its copy constructor deleted.
+	 * 
+	 * Inherit from this to easily delete the copy constructor.
+	*/
+	struct no_copy_construct
+	{
+		constexpr no_copy_construct() noexcept = default;
+		constexpr no_copy_construct(const no_copy_construct&) noexcept = delete;
+		constexpr no_copy_construct& operator=(const no_copy_construct&) noexcept = default;
+		constexpr no_copy_construct(no_copy_construct&&) noexcept = default;
+		constexpr no_copy_construct& operator=(no_copy_construct&&) noexcept = default;
+	};
+
+	/**
+	 * @brief Type that has its copy assignment operator deleted.
+	 *
+	 * Inherit from this to easily delete the copy assignment operator.
+	*/
+	struct no_copy_assign
+	{
+		constexpr no_copy_assign() noexcept = default;
+		constexpr no_copy_assign(const no_copy_assign&) noexcept = default;
+		constexpr no_copy_assign& operator=(const no_copy_assign&) noexcept = delete;
+		constexpr no_copy_assign(no_copy_assign&&) noexcept = default;
+		constexpr no_copy_assign& operator=(no_copy_assign&&) noexcept = default;
+	};
+
+	/**
+	 * @brief Type that has its copy constructor and copy assignment operator deleted.
+	 *
+	 * Inherit from this to easily make a type non-copyable.
+	*/
+	struct no_copy
+	{
+		constexpr no_copy() noexcept = default;
+		constexpr no_copy(const no_copy&) noexcept = delete;
+		constexpr no_copy& operator=(const no_copy&) noexcept = delete;
+		constexpr no_copy(no_copy&&) noexcept = default;
+		constexpr no_copy& operator=(no_copy&&) noexcept = default;
+	};
+
+	/**
+	 * @brief Type that has its move constructor deleted.
+	 *
+	 * Inherit from this to easily delete the move constructor.
+	*/
+	struct no_move_construct
+	{
+		constexpr no_move_construct() noexcept = default;
+		constexpr no_move_construct(const no_move_construct&) noexcept = default;
+		constexpr no_move_construct& operator=(const no_move_construct&) noexcept = default;
+		constexpr no_move_construct(no_move_construct&&) noexcept = delete;
+		constexpr no_move_construct& operator=(no_move_construct&&) noexcept = default;
+	};
+
+	/**
+	 * @brief Type that has its move assignment operator deleted.
+	 *
+	 * Inherit from this to easily delete the move assignment operator.
+	*/
+	struct no_move_assign
+	{
+		constexpr no_move_assign() noexcept = default;
+		constexpr no_move_assign(const no_move_assign&) noexcept = default;
+		constexpr no_move_assign& operator=(const no_move_assign&) noexcept = default;
+		constexpr no_move_assign(no_move_assign&&) noexcept = default;
+		constexpr no_move_assign& operator=(no_move_assign&&) noexcept = delete;
+	};
+
+	/**
+	 * @brief Type that has its move constructor and move assignment operator deleted.
+	 *
+	 * Inherit from this to easily make a type non-movable.
+	*/
+	struct no_move
+	{
+		constexpr no_move() noexcept = default;
+		constexpr no_move(const no_move&) noexcept = default;
+		constexpr no_move& operator=(const no_move&) noexcept = default;
+		constexpr no_move(no_move&&) noexcept = delete;
+		constexpr no_move& operator=(no_move&&) noexcept = delete;
+	};
+
+	/**
+	 * @brief Type that has its move/copy constructors and assigment operators deleted.
+	 *
+	 * Inherit from this to easily make a type non-movable and non-copyable.
+	*/
+	struct no_copy_or_move
+	{
+		constexpr no_copy_or_move() noexcept = default;
+		constexpr no_copy_or_move(const no_copy_or_move&) noexcept = delete;
+		constexpr no_copy_or_move& operator=(const no_copy_or_move&) noexcept = delete;
+		constexpr no_copy_or_move(no_copy_or_move&&) noexcept = delete;
+		constexpr no_copy_or_move& operator=(no_copy_or_move&&) noexcept = delete;
+	};
+}
 
 #endif

@@ -58,7 +58,6 @@ int subtest_pointer()
 	PASS();
 };
 
-
 int main()
 {
 	NEWTEST();
