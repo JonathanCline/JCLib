@@ -302,6 +302,13 @@ namespace jc
 		constexpr no_move_assign(no_move_assign&&) noexcept = default;
 		constexpr no_move_assign& operator=(no_move_assign&&) noexcept = delete;
 	};
+
+	/**
+	 * @brief Type that has its move constructor and move assignment operator deleted.
+	 *
+	 * Inherit from this to easily make a type non-moveable.
+	*/
+	struct no_move : no_move_construct, no_move_assign {};
 }
 
 #endif
